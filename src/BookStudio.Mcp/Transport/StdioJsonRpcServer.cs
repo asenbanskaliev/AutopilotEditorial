@@ -73,7 +73,10 @@ public sealed class StdioJsonRpcServer
                 try
                 {
                     using var document = JsonDocument.Parse(line, DocumentOptions);
-                    result = _session.Dispatch(document.RootElement);
+                    result = await _session.DispatchAsync(
+                            document.RootElement,
+                            cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 catch (JsonException)
                 {
@@ -83,6 +86,10 @@ public sealed class StdioJsonRpcServer
                             JsonRpcErrorCodes.ParseError,
                             "Parse error"),
                         "MCP_PARSE_ERROR");
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return 0;
                 }
                 catch (Exception)
                 {
