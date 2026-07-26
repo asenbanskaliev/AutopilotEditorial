@@ -44,7 +44,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":\"pre-ping\",\"method\":\"ping\"}");
     using (var ping = await server.ReadJsonAsync())
     {
-        AssertId(ping.RootElement, "pre-ping");
+        AssertStringId(ping.RootElement, "pre-ping");
         Require(!ping.RootElement.GetProperty("result").EnumerateObject().Any(), "Ping result must be empty.");
     }
 
@@ -52,7 +52,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/list\"}");
     using (var notInitialized = await server.ReadJsonAsync())
     {
-        AssertId(notInitialized.RootElement, 3);
+        AssertNumericId(notInitialized.RootElement, 3);
         AssertError(notInitialized.RootElement, -32002);
     }
 
@@ -60,14 +60,14 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{}}}");
     using (var invalidParams = await server.ReadJsonAsync())
     {
-        AssertId(invalidParams.RootElement, 4);
+        AssertNumericId(invalidParams.RootElement, 4);
         AssertError(invalidParams.RootElement, -32602);
     }
 
     await server.SendAsync(CurrentInitializeRequest(5));
     using (var initialized = await server.ReadJsonAsync())
     {
-        AssertId(initialized.RootElement, 5);
+        AssertNumericId(initialized.RootElement, 5);
         var result = initialized.RootElement.GetProperty("result");
         Require(
             result.GetProperty("protocolVersion").GetString() == "2025-11-25",
@@ -89,7 +89,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
     await server.SendAsync(CurrentInitializeRequest(6));
     using (var duplicateInitialize = await server.ReadJsonAsync())
     {
-        AssertId(duplicateInitialize.RootElement, 6);
+        AssertNumericId(duplicateInitialize.RootElement, 6);
         AssertError(duplicateInitialize.RootElement, -32600);
     }
 
@@ -99,7 +99,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"ping\"}");
     using (var readyPing = await server.ReadJsonAsync())
     {
-        AssertId(readyPing.RootElement, 7);
+        AssertNumericId(readyPing.RootElement, 7);
         Require(readyPing.RootElement.TryGetProperty("result", out _), "Initialized notification produced an unexpected response.");
     }
 
@@ -107,7 +107,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}");
     using (var missingMethod = await server.ReadJsonAsync())
     {
-        AssertId(missingMethod.RootElement, 8);
+        AssertNumericId(missingMethod.RootElement, 8);
         AssertError(missingMethod.RootElement, -32601);
     }
 
@@ -117,7 +117,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"ping\"}");
     using (var notificationPing = await server.ReadJsonAsync())
     {
-        AssertId(notificationPing.RootElement, 9);
+        AssertNumericId(notificationPing.RootElement, 9);
     }
 
     await server.SendAsync(
@@ -144,7 +144,7 @@ static async Task RunVersionNegotiationAsync(string requested, string expected)
 
     using (var response = await server.ReadJsonAsync())
     {
-        AssertId(response.RootElement, "version-init");
+        AssertStringId(response.RootElement, "version-init");
         Require(
             response.RootElement.GetProperty("result").GetProperty("protocolVersion").GetString() == expected,
             $"Negotiated version mismatch for {requested}.");
@@ -186,12 +186,12 @@ static void AssertError(JsonElement response, int expectedCode)
     Require(!string.IsNullOrWhiteSpace(error.GetProperty("message").GetString()), "Error message is missing.");
 }
 
-static void AssertId(JsonElement response, long expected)
+static void AssertNumericId(JsonElement response, long expected)
 {
     Require(response.GetProperty("id").GetInt64() == expected, $"Expected response id {expected}.");
 }
 
-static void AssertId(JsonElement response, string expected)
+static void AssertStringId(JsonElement response, string expected)
 {
     Require(response.GetProperty("id").GetString() == expected, $"Expected response id {expected}.");
 }
