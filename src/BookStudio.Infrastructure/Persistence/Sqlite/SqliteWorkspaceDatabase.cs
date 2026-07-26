@@ -91,6 +91,16 @@ public sealed class SqliteWorkspaceDatabase : IWorkspaceDatabaseLifecycle, IAsyn
                 nameof(destinationPath));
         }
 
+        var workspacePrefix = _options.WorkspaceRoot + Path.DirectorySeparatorChar;
+        if (!canonicalDestination.StartsWith(
+                workspacePrefix,
+                SqliteWorkspaceOptions.PathComparison))
+        {
+            throw new ArgumentException(
+                "The backup destination must remain inside the workspace root.",
+                nameof(destinationPath));
+        }
+
         var parent = Path.GetDirectoryName(canonicalDestination)
             ?? throw new InvalidOperationException("The backup destination has no parent directory.");
         Directory.CreateDirectory(parent);
