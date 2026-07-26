@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F1-FOUNDATION
-- Current slice: VS-014
+- Current slice: VS-014 — API and health
 - State: VERIFIED_PENDING_MERGE
-- Open PR: #15 — VS-014 Outbox and domain events
+- Open PR: #17 — VS-014 API and health governance correction
 - Blocking gate: final governance checks and merge
-- Next action: merge PR #15 and resolve the next READY slice from the master backlog
+- Next action: merge PR #17 and start VS-015 — Control Center shell
 - Full program gate: NOT_READY

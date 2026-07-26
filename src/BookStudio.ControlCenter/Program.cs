@@ -1,8 +1,4 @@
-var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
+using BookStudio.ControlCenter;
 
-app.MapGet(
-    "/health",
-    () => Results.Ok(new { status = "ok", service = "BookStudio.ControlCenter" }));
-
-app.Run();
+var app = ControlCenterApplication.Build(args);
+await app.RunAsync();
