@@ -1,0 +1,19 @@
+name: .NET CI
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "*.slnx"
+      - "Directory.*"
+      - "global.json"
+
+jobs:
+  build-test:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - run: dotnet restore
+      - run: dotnet build --no-restore -c Release
+      - run: dotnet test --no-build -c Release --logger trx
