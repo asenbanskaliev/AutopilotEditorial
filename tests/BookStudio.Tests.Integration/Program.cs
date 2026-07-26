@@ -25,7 +25,7 @@ finally
 
 if (errors.Count == 0)
 {
-    Console.WriteLine("SQLite integration PASS: lifecycle, migrations, WAL, serialized writes, integrity and backup verified.");
+    Console.WriteLine("SQLite integration PASS: lifecycle, migrations, WAL, serialized writes, rollback, integrity and backup verified.");
     return 0;
 }
 
@@ -38,6 +38,9 @@ return 1;
 
 static async Task RunSqliteJourneyAsync(string workspaceRoot)
 {
+    RequireThrows<ArgumentException>(
+        () => SqliteWorkspaceOptions.Create(workspaceRoot, "../escape.db"));
+
     var options = SqliteWorkspaceOptions.Create(
         workspaceRoot,
         databaseFileName: "bookstudio.db",
@@ -98,8 +101,35 @@ static async Task RunSqliteJourneyAsync(string workspaceRoot)
     }
     Require(await database.CountMetadataAsync() == 64, "A cancelled write must not commit.");
 
+    await using (var rollbackQueue = new SqliteWriteQueue(connectionFactory, capacity: 4))
+    {
+        await RequireThrowsAsync<InvalidOperationException>(
+            async () => await rollbackQueue.ExecuteInTransactionAsync<bool>(
+                (connection, transaction, token) =>
+                {
+                    token.ThrowIfCancellationRequested();
+                    using var command = connection.CreateCommand();
+                    command.Transaction = transaction;
+                    command.CommandText = """
+                        INSERT INTO workspace_metadata(key, value, updated_at_utc)
+                        VALUES ('rollback-key', 'must-not-commit', 'test');
+                        """;
+                    command.ExecuteNonQuery();
+                    throw new InvalidOperationException("force rollback");
+                }).AsTask());
+    }
+    Require(
+        await database.GetMetadataAsync("rollback-key") is null,
+        "A failed write operation must roll back its transaction.");
+
     await RequireThrowsAsync<ArgumentException>(
         async () => await database.BackupAsync(options.DatabasePath));
+
+    var outsideBackup = Path.Combine(
+        Directory.GetParent(workspaceRoot)?.FullName ?? Path.GetTempPath(),
+        "outside-backup.db");
+    await RequireThrowsAsync<ArgumentException>(
+        async () => await database.BackupAsync(outsideBackup));
 
     var backupPath = Path.Combine(workspaceRoot, "backup.db");
     await database.BackupAsync(backupPath);
@@ -116,6 +146,22 @@ static async Task RunSqliteJourneyAsync(string workspaceRoot)
         Require(
             await backupDatabase.GetMetadataAsync("key-063") == "value-063",
             "The backup must preserve metadata values.");
+    }
+
+    var tamperOptions = SqliteWorkspaceOptions.Create(workspaceRoot, "tamper.db");
+    await using (var tamperDatabase = new SqliteWorkspaceDatabase(tamperOptions))
+    {
+        _ = await tamperDatabase.InitializeAsync();
+        var tamperFactory = new SqliteConnectionFactory(tamperOptions);
+        using (var connection = tamperFactory.OpenConnection())
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE schema_migrations SET sha256 = 'corrupted';";
+            Require(command.ExecuteNonQuery() == 1, "Migration ledger tamper setup failed.");
+        }
+
+        await RequireThrowsAsync<InvalidOperationException>(
+            async () => _ = await tamperDatabase.InitializeAsync());
     }
 
     await database.DisposeAsync();
@@ -148,6 +194,21 @@ static async Task RequireThrowsAsync<TException>(Func<Task> operation)
     try
     {
         await operation();
+    }
+    catch (TException)
+    {
+        return;
+    }
+
+    throw new InvalidOperationException($"Expected exception {typeof(TException).Name} was not thrown.");
+}
+
+static void RequireThrows<TException>(Action operation)
+    where TException : Exception
+{
+    try
+    {
+        operation();
     }
     catch (TException)
     {
