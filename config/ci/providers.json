@@ -65,10 +65,16 @@
       "command": ["python", "scripts/verify_completion.py", "--pr-mode"]
     },
     {
+      "id": "dotnet.solution-baseline",
+      "capability": "dotnet",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "build", "BookStudio.slnx", "--no-restore", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
-      "command": ["dotnet", "test", "-c", "Release"]
+      "command": ["dotnet", "test", "BookStudio.slnx", "-c", "Release"]
     },
     {
       "id": "release.full-program",
