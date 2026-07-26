@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>BookStudio.Domain</AssemblyName>
+    <RootNamespace>BookStudio.Domain</RootNamespace>
+  </PropertyGroup>
+</Project>
