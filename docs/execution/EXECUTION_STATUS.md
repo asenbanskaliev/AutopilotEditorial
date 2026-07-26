@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F1-FOUNDATION
-- Current slice: VS-011
+- Current slice: VS-012
 - State: VERIFIED_PENDING_MERGE
-- Open PR: #9 — VS-011 Architecture boundaries
+- Open PR: #11 — VS-012 SQLite persistence
 - Blocking gate: final PR checks and merge
-- Next action: merge PR #9 and start VS-012 — SQLite persistence
+- Next action: merge PR #11 and start VS-013 — Artifact store
 - Full program gate: NOT_READY

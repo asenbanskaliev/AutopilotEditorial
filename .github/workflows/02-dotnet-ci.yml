@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**/*.cs"
       - "src/**/*.csproj"
+      - "src/**/*.sql"
       - "tests/**/*.cs"
       - "tests/**/*.csproj"
       - "*.sln"
@@ -36,13 +37,18 @@ jobs:
         run: dotnet build BookStudio.slnx --no-restore -c Release
       - name: Run architecture fitness
         run: dotnet run --project tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj --no-build -c Release
-      - name: Generate normalized .NET evidence
+      - name: Run SQLite integration journey
+        run: dotnet run --project tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj --no-build -c Release
+      - name: Generate normalized build evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
+      - name: Generate normalized SQLite evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.sqlite-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-sqlite-integration.json -- dotnet run --project tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dotnet-solution-baseline-evidence
+          name: dotnet-ci-evidence
           path: artifacts/ci/*.json
           if-no-files-found: error

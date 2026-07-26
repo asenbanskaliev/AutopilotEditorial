@@ -11,5 +11,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj" />
+    <Project Path="tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj" />
   </Folder>
 </Solution>
