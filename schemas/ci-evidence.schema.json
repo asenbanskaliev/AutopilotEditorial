@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bookstudio.local/schemas/ci-evidence.schema.json",
+  "title": "CI Validation Evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "providerId",
+    "providerType",
+    "contractId",
+    "sourceSha",
+    "startedAt",
+    "completedAt",
+    "durationMs",
+    "command",
+    "exitCode",
+    "result",
+    "stdoutSha256",
+    "stderrSha256",
+    "equivalence",
+    "retryChain"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "providerId": {"type": "string", "minLength": 1},
+    "providerType": {
+      "enum": ["github-hosted", "github-self-hosted", "circleci", "local-evidence"]
+    },
+    "contractId": {"type": "string", "minLength": 1},
+    "sourceSha": {"type": "string", "minLength": 1},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "durationMs": {"type": "integer", "minimum": 0},
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"}
+    },
+    "exitCode": {"type": ["integer", "null"]},
+    "result": {"enum": ["PASS", "FAIL", "BLOCKED"]},
+    "stdoutSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stderrSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "stdout": {"type": "string"},
+    "stderr": {"type": "string"},
+    "environment": {"type": "object"},
+    "equivalence": {
+      "type": "object",
+      "required": ["mode", "approved"],
+      "properties": {
+        "mode": {"enum": ["exact", "approved-equivalent", "none"]},
+        "approved": {"type": "boolean"},
+        "reason": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "retryChain": {
+      "type": "array",
+      "items": {"type": "object"}
+    }
+  },
+  "additionalProperties": false
+}

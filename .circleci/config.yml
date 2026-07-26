@@ -1,0 +1,25 @@
+version: 2.1
+
+jobs:
+  governance:
+    docker:
+      - image: cimg/python:3.12
+    steps:
+      - checkout
+      - run:
+          name: Validate master plan
+          command: python scripts/verify_plan_integrity.py
+      - run:
+          name: Validate pull-request state policy
+          command: python scripts/verify_completion.py --pr-mode
+      - run:
+          name: Validate CI provider catalog
+          command: python scripts/validate_ci_providers.py
+      - run:
+          name: Run governance tests
+          command: python -m unittest discover -s tests/governance -p "test_*.py" -v
+
+workflows:
+  governance:
+    jobs:
+      - governance
