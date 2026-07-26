@@ -125,6 +125,26 @@ internal static class OutboxJourney
                 async () => _ = await restarted.ClaimAsync("worker-a", 1, TimeSpan.Zero, now));
         }
 
+        var raceId = Guid.NewGuid();
+        await using (var enqueueStore = new SqliteOutboxStore(factory))
+        {
+            _ = await enqueueStore.EnqueueAsync(
+                Draft(raceId, "book.concurrent-dispatch", "{\"race\":true}", now.AddHours(2)),
+                now);
+        }
+
+        await using (var raceStoreA = new SqliteOutboxStore(factory))
+        await using (var raceStoreB = new SqliteOutboxStore(factory))
+        {
+            var claims = await Task.WhenAll(
+                raceStoreA.ClaimAsync("worker-race-a", 1, TimeSpan.FromMinutes(5), now.AddHours(2)).AsTask(),
+                raceStoreB.ClaimAsync("worker-race-b", 1, TimeSpan.FromMinutes(5), now.AddHours(2)).AsTask());
+            Require(claims.Sum(batch => batch.Count) == 1, "Two store instances must not claim the same message.");
+            var winner = claims.Single(batch => batch.Count == 1).Single();
+            await (winner.LockedBy == "worker-race-a" ? raceStoreA : raceStoreB)
+                .CompleteAsync(winner.MessageId, winner.LockedBy!, now.AddHours(2).AddMinutes(1));
+        }
+
         var disposedStore = new SqliteOutboxStore(factory);
         await disposedStore.DisposeAsync();
         await RequireThrowsAsync<ObjectDisposedException>(
