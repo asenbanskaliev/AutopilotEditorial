@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F0-BOOTSTRAP
-- Current slice: VS-000
-- State: IN_REVIEW
-- Open PR: #1 — PR-000 Governance Bootstrap
-- Blocking gate: PR review and governance checks
-- Next action: validate PR-000, correct failures and merge after approval
+- Current slice: VS-001
+- State: IMPLEMENTED_PENDING_AUDIT
+- Open PR: #3 — VS-001 Backlog and GitHub Project
+- Blocking gate: Governance CI, M-Audit and RetroSpec
+- Next action: obtain DUAL_GREEN, complete audit evidence and prepare merge
 - Full program gate: NOT_READY
