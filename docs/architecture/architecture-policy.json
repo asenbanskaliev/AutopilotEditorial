@@ -166,6 +166,17 @@
       "packagePolicy": "none",
       "agentsPath": "tests/BookStudio.Tests.McpInitialize/AGENTS.md",
       "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Tests.BookCore",
+      "projectPath": "tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj",
+      "layer": "integration-test",
+      "outputAssemblyPath": "tests/BookStudio.Tests.BookCore/bin/Release/net10.0/BookStudio.Tests.BookCore.dll",
+      "allowedProjectReferences": ["../../src/BookStudio.Application/BookStudio.Application.csproj", "../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj", "../../src/BookStudio.Mcp/BookStudio.Mcp.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Infrastructure", "BookStudio.Mcp"],
+      "packagePolicy": "none",
+      "agentsPath": "tests/BookStudio.Tests.BookCore/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
     }
   ]
 }
