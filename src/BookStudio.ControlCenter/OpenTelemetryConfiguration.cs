@@ -1,5 +1,6 @@
 using BookStudio.Application.Observability;
 using BookStudio.Infrastructure.Observability;
+using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
