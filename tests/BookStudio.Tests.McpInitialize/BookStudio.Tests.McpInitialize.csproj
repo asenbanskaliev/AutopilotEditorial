@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.McpInitialize</AssemblyName>
+    <RootNamespace>BookStudio.Tests.McpInitialize</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+  </ItemGroup>
+</Project>
