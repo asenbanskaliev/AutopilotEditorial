@@ -58,6 +58,17 @@
       "forbiddenNamespacePrefixes": []
     },
     {
+      "name": "BookStudio.Mcp.Quality",
+      "projectPath": "src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj",
+      "layer": "protocol-adapter",
+      "outputAssemblyPath": "src/BookStudio.Mcp.Quality/bin/Release/net10.0/BookStudio.Mcp.Quality.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj", "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj", "../BookStudio.Mcp/BookStudio.Mcp.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Infrastructure", "BookStudio.Mcp"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.Mcp.Quality/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
       "name": "BookStudio.OpenCode",
       "projectPath": "src/BookStudio.OpenCode/BookStudio.OpenCode.csproj",
       "layer": "external-adapter",
@@ -198,6 +209,17 @@
       "allowedBookStudioAssemblyReferences": ["BookStudio.Mcp.Authoring"],
       "packagePolicy": "none",
       "agentsPath": "tests/BookStudio.Tests.BookAuthoring/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Tests.BookQuality",
+      "projectPath": "tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj",
+      "layer": "integration-test",
+      "outputAssemblyPath": "tests/BookStudio.Tests.BookQuality/bin/Release/net10.0/BookStudio.Tests.BookQuality.dll",
+      "allowedProjectReferences": ["../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj", "../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Mcp.Authoring", "BookStudio.Mcp.Quality"],
+      "packagePolicy": "none",
+      "agentsPath": "tests/BookStudio.Tests.BookQuality/AGENTS.md",
       "forbiddenNamespacePrefixes": []
     }
   ]
