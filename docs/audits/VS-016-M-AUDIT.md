@@ -106,8 +106,9 @@ same SDK pipeline
 
 - RED Governance: run `30215414344`, job `89828657642`.
 - Build RED de API OpenTelemetry: run `30215755276`, job `89829552466`.
-- GREEN final .NET: run `30216432300`, job `89831350990`.
-- GREEN final Governance: run `30216432301`.
-- GREEN final Plan Integrity: run `30216432303`.
-- Artifact: `8635940847`.
-- Digest: `sha256:51fa6a404098e20d04e8356d652f22ab0ffd379254ce226c35bed78af6236f1e`.
+- GREEN funcional .NET: run `30216432300`, job `89831350990`.
+- GREEN final .NET: run `30216552914`, job `89831668643`.
+- GREEN final Governance: run `30216552925`, job `89831668749`.
+- GREEN final Plan Integrity: run `30216552915`.
+- Artifact final: `8635973316`.
+- Digest final: `sha256:257354287caa12a26ae7b5787e3997efcc3252e58e213937317d1c3d4372663a`.
