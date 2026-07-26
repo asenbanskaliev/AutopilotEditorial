@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F1-FOUNDATION
-- Current slice: VS-014
-- State: VERIFIED_PENDING_MERGE
-- Open PR: #15 — VS-014 Outbox and domain events
-- Blocking gate: final governance checks and merge
-- Next action: merge PR #15 and resolve the next READY slice from the master backlog
+- Current slice: VS-014 — API and health
+- State: CORRECTIVE_SPECIFICATION
+- Open PR: pending
+- Blocking gate: restore canonical slice identity, SPEC_READY and DUAL_RED_CONFIRMED
+- Next action: implement and verify the API/health journey; retain Outbox as an early capability for future VS-040 certification
 - Full program gate: NOT_READY
