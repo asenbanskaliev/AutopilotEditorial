@@ -6,6 +6,9 @@ on:
       - "src/**/*.cs"
       - "src/**/*.csproj"
       - "src/**/*.sql"
+      - "src/**/*.html"
+      - "src/**/*.css"
+      - "src/**/*.js"
       - "tests/**/*.cs"
       - "tests/**/*.csproj"
       - "*.sln"
@@ -43,7 +46,7 @@ jobs:
         run: dotnet run --project tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj --no-build -c Release
       - name: Run Outbox integration journey
         run: dotnet run --project tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj --no-build -c Release
-      - name: Run API health integration journey
+      - name: Run API and shell integration journey
         run: dotnet run --project tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj --no-build -c Release
       - name: Generate normalized build evidence
         if: always()
@@ -60,6 +63,9 @@ jobs:
       - name: Generate normalized API health evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.api-health-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-api-health-integration.json -- dotnet run --project tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj --no-build -c Release
+      - name: Generate normalized Control Center shell evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.control-center-shell-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-control-center-shell-integration.json -- dotnet run --project tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4
