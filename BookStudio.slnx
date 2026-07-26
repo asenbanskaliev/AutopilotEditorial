@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BookStudio.Domain/BookStudio.Domain.csproj" />
+    <Project Path="src/BookStudio.Application/BookStudio.Application.csproj" />
+    <Project Path="src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+    <Project Path="src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+    <Project Path="src/BookStudio.OpenCode/BookStudio.OpenCode.csproj" />
+    <Project Path="src/BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
+    <Project Path="src/BookStudio.Worker/BookStudio.Worker.csproj" />
+    <Project Path="src/BookStudio.ControlCenter/BookStudio.ControlCenter.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj" />
+  </Folder>
+</Solution>
