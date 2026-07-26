@@ -37,9 +37,9 @@ class BacklogGovernanceTests(unittest.TestCase):
         for slice_id in self.status_by_id:
             self.assertIn(slice_id, self.by_id)
 
-    def test_bootstrap_is_verified_and_current_slice_is_in_progress(self) -> None:
+    def test_bootstrap_and_backlog_slice_are_verified(self) -> None:
         self.assertEqual("VERIFIED", self.status_by_id["VS-000"]["status"])
-        self.assertEqual("IN_PROGRESS", self.status_by_id["VS-001"]["status"])
+        self.assertEqual("VERIFIED", self.status_by_id["VS-001"]["status"])
 
     def test_wave_plan_covers_every_program_phase(self) -> None:
         self.assertTrue(WAVE_PLAN.exists(), "WAVE_PLAN.md has not been created")
