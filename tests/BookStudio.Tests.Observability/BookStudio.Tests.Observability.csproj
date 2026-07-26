@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.Observability</AssemblyName>
+    <RootNamespace>BookStudio.Tests.Observability</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/BookStudio.ControlCenter/BookStudio.ControlCenter.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry" />
+  </ItemGroup>
+</Project>
