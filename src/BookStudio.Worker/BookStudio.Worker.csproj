@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Worker</AssemblyName>
+    <RootNamespace>BookStudio.Worker</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
+    <ProjectReference Include="../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+    <ProjectReference Include="../BookStudio.OpenCode/BookStudio.OpenCode.csproj" />
+  </ItemGroup>
+</Project>
