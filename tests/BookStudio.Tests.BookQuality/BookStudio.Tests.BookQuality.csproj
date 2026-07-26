@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.BookQuality</AssemblyName>
+    <RootNamespace>BookStudio.Tests.BookQuality</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj" />
+  </ItemGroup>
+</Project>

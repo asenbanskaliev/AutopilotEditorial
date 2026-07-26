@@ -125,6 +125,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.book-quality-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
