@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>BookStudio.Autopilot</AssemblyName>
+    <RootNamespace>BookStudio.Autopilot</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../BookStudio.Domain/BookStudio.Domain.csproj" />
+  </ItemGroup>
+</Project>

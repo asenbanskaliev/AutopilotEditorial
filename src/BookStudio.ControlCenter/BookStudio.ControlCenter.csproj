@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>BookStudio.ControlCenter</AssemblyName>
+    <RootNamespace>BookStudio.ControlCenter</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

@@ -13,11 +13,36 @@ on:
       - "Directory.Packages.*"
       - "global.json"
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: dotnet restore
-      - run: dotnet build --no-restore -c Release
-      - run: dotnet test --no-build -c Release --logger trx
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Show SDK
+        run: dotnet --info
+      - name: Restore solution
+        run: dotnet restore BookStudio.slnx
+      - name: Build solution
+        run: dotnet build BookStudio.slnx --no-restore -c Release
+      - name: Run architecture fitness
+        run: dotnet run --project tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj --no-build -c Release
+      - name: Generate normalized .NET evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
+      - name: Upload .NET evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-solution-baseline-evidence
+          path: artifacts/ci/*.json
+          if-no-files-found: error

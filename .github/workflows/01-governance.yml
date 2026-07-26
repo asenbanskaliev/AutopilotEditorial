@@ -19,6 +19,7 @@ jobs:
       - run: python scripts/validate_ci_providers.py
       - run: python -m unittest discover -s tests/governance -p "test_*.py" -v
       - name: Generate normalized local evidence
+        if: always()
         run: |
           mkdir -p artifacts/ci
           python scripts/run_local_validation.py \

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Mcp</AssemblyName>
+    <RootNamespace>BookStudio.Mcp</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

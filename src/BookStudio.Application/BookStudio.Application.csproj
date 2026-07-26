@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>BookStudio.Application</AssemblyName>
+    <RootNamespace>BookStudio.Application</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Domain/BookStudio.Domain.csproj" />
+  </ItemGroup>
+</Project>
