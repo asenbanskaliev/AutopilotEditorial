@@ -8,7 +8,7 @@
       "type": "github-hosted",
       "enabled": true,
       "priority": 10,
-      "capabilities": ["governance", "lightweight"],
+      "capabilities": ["governance", "lightweight", "dotnet-baseline"],
       "evidenceLevel": "native-check",
       "availability": "runtime",
       "secretRefs": []
@@ -18,7 +18,7 @@
       "type": "github-self-hosted",
       "enabled": true,
       "priority": 20,
-      "capabilities": ["governance", "dotnet", "integration", "render"],
+      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration", "render"],
       "evidenceLevel": "native-check",
       "availability": "runtime",
       "runnerLabels": ["self-hosted", "windows"],
@@ -29,7 +29,7 @@
       "type": "circleci",
       "enabled": false,
       "priority": 30,
-      "capabilities": ["governance", "dotnet", "integration"],
+      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration"],
       "evidenceLevel": "provider-artifact",
       "availability": "runtime",
       "secretRefs": ["CIRCLECI_TOKEN"]
@@ -39,7 +39,7 @@
       "type": "local-evidence",
       "enabled": true,
       "priority": 40,
-      "capabilities": ["governance", "dotnet", "integration"],
+      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration"],
       "evidenceLevel": "hashed-local-artifact",
       "availability": "runtime",
       "secretRefs": []
@@ -66,7 +66,7 @@
     },
     {
       "id": "dotnet.solution-baseline",
-      "capability": "dotnet",
+      "capability": "dotnet-baseline",
       "localEquivalentAllowed": true,
       "command": ["dotnet", "build", "BookStudio.slnx", "--no-restore", "-c", "Release"]
     },
