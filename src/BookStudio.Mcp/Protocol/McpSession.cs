@@ -21,10 +21,18 @@ public sealed class McpSession
 
     private readonly HashSet<string> _usedRequestIds = new(StringComparer.Ordinal);
     private readonly IMcpFeatureRouter _features;
+    private readonly McpImplementationInfo _serverInfo;
 
-    public McpSession(IMcpFeatureRouter? features = null)
+    public McpSession(
+        IMcpFeatureRouter? features = null,
+        McpImplementationInfo? serverInfo = null)
     {
         _features = features ?? EmptyMcpFeatureRouter.Instance;
+        _serverInfo = serverInfo ?? new McpImplementationInfo(
+            "bookstudio",
+            GetServerVersion(),
+            "BookStudio MCP");
+        ValidateServerInfo(_serverInfo);
     }
 
     public McpSessionState State { get; private set; } = McpSessionState.Created;
@@ -207,10 +215,7 @@ public sealed class McpSession
         var result = new McpInitializeResult(
             negotiatedVersion,
             _features.Capabilities,
-            new McpImplementationInfo(
-                "bookstudio",
-                GetServerVersion(),
-                "BookStudio MCP"),
+            _serverInfo,
             instructions);
 
         return new McpDispatchResult(JsonRpcMessageWriter.Result(requestId, result));
@@ -365,6 +370,17 @@ public sealed class McpSession
 
         value = property.GetString();
         return value is not null && IsBoundedText(value, maximumLength);
+    }
+
+    private static void ValidateServerInfo(McpImplementationInfo serverInfo)
+    {
+        if (!IsBoundedText(serverInfo.Name, MaximumImplementationFieldLength) ||
+            !IsBoundedText(serverInfo.Version, MaximumImplementationFieldLength) ||
+            serverInfo.Title is not null &&
+            !IsBoundedText(serverInfo.Title, MaximumImplementationTitleLength))
+        {
+            throw new ArgumentException("MCP server identity is invalid.", nameof(serverInfo));
+        }
     }
 
     private static bool IsBoundedText(string value, int maximumLength)
