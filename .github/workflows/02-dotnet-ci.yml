@@ -3,10 +3,14 @@ name: .NET CI
 on:
   pull_request:
     paths:
-      - "src/**"
-      - "tests/**"
+      - "src/**/*.cs"
+      - "src/**/*.csproj"
+      - "tests/**/*.cs"
+      - "tests/**/*.csproj"
+      - "*.sln"
       - "*.slnx"
-      - "Directory.*"
+      - "Directory.Build.*"
+      - "Directory.Packages.*"
       - "global.json"
 
 jobs:
