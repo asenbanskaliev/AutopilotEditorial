@@ -113,6 +113,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.book-core-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
