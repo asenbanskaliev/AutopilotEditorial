@@ -13,5 +13,6 @@
     <Project Path="tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj" />
     <Project Path="tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj" />
     <Project Path="tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj" />
+    <Project Path="tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj" />
   </Folder>
 </Solution>

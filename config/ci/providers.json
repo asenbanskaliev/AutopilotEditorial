@@ -83,6 +83,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.outbox-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
