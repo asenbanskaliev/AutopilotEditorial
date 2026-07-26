@@ -107,6 +107,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.mcp-initialize-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,

@@ -16,5 +16,6 @@
     <Project Path="tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj" />
     <Project Path="tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj" />
     <Project Path="tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj" />
+    <Project Path="tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj" />
   </Folder>
 </Solution>
