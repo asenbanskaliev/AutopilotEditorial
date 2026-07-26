@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.Outbox</AssemblyName>
+    <RootNamespace>BookStudio.Tests.Outbox</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../BookStudio.Tests.Integration/OutboxJourney.cs" Link="OutboxJourney.cs" />
+  </ItemGroup>
+</Project>
