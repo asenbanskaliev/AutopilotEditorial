@@ -2,19 +2,41 @@ using BookStudio.Application.Diagnostics;
 using BookStudio.Application.Persistence;
 using BookStudio.Infrastructure.Diagnostics;
 using BookStudio.Infrastructure.Persistence.Sqlite;
-using Microsoft.AspNetCore.Http.Features;
 
 namespace BookStudio.ControlCenter;
 
-/// <summary>Composition root for the versioned local Control Center API.</summary>
+/// <summary>Composition root for the versioned local Control Center API and shell.</summary>
 public static class ControlCenterApplication
 {
     private const string CorrelationHeader = "X-Correlation-ID";
     private const string ServiceName = "BookStudio.ControlCenter";
+    private const string ContentSecurityPolicy =
+        "default-src 'self'; " +
+        "script-src 'self'; " +
+        "style-src 'self'; " +
+        "img-src 'self' data:; " +
+        "connect-src 'self'; " +
+        "font-src 'self'; " +
+        "object-src 'none'; " +
+        "base-uri 'self'; " +
+        "frame-ancestors 'none'; " +
+        "form-action 'self'";
+
+    private static readonly string[] ShellRoutes = ["/", "/system", "/configuration", "/about"];
+    private static readonly string[] SupportedThemes = ["system", "light", "dark"];
+    private static readonly int[] SupportedRefreshIntervalsSeconds = [0, 5, 15, 30, 60];
 
     public static WebApplication Build(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        var contentRootPath = Directory.GetCurrentDirectory();
+        var webRootPath = ResolveWebRootPath(contentRootPath);
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = args,
+            ApplicationName = typeof(ControlCenterApplication).Assembly.FullName,
+            ContentRootPath = contentRootPath,
+            WebRootPath = webRootPath,
+        });
         var options = ControlCenterHostOptions.FromConfiguration(builder.Configuration);
         builder.WebHost.UseUrls(options.Url);
 
@@ -37,6 +59,7 @@ public static class ControlCenterApplication
 
         var app = builder.Build();
         var startedAtUtc = DateTimeOffset.UtcNow;
+        var indexPath = Path.Combine(webRootPath, "index.html");
 
         app.Use(async (context, next) =>
         {
@@ -48,12 +71,28 @@ public static class ControlCenterApplication
             context.Response.OnStarting(() =>
             {
                 context.Response.Headers[CorrelationHeader] = correlationId;
+                context.Response.Headers["Content-Security-Policy"] = ContentSecurityPolicy;
+                context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                context.Response.Headers["Referrer-Policy"] = "no-referrer";
+                context.Response.Headers["X-Frame-Options"] = "DENY";
+                context.Response.Headers["Permissions-Policy"] =
+                    "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
                 return Task.CompletedTask;
             });
             await next(context).ConfigureAwait(false);
         });
         app.UseExceptionHandler();
         app.UseStatusCodePages();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = context =>
+            {
+                context.Context.Response.Headers.CacheControl =
+                    context.Context.Request.Path.Equals("/index.html", StringComparison.OrdinalIgnoreCase)
+                        ? "no-store"
+                        : "public,max-age=3600";
+            },
+        });
 
         static object LivePayload() => new
         {
@@ -102,6 +141,28 @@ public static class ControlCenterApplication
                 });
             });
 
+        app.MapGet(
+            "/api/v1/configuration",
+            () => Results.Ok(new
+            {
+                apiVersion = "v1",
+                bindScope = options.AllowRemoteBinding ? "remote-enabled" : "loopback",
+                remoteBindingEnabled = options.AllowRemoteBinding,
+                supportedThemes = SupportedThemes,
+                supportedRefreshIntervalsSeconds = SupportedRefreshIntervalsSeconds,
+            }));
+
+        foreach (var route in ShellRoutes)
+        {
+            app.MapGet(
+                route,
+                (HttpContext context) =>
+                {
+                    context.Response.Headers.CacheControl = "no-store";
+                    return Results.File(indexPath, "text/html; charset=utf-8");
+                });
+        }
+
         return app;
     }
 
@@ -123,6 +184,39 @@ public static class ControlCenterApplication
                value.Length <= 128 &&
                value.All(character => !char.IsControl(character));
     }
+
+    private static string ResolveWebRootPath(string contentRootPath)
+    {
+        var candidates = new List<string>
+        {
+            Path.Combine(contentRootPath, "wwwroot"),
+            Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+        };
+
+        foreach (var startingPath in new[] { contentRootPath, AppContext.BaseDirectory })
+        {
+            for (var directory = new DirectoryInfo(startingPath);
+                 directory is not null;
+                 directory = directory.Parent)
+            {
+                candidates.Add(Path.Combine(
+                    directory.FullName,
+                    "src",
+                    "BookStudio.ControlCenter",
+                    "wwwroot"));
+            }
+        }
+
+        var resolved = candidates
+            .Select(Path.GetFullPath)
+            .Distinct(PathComparer)
+            .FirstOrDefault(candidate => File.Exists(Path.Combine(candidate, "index.html")));
+        return resolved ?? throw new InvalidOperationException(
+            "Control Center shell assets were not found in the application or repository layout.");
+    }
+
+    private static IEqualityComparer<string> PathComparer =>
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
     private static string GetVersion() =>
         typeof(ControlCenterApplication).Assembly.GetName().Version?.ToString() ?? "0.0.0";

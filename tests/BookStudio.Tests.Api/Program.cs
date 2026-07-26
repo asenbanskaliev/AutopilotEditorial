@@ -16,12 +16,12 @@ try
     VerifyRemoteBindingRejected(root);
     await VerifyHealthyHostAsync(Path.Combine(root, "healthy"));
     await VerifyUnreadyHostAsync(root);
-    Console.WriteLine("API health integration PASS: binding, live, ready, diagnostics, correlation, problems and shutdown verified.");
+    Console.WriteLine("API and shell integration PASS: binding, health, diagnostics, shell, deep links, security and shutdown verified.");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("API health integration FAIL: " + exception);
+    Console.Error.WriteLine("API and shell integration FAIL: " + exception);
     return 1;
 }
 finally
@@ -60,6 +60,7 @@ static async Task VerifyHealthyHostAsync(string workspaceRoot)
         {
             Require(live.StatusCode == HttpStatusCode.OK, "Liveness must return 200.");
             Require(live.Headers.Contains("X-Correlation-ID"), "Liveness must return a correlation ID.");
+            AssertSecurityHeaders(live);
             var body = await live.Content.ReadAsStringAsync();
             Require(JsonStatus(body) == "live", "Liveness payload is invalid.");
         }
@@ -83,6 +84,57 @@ static async Task VerifyHealthyHostAsync(string workspaceRoot)
             Require(JsonStatus(body) == "ready", "Diagnostics readiness is invalid.");
             AssertSanitized(body, workspaceRoot);
         }
+
+        using (var configuration = await client.GetAsync("/api/v1/configuration"))
+        {
+            Require(configuration.StatusCode == HttpStatusCode.OK, "Safe configuration must return 200.");
+            var body = await configuration.Content.ReadAsStringAsync();
+            using var document = JsonDocument.Parse(body);
+            var rootElement = document.RootElement;
+            Require(rootElement.GetProperty("apiVersion").GetString() == "v1", "API version is invalid.");
+            Require(rootElement.GetProperty("bindScope").GetString() == "loopback", "Default bind scope must be loopback.");
+            Require(!rootElement.GetProperty("remoteBindingEnabled").GetBoolean(), "Remote binding must be disabled by default.");
+            Require(
+                rootElement.GetProperty("supportedThemes").EnumerateArray().Select(item => item.GetString()).SequenceEqual(["system", "light", "dark"]),
+                "Supported theme contract is invalid.");
+            Require(
+                rootElement.GetProperty("supportedRefreshIntervalsSeconds").EnumerateArray().Select(item => item.GetInt32()).SequenceEqual([0, 5, 15, 30, 60]),
+                "Supported refresh intervals are invalid.");
+            AssertSanitized(body, workspaceRoot);
+            Require(!body.Contains("url", StringComparison.OrdinalIgnoreCase), "Configuration must not expose the listen URL.");
+        }
+
+        foreach (var route in new[] { "/", "/system", "/configuration", "/about" })
+        {
+            await AssertShellAsync(client, route);
+        }
+
+        using (var css = await client.GetAsync("/app.css"))
+        {
+            Require(css.StatusCode == HttpStatusCode.OK, "Shell CSS must return 200.");
+            Require(css.Content.Headers.ContentType?.MediaType == "text/css", "Shell CSS content type is invalid.");
+            Require(css.Headers.CacheControl?.MaxAge == TimeSpan.FromHours(1), "Static assets must use the configured cache duration.");
+            var body = await css.Content.ReadAsStringAsync();
+            Require(body.Contains(":focus-visible", StringComparison.Ordinal), "Shell CSS lacks visible focus support.");
+            Require(body.Contains("prefers-reduced-motion", StringComparison.Ordinal), "Shell CSS lacks reduced-motion support.");
+            AssertSecurityHeaders(css);
+        }
+
+        using (var script = await client.GetAsync("/app.js"))
+        {
+            Require(script.StatusCode == HttpStatusCode.OK, "Shell JavaScript must return 200.");
+            Require(
+                script.Content.Headers.ContentType?.MediaType is "text/javascript" or "application/javascript",
+                "Shell JavaScript content type is invalid.");
+            var body = await script.Content.ReadAsStringAsync();
+            Require(body.Contains("/api/v1/diagnostics", StringComparison.Ordinal), "Shell does not consume diagnostics API.");
+            Require(body.Contains("localStorage", StringComparison.Ordinal), "Shell does not persist local preferences.");
+            AssertSecurityHeaders(script);
+        }
+
+        await AssertProblemAsync(client, "/api/v1/unknown", workspaceRoot);
+        await AssertProblemAsync(client, "/health/unknown", workspaceRoot);
+        await AssertProblemAsync(client, "/unknown-page", workspaceRoot);
 
         using (var problemRequest = new HttpRequestMessage(HttpMethod.Get, "/missing-route"))
         {
@@ -143,12 +195,55 @@ static async Task VerifyUnreadyHostAsync(string parentRoot)
         var diagnosticsBody = await diagnostics.Content.ReadAsStringAsync();
         Require(JsonStatus(diagnosticsBody) == "notReady", "Diagnostics must expose sanitized not-ready status.");
         AssertSanitized(diagnosticsBody, blockedRoot);
+
+        using var shell = await client.GetAsync("/");
+        Require(shell.StatusCode == HttpStatusCode.OK, "Shell must remain available while a dependency is unready.");
+        Require(shell.Content.Headers.ContentType?.MediaType == "text/html", "Unready shell must remain HTML.");
     }
     finally
     {
         await app.StopAsync();
         await app.DisposeAsync();
     }
+}
+
+static async Task AssertShellAsync(HttpClient client, string route)
+{
+    using var response = await client.GetAsync(route);
+    Require(response.StatusCode == HttpStatusCode.OK, $"Shell route {route} must return 200.");
+    Require(response.Content.Headers.ContentType?.MediaType == "text/html", $"Shell route {route} must return HTML.");
+    Require(response.Headers.CacheControl?.NoStore == true, $"Shell route {route} must use no-store.");
+    AssertSecurityHeaders(response);
+    var body = await response.Content.ReadAsStringAsync();
+    Require(body.Contains("Autopilot Editorial", StringComparison.Ordinal), "Shell brand marker is missing.");
+    Require(body.Contains("data-route=\"/configuration\"", StringComparison.Ordinal), "Shell navigation marker is missing.");
+    Require(body.Contains("aria-live", StringComparison.Ordinal), "Shell live-region marker is missing.");
+    Require(!body.Contains("http://", StringComparison.OrdinalIgnoreCase), "Shell contains an external or absolute HTTP asset.");
+    Require(!body.Contains("https://", StringComparison.OrdinalIgnoreCase), "Shell contains an external HTTPS asset.");
+}
+
+static async Task AssertProblemAsync(HttpClient client, string route, string workspaceRoot)
+{
+    using var response = await client.GetAsync(route);
+    Require(response.StatusCode == HttpStatusCode.NotFound, $"Unknown route {route} must return 404.");
+    Require(
+        response.Content.Headers.ContentType?.MediaType == "application/problem+json",
+        $"Unknown route {route} must remain Problem Details, not shell HTML.");
+    var body = await response.Content.ReadAsStringAsync();
+    Require(!body.Contains("<!doctype html>", StringComparison.OrdinalIgnoreCase), "Problem response was replaced by the shell.");
+    AssertSanitized(body, workspaceRoot);
+}
+
+static void AssertSecurityHeaders(HttpResponseMessage response)
+{
+    var csp = response.Headers.GetValues("Content-Security-Policy").Single();
+    Require(csp.Contains("default-src 'self'", StringComparison.Ordinal), "CSP default-src is missing.");
+    Require(csp.Contains("object-src 'none'", StringComparison.Ordinal), "CSP object-src is missing.");
+    Require(csp.Contains("frame-ancestors 'none'", StringComparison.Ordinal), "CSP frame-ancestors is missing.");
+    Require(response.Headers.GetValues("X-Content-Type-Options").Single() == "nosniff", "nosniff header is missing.");
+    Require(response.Headers.GetValues("Referrer-Policy").Single() == "no-referrer", "Referrer policy is invalid.");
+    Require(response.Headers.GetValues("X-Frame-Options").Single() == "DENY", "Frame policy is invalid.");
+    Require(response.Headers.Contains("Permissions-Policy"), "Permissions policy is missing.");
 }
 
 static HttpClient CreateClient(WebApplication app)

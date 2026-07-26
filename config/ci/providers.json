@@ -95,6 +95,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.control-center-shell-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
