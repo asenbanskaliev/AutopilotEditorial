@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>BookStudio.OpenCode</AssemblyName>
+    <RootNamespace>BookStudio.OpenCode</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../BookStudio.Application/BookStudio.Application.csproj" />
+  </ItemGroup>
+</Project>
