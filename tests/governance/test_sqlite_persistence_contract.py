@@ -36,12 +36,14 @@ class SqlitePersistenceContractTests(unittest.TestCase):
         for path in REQUIRED_FILES:
             self.assertTrue(path.exists(), f"Missing SQLite contract file: {path}")
 
-    def test_microsoft_data_sqlite_is_centrally_pinned_to_10_0_10(self) -> None:
+    def test_sqlite_packages_are_centrally_pinned_to_secure_versions(self) -> None:
         package_versions = {
             element.attrib["Include"]: element.attrib["Version"]
             for element in xml_root(PACKAGE_PROPS).findall(".//PackageVersion")
         }
         self.assertEqual("10.0.10", package_versions["Microsoft.Data.Sqlite"])
+        self.assertEqual("2.1.12", package_versions["SQLitePCLRaw.bundle_e_sqlite3"])
+        self.assertEqual("2.1.12", package_versions["SQLitePCLRaw.lib.e_sqlite3"])
 
     def test_infrastructure_references_sqlite_without_inline_version(self) -> None:
         packages = xml_root(INFRA_PROJECT).findall(".//PackageReference")
