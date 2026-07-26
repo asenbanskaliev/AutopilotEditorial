@@ -28,11 +28,17 @@ public static class ControlCenterApplication
 
     public static WebApplication Build(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        var contentRootPath = Directory.GetCurrentDirectory();
+        var webRootPath = ResolveWebRootPath(contentRootPath);
+        var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+        {
+            Args = args,
+            ApplicationName = typeof(ControlCenterApplication).Assembly.FullName,
+            ContentRootPath = contentRootPath,
+            WebRootPath = webRootPath,
+        });
         var options = ControlCenterHostOptions.FromConfiguration(builder.Configuration);
-        var webRootPath = ResolveWebRootPath(builder.Environment.ContentRootPath);
         builder.WebHost.UseUrls(options.Url);
-        builder.WebHost.UseWebRoot(webRootPath);
 
         builder.Services.AddProblemDetails(problemOptions =>
         {
