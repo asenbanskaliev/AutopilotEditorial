@@ -10,51 +10,29 @@ SOLUTION = ROOT / "BookStudio.slnx"
 GLOBAL_JSON = ROOT / "global.json"
 BUILD_PROPS = ROOT / "Directory.Build.props"
 PACKAGE_PROPS = ROOT / "Directory.Packages.props"
+POLICY = ROOT / "docs" / "architecture" / "architecture-policy.json"
 
-PROJECTS = {
-    "src/BookStudio.Domain/BookStudio.Domain.csproj": set(),
-    "src/BookStudio.Application/BookStudio.Application.csproj": {
-        "../BookStudio.Domain/BookStudio.Domain.csproj"
-    },
-    "src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj": {
-        "../BookStudio.Application/BookStudio.Application.csproj",
-        "../BookStudio.Domain/BookStudio.Domain.csproj",
-    },
-    "src/BookStudio.Mcp/BookStudio.Mcp.csproj": {
-        "../BookStudio.Application/BookStudio.Application.csproj",
-        "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj",
-    },
-    "src/BookStudio.OpenCode/BookStudio.OpenCode.csproj": {
-        "../BookStudio.Application/BookStudio.Application.csproj"
-    },
-    "src/BookStudio.Autopilot/BookStudio.Autopilot.csproj": {
-        "../BookStudio.Application/BookStudio.Application.csproj",
-        "../BookStudio.Domain/BookStudio.Domain.csproj",
-    },
-    "src/BookStudio.Worker/BookStudio.Worker.csproj": {
-        "../BookStudio.Autopilot/BookStudio.Autopilot.csproj",
-        "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj",
-        "../BookStudio.OpenCode/BookStudio.OpenCode.csproj",
-    },
-    "src/BookStudio.ControlCenter/BookStudio.ControlCenter.csproj": {
-        "../BookStudio.Application/BookStudio.Application.csproj",
-        "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj",
-    },
-    "tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj": set(),
-}
+
+def normalize(value: str) -> str:
+    return value.replace("\\", "/")
 
 
 def project_references(path: Path) -> set[str]:
     root = ET.fromstring(path.read_text(encoding="utf-8"))
     return {
-        element.attrib["Include"].replace("\\", "/")
+        normalize(element.attrib["Include"])
         for element in root.findall(".//ProjectReference")
     }
 
 
 class SolutionBaselineTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.policy = json.loads(POLICY.read_text(encoding="utf-8"))
+        cls.projects = cls.policy["projects"]
+
     def test_required_root_build_files_exist(self) -> None:
-        for path in (SOLUTION, GLOBAL_JSON, BUILD_PROPS, PACKAGE_PROPS):
+        for path in (SOLUTION, GLOBAL_JSON, BUILD_PROPS, PACKAGE_PROPS, POLICY):
             self.assertTrue(path.exists(), f"Missing root build file: {path}")
 
     def test_global_json_pins_dotnet_10_sdk(self) -> None:
@@ -64,24 +42,26 @@ class SolutionBaselineTests(unittest.TestCase):
         self.assertEqual("latestPatch", data["sdk"]["rollForward"])
         self.assertFalse(data["sdk"]["allowPrerelease"])
 
-    def test_all_required_projects_exist_with_exact_references(self) -> None:
-        for relative_path, expected_references in PROJECTS.items():
+    def test_all_required_projects_exist_with_policy_references(self) -> None:
+        for definition in self.projects:
+            relative_path = definition["projectPath"]
             project = ROOT / relative_path
             self.assertTrue(project.exists(), f"Missing project: {relative_path}")
             self.assertEqual(
-                expected_references,
+                set(definition["allowedProjectReferences"]),
                 project_references(project),
                 f"Unexpected references in {relative_path}",
             )
 
-    def test_solution_contains_each_project_once(self) -> None:
+    def test_solution_contains_each_policy_project_once(self) -> None:
         tree = ET.fromstring(SOLUTION.read_text(encoding="utf-8"))
-        paths = [
-            element.attrib["Path"].replace("\\", "/")
+        solution_paths = [
+            normalize(element.attrib["Path"])
             for element in tree.findall(".//Project")
         ]
-        self.assertEqual(len(PROJECTS), len(paths))
-        self.assertEqual(set(PROJECTS), set(paths))
+        policy_paths = [definition["projectPath"] for definition in self.projects]
+        self.assertEqual(len(policy_paths), len(solution_paths))
+        self.assertEqual(set(policy_paths), set(solution_paths))
 
     def test_directory_build_props_enforces_net10_and_quality(self) -> None:
         tree = ET.fromstring(BUILD_PROPS.read_text(encoding="utf-8"))

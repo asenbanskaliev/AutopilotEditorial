@@ -1,0 +1,105 @@
+{
+  "schemaVersion": "1.0.0",
+  "policyName": "BookStudio Clean Architecture Boundaries",
+  "projects": [
+    {
+      "name": "BookStudio.Domain",
+      "projectPath": "src/BookStudio.Domain/BookStudio.Domain.csproj",
+      "layer": "domain",
+      "outputAssemblyPath": "src/BookStudio.Domain/bin/Release/net10.0/BookStudio.Domain.dll",
+      "allowedProjectReferences": [],
+      "allowedBookStudioAssemblyReferences": [],
+      "packagePolicy": "none",
+      "agentsPath": "src/BookStudio.Domain/AGENTS.md",
+      "forbiddenNamespacePrefixes": ["Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "System.Data", "System.Net.Http"]
+    },
+    {
+      "name": "BookStudio.Application",
+      "projectPath": "src/BookStudio.Application/BookStudio.Application.csproj",
+      "layer": "application",
+      "outputAssemblyPath": "src/BookStudio.Application/bin/Release/net10.0/BookStudio.Application.dll",
+      "allowedProjectReferences": ["../BookStudio.Domain/BookStudio.Domain.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Domain"],
+      "packagePolicy": "none",
+      "agentsPath": "src/BookStudio.Application/AGENTS.md",
+      "forbiddenNamespacePrefixes": ["Microsoft.EntityFrameworkCore", "Microsoft.AspNetCore", "System.Data.SqlClient"]
+    },
+    {
+      "name": "BookStudio.Infrastructure",
+      "projectPath": "src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj",
+      "layer": "infrastructure",
+      "outputAssemblyPath": "src/BookStudio.Infrastructure/bin/Release/net10.0/BookStudio.Infrastructure.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj", "../BookStudio.Domain/BookStudio.Domain.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Domain"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.Infrastructure/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Mcp",
+      "projectPath": "src/BookStudio.Mcp/BookStudio.Mcp.csproj",
+      "layer": "protocol-adapter",
+      "outputAssemblyPath": "src/BookStudio.Mcp/bin/Release/net10.0/BookStudio.Mcp.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj", "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Infrastructure"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.Mcp/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.OpenCode",
+      "projectPath": "src/BookStudio.OpenCode/BookStudio.OpenCode.csproj",
+      "layer": "external-adapter",
+      "outputAssemblyPath": "src/BookStudio.OpenCode/bin/Release/net10.0/BookStudio.OpenCode.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.OpenCode/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Autopilot",
+      "projectPath": "src/BookStudio.Autopilot/BookStudio.Autopilot.csproj",
+      "layer": "orchestration",
+      "outputAssemblyPath": "src/BookStudio.Autopilot/bin/Release/net10.0/BookStudio.Autopilot.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj", "../BookStudio.Domain/BookStudio.Domain.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Domain"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.Autopilot/AGENTS.md",
+      "forbiddenNamespacePrefixes": ["Microsoft.EntityFrameworkCore"]
+    },
+    {
+      "name": "BookStudio.Worker",
+      "projectPath": "src/BookStudio.Worker/BookStudio.Worker.csproj",
+      "layer": "host",
+      "outputAssemblyPath": "src/BookStudio.Worker/bin/Release/net10.0/BookStudio.Worker.dll",
+      "allowedProjectReferences": ["../BookStudio.Autopilot/BookStudio.Autopilot.csproj", "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj", "../BookStudio.OpenCode/BookStudio.OpenCode.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Autopilot", "BookStudio.Infrastructure", "BookStudio.OpenCode"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.Worker/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.ControlCenter",
+      "projectPath": "src/BookStudio.ControlCenter/BookStudio.ControlCenter.csproj",
+      "layer": "presentation-host",
+      "outputAssemblyPath": "src/BookStudio.ControlCenter/bin/Release/net10.0/BookStudio.ControlCenter.dll",
+      "allowedProjectReferences": ["../BookStudio.Application/BookStudio.Application.csproj", "../BookStudio.Infrastructure/BookStudio.Infrastructure.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Infrastructure"],
+      "packagePolicy": "central-only",
+      "agentsPath": "src/BookStudio.ControlCenter/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Tests.Architecture",
+      "projectPath": "tests/BookStudio.Tests.Architecture/BookStudio.Tests.Architecture.csproj",
+      "layer": "architecture-test",
+      "outputAssemblyPath": "tests/BookStudio.Tests.Architecture/bin/Release/net10.0/BookStudio.Tests.Architecture.dll",
+      "allowedProjectReferences": [],
+      "allowedBookStudioAssemblyReferences": [],
+      "packagePolicy": "none",
+      "agentsPath": "tests/BookStudio.Tests.Architecture/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
+    }
+  ]
+}
