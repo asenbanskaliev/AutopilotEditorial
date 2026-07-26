@@ -144,6 +144,17 @@
       "packagePolicy": "none",
       "agentsPath": "tests/BookStudio.Tests.Api/AGENTS.md",
       "forbiddenNamespacePrefixes": []
+    },
+    {
+      "name": "BookStudio.Tests.Observability",
+      "projectPath": "tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj",
+      "layer": "integration-test",
+      "outputAssemblyPath": "tests/BookStudio.Tests.Observability/bin/Release/net10.0/BookStudio.Tests.Observability.dll",
+      "allowedProjectReferences": ["../../src/BookStudio.Application/BookStudio.Application.csproj", "../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj", "../../src/BookStudio.ControlCenter/BookStudio.ControlCenter.csproj"],
+      "allowedBookStudioAssemblyReferences": ["BookStudio.Application", "BookStudio.Infrastructure", "BookStudio.ControlCenter"],
+      "packagePolicy": "central-only",
+      "agentsPath": "tests/BookStudio.Tests.Observability/AGENTS.md",
+      "forbiddenNamespacePrefixes": []
     }
   ]
 }

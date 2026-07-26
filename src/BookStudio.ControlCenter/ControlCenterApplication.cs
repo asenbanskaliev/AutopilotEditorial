@@ -1,4 +1,5 @@
 using BookStudio.Application.Diagnostics;
+using BookStudio.Application.Observability;
 using BookStudio.Application.Persistence;
 using BookStudio.Infrastructure.Diagnostics;
 using BookStudio.Infrastructure.Persistence.Sqlite;
@@ -38,7 +39,9 @@ public static class ControlCenterApplication
             WebRootPath = webRootPath,
         });
         var options = ControlCenterHostOptions.FromConfiguration(builder.Configuration);
+        var observabilityOptions = ObservabilityOptions.FromConfiguration(builder.Configuration);
         builder.WebHost.UseUrls(options.Url);
+        builder.AddBookStudioOpenTelemetry(observabilityOptions);
 
         builder.Services.AddProblemDetails(problemOptions =>
         {
@@ -49,6 +52,7 @@ public static class ControlCenterApplication
             };
         });
         builder.Services.AddSingleton(options);
+        builder.Services.AddSingleton(observabilityOptions);
         builder.Services.AddSingleton(
             SqliteWorkspaceOptions.Create(options.WorkspaceRoot));
         builder.Services.AddSingleton<SqliteWorkspaceDatabase>();
@@ -142,6 +146,23 @@ public static class ControlCenterApplication
             });
 
         app.MapGet(
+            "/api/v1/observability",
+            (IObservabilitySnapshotReader reader, int? limit) =>
+            {
+                var resolvedLimit = limit ?? 20;
+                if (resolvedLimit is < 1 or > 100)
+                {
+                    return Results.Problem(
+                        title: "Invalid observability limit",
+                        detail: "The limit must be between 1 and 100.",
+                        statusCode: StatusCodes.Status400BadRequest,
+                        type: "https://bookstudio.local/problems/invalid-observability-limit");
+                }
+
+                return Results.Ok(reader.Read(resolvedLimit));
+            });
+
+        app.MapGet(
             "/api/v1/configuration",
             () => Results.Ok(new
             {
@@ -150,6 +171,9 @@ public static class ControlCenterApplication
                 remoteBindingEnabled = options.AllowRemoteBinding,
                 supportedThemes = SupportedThemes,
                 supportedRefreshIntervalsSeconds = SupportedRefreshIntervalsSeconds,
+                observabilityEnabled = observabilityOptions.Enabled,
+                otlpEnabled = observabilityOptions.OtlpEnabled,
+                observabilitySnapshotCapacity = observabilityOptions.SnapshotCapacityPerSignal,
             }));
 
         foreach (var route in ShellRoutes)
