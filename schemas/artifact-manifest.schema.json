@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bookstudio.local/schemas/artifact-manifest.schema.json",
+  "title": "BookStudio Artifact Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactId",
+    "version",
+    "sha256",
+    "length",
+    "mediaType",
+    "createdAtUtc"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "artifactId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "length": { "type": "integer", "minimum": 0 },
+    "mediaType": { "type": "string", "minLength": 3, "maxLength": 255 },
+    "createdAtUtc": { "type": "string", "format": "date-time" }
+  }
+}

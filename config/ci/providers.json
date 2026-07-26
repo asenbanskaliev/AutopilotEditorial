@@ -77,6 +77,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.artifact-store-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
