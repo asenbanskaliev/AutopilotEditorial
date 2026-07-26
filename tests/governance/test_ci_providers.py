@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -40,6 +43,40 @@ class CiProviderContractTests(unittest.TestCase):
         result_values = schema["properties"]["result"]["enum"]
         self.assertNotIn("SKIPPED", result_values)
         self.assertEqual({"PASS", "FAIL", "BLOCKED"}, set(result_values))
+
+    def test_local_runner_creates_normalized_pass_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "evidence.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(LOCAL_RUNNER),
+                    "--provider",
+                    "local-evidence-default",
+                    "--contract",
+                    "governance.echo",
+                    "--source-sha",
+                    "test-sha",
+                    "--output",
+                    str(output),
+                    "--",
+                    sys.executable,
+                    "-c",
+                    "print('ok')",
+                ],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            data = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual("PASS", data["result"])
+            self.assertEqual("local-evidence", data["providerType"])
+            self.assertEqual("governance.echo", data["contractId"])
+            self.assertEqual(0, data["exitCode"])
+            self.assertEqual("test-sha", data["sourceSha"])
+            self.assertTrue(data["stdoutSha256"])
 
 
 if __name__ == "__main__":
