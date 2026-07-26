@@ -1,5 +1,11 @@
-# AutopilotEditorial
+# BookStudio
 
-Repositorio inicializado para cargar el programa completo de desarrollo del MCP editorial.
+Repository governed by the complete Autopiloto Editorial OpenCode MCP program.
 
-El contenido funcional se incorporará mediante **PR-000 — Governance Bootstrap**.
+## Start
+
+1. Read `AGENTS.md`.
+2. Read `docs/execution/EXECUTION_STATUS.md`.
+3. Validate the plan:
+   `python scripts/verify_plan_integrity.py`
+4. Execute the next READY vertical slice.

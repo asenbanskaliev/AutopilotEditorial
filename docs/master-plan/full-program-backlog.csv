@@ -1,0 +1,105 @@
+order;phase;slice_id;title;objective;status;depends_on
+1;F0-BOOTSTRAP;VS-000;Governance bootstrap;Subir plan, gobierno, templates y validación.;PLANNED;
+2;F0-BOOTSTRAP;VS-001;Backlog and GitHub Project;Crear issues, labels, milestones y campos.;PLANNED;VS-000
+3;F0-BOOTSTRAP;VS-002;CI provider abstraction;Configurar Actions, self-hosted, CircleCI y evidencia local.;PLANNED;VS-001
+4;F1-FOUNDATION;VS-010;Solution baseline;Crear solución, build, lint y tests.;PLANNED;VS-002
+5;F1-FOUNDATION;VS-011;Architecture boundaries;Crear Domain, Application e Infrastructure con fitness tests.;PLANNED;VS-010
+6;F1-FOUNDATION;VS-012;SQLite persistence;Migrations, WAL, single writer y backup.;PLANNED;VS-011
+7;F1-FOUNDATION;VS-013;Artifact store;Filesystem seguro, hashes y versiones.;PLANNED;VS-012
+8;F1-FOUNDATION;VS-014;API and health;API, liveness, readiness y diagnostics.;PLANNED;VS-013
+9;F1-FOUNDATION;VS-015;Control Center shell;Navegación, estado y configuración.;PLANNED;VS-014
+10;F1-FOUNDATION;VS-016;Observability baseline;OpenTelemetry end-to-end.;PLANNED;VS-015
+11;F2-MCP;VS-020;MCP initialize;Negociación de protocolo y capabilities.;PLANNED;VS-016
+12;F2-MCP;VS-021;book-core server;Tools core, resources y contract tests.;PLANNED;VS-020
+13;F2-MCP;VS-022;book-authoring server;Tools de autoría y schemas.;PLANNED;VS-021
+14;F2-MCP;VS-023;book-quality server;Auditoría, gates y memoria.;PLANNED;VS-022
+15;F2-MCP;VS-024;book-production server;Assets, render y release.;PLANNED;VS-023
+16;F2-MCP;VS-025;book-ops server;Autopilot y diagnostics.;PLANNED;VS-024
+17;F2-MCP;VS-026;Prompts and resources;Prompts versionados y resources.;PLANNED;VS-025
+18;F2-MCP;VS-027;MCP conformance;Conformance, malformed inputs y fuzzing.;PLANNED;VS-026
+19;F2-MCP;VS-028;MCP security sandbox;Paths, files, quotas y policy.;PLANNED;VS-027
+20;F3-OPENCODE;VS-030;OpenCode compatibility;Health y feature detection.;PLANNED;VS-028
+21;F3-OPENCODE;VS-031;Session lifecycle;Create, prompt, status y abort.;PLANNED;VS-030
+22;F3-OPENCODE;VS-032;SSE reconciliation;Eventos, polling y recovery.;PLANNED;VS-031
+23;F3-OPENCODE;VS-033;Agent tool profiles;Perfiles por workflow.;PLANNED;VS-032
+24;F3-OPENCODE;VS-034;Model benchmarks;Benchmarks y restricciones por rol.;PLANNED;VS-033
+25;F3-OPENCODE;VS-035;Context compiler;Manifest, presupuesto y trust labels.;PLANNED;VS-034
+26;F4-AUTOPILOT;VS-040;Transactional Outbox;Eventos idempotentes.;PLANNED;VS-035
+27;F4-AUTOPILOT;VS-041;Scheduler and jobs;Jobs, leases y prioridades.;PLANNED;VS-040
+28;F4-AUTOPILOT;VS-042;Worker execution;Heartbeat, timeout y retry.;PLANNED;VS-041
+29;F4-AUTOPILOT;VS-043;Workflow catalog;Definiciones versionadas.;PLANNED;VS-042
+30;F4-AUTOPILOT;VS-044;Human gate inbox;Decisiones y reanudación.;PLANNED;VS-043
+31;F4-AUTOPILOT;VS-045;Pause resume cancel;Controles operativos.;PLANNED;VS-044
+32;F4-AUTOPILOT;VS-046;Dead letter recovery;Reparación y restart.;PLANNED;VS-045
+33;F4-AUTOPILOT;VS-047;Concurrency limits;Locks, budgets y paralelo seguro.;PLANNED;VS-046
+34;F5-AUTHORING;VS-050;Project journey;Crear proyecto desde UI.;PLANNED;VS-047
+35;F5-AUTHORING;VS-051;Discovery journey;Preguntas y decisiones.;PLANNED;VS-050
+36;F5-AUTHORING;VS-052;Editorial proposal;Propuestas y aprobación.;PLANNED;VS-051
+37;F5-AUTHORING;VS-053;Specification lifecycle;Prepare, commit, approve y version.;PLANNED;VS-052
+38;F5-AUTHORING;VS-054;Book planning;Partes, capítulos y restricciones.;PLANNED;VS-053
+39;F5-AUTHORING;VS-055;Scene planning;ScenePlan y paragraph flow.;PLANNED;VS-054
+40;F6-COHERENCE;VS-060;Scene generation;Brief, modelo y registro.;PLANNED;VS-055
+41;F6-COHERENCE;VS-061;Paragraph coherence;Checks locales.;PLANNED;VS-060
+42;F6-COHERENCE;VS-062;Scene coherence;Causalidad, beats y exit state.;PLANNED;VS-061
+43;F6-COHERENCE;VS-063;Transition audit;Transiciones de párrafo, escena y capítulo.;PLANNED;VS-062
+44;F6-COHERENCE;VS-064;Knowledge state;Hechos, creencias y secretos.;PLANNED;VS-063
+45;F6-COHERENCE;VS-065;Character object state;Estados e inventario.;PLANNED;VS-064
+46;F6-COHERENCE;VS-066;Timeline plot threads;Cronología y tramas.;PLANNED;VS-065
+47;F6-COHERENCE;VS-067;Repair patches;Corrección localizada.;PLANNED;VS-066
+48;F6-COHERENCE;VS-068;Chapter gate lock;Auditoría, aprobación y lock.;PLANNED;VS-067
+49;F6-COHERENCE;VS-069;Memory commit;MemoryDelta transaccional.;PLANNED;VS-068
+50;F6-COHERENCE;VS-070;Cross chapter audit;Coherencia global.;PLANNED;VS-069
+51;F7-PROFESSIONAL;VS-080;Editorial pass orchestration;Plan de pasadas y gates.;PLANNED;VS-070
+52;F7-PROFESSIONAL;VS-081;Developmental editing;Promesa y estructura.;PLANNED;VS-080
+53;F7-PROFESSIONAL;VS-082;Structural content editing;Orden, profundidad y huecos.;PLANNED;VS-081
+54;F7-PROFESSIONAL;VS-083;Voice line editing;Voz, claridad y ritmo.;PLANNED;VS-082
+55;F7-PROFESSIONAL;VS-084;Dialogue editing;Subtexto y turnos.;PLANNED;VS-083
+56;F7-PROFESSIONAL;VS-085;Themes pacing;Curvas, tensión y motivos.;PLANNED;VS-084
+57;F7-PROFESSIONAL;VS-086;Copyedit proofreading;Lengua y ortotipografía.;PLANNED;VS-085
+58;F7-PROFESSIONAL;VS-087;Beta readers;Perfiles y consolidación.;PLANNED;VS-086
+59;F7-PROFESSIONAL;VS-088;Originality read aloud;Redundancia y oralidad.;PLANNED;VS-087
+60;F8-RESEARCH-RIGHTS;VS-090;Research planning;Preguntas y fuentes.;PLANNED;VS-088
+61;F8-RESEARCH-RIGHTS;VS-091;Claim verification;Claims, evidencia y vigencia.;PLANNED;VS-090
+62;F8-RESEARCH-RIGHTS;VS-092;Citations bibliography;Citas y referencias.;PLANNED;VS-091
+63;F8-RESEARCH-RIGHTS;VS-093;Rights licenses;Permisos y licencias.;PLANNED;VS-092
+64;F8-RESEARCH-RIGHTS;VS-094;AI provenance disclosure;Clasificación y declaración.;PLANNED;VS-093
+65;F8-RESEARCH-RIGHTS;VS-095;Legal risk workflow;Personas, marcas y revisión humana.;PLANNED;VS-094
+66;F9-VISUAL;VS-100;Visual briefs;Briefs y continuidad.;PLANNED;VS-095
+67;F9-VISUAL;VS-101;Asset registry;Assets, provenance y rights.;PLANNED;VS-100
+68;F9-VISUAL;VS-102;Image adapters;ComfyUI, local, remoto y manual.;PLANNED;VS-101
+69;F9-VISUAL;VS-103;Visual audits;Checks técnicos y semánticos.;PLANNED;VS-102
+70;F9-VISUAL;VS-104;Cover workflow;Portada, miniatura y género.;PLANNED;VS-103
+71;F9-VISUAL;VS-105;Visual accessibility;Alt text y contraste.;PLANNED;VS-104
+72;F10-PRODUCTION;VS-110;Manuscript assembly;Fuente canónica.;PLANNED;VS-105
+73;F10-PRODUCTION;VS-111;EPUB renderer;Pandoc y EPUBCheck.;PLANNED;VS-110
+74;F10-PRODUCTION;VS-112;Print PDF renderer;PDF y geometría.;PLANNED;VS-111
+75;F10-PRODUCTION;VS-113;DOCX renderer;Documento editable.;PLANNED;VS-112
+76;F10-PRODUCTION;VS-114;Accessibility pipeline;Ace y revisión manual.;PLANNED;VS-113
+77;F10-PRODUCTION;VS-115;Technical preflight;Fonts, DPI, links y TOC.;PLANNED;VS-114
+78;F10-PRODUCTION;VS-116;Metadata KDP package;Metadata y ZIP.;PLANNED;VS-115
+79;F10-PRODUCTION;VS-117;Proof workflow;Galeradas y copia física.;PLANNED;VS-116
+80;F10-PRODUCTION;VS-118;Professional release;Freeze y manifest.;PLANNED;VS-117
+81;F11-OPERATIONS;VS-120;Installer packaging;Instaladores y prerequisites.;PLANNED;VS-118
+82;F11-OPERATIONS;VS-121;Configuration secrets;Keyring y perfiles.;PLANNED;VS-120
+83;F11-OPERATIONS;VS-122;Backup restore export;Operaciones completas.;PLANNED;VS-121
+84;F11-OPERATIONS;VS-123;Safe mode support;Diagnóstico y recovery.;PLANNED;VS-122
+85;F11-OPERATIONS;VS-124;Upgrade rollback;Updates y migrations.;PLANNED;VS-123
+86;F11-OPERATIONS;VS-125;Local only profile;Modo sin egress.;PLANNED;VS-124
+87;F11-OPERATIONS;VS-126;Resource budgets;CPU, RAM, storage y queues.;PLANNED;VS-125
+88;F12-ENTERPRISE;VS-130;PostgreSQL persistence;Port y migration.;PLANNED;VS-126
+89;F12-ENTERPRISE;VS-131;Authentication organizations;Usuarios y organizaciones.;PLANNED;VS-130
+90;F12-ENTERPRISE;VS-132;RBAC audit;Roles y auditoría.;PLANNED;VS-131
+91;F12-ENTERPRISE;VS-133;Collaboration;Conflictos y approvals.;PLANNED;VS-132
+92;F12-ENTERPRISE;VS-134;Remote deployment;Containers y operations.;PLANNED;VS-133
+93;F12-ENTERPRISE;VS-135;Remote MCP authorization;OAuth y scopes.;PLANNED;VS-134
+94;F12-ENTERPRISE;VS-136;Distributed workflows;Temporal adapter.;PLANNED;VS-135
+95;F12-ENTERPRISE;VS-137;Enterprise admin;Policies y reporting.;PLANNED;VS-136
+96;F13-CERTIFICATION;VS-140;Full E2E certification;Todos los journeys.;PLANNED;VS-137
+97;F13-CERTIFICATION;VS-141;Security certification;Threat model y adversarial.;PLANNED;VS-140
+98;F13-CERTIFICATION;VS-142;MCP certification;Conformance y compatibility.;PLANNED;VS-141
+99;F13-CERTIFICATION;VS-143;Data certification;SQLite y PostgreSQL.;PLANNED;VS-142
+100;F13-CERTIFICATION;VS-144;Accessibility editorial audit;Auditoría final.;PLANNED;VS-143
+101;F13-CERTIFICATION;VS-145;Disaster recovery drill;Recovery completo.;PLANNED;VS-144
+102;F13-CERTIFICATION;VS-146;Documentation certification;User, admin, developer y client.;PLANNED;VS-145
+103;F13-CERTIFICATION;VS-147;Final M-Audit;Meta-auditoría completa.;PLANNED;VS-146
+104;F13-CERTIFICATION;VS-148;Full program release;Tag, installers y manifests.;PLANNED;VS-147
