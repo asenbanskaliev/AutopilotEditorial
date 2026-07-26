@@ -37,8 +37,11 @@ internal static class OutboxJourney
                     firstDraft with { PayloadJson = "{\"projectId\":\"changed\"}" },
                     now.AddSeconds(2)));
 
-            var pending = await store.GetAsync(firstId);
-            Require(pending is { Status: OutboxMessageStatus.Pending, Attempts: 0 }, "Enqueued state is invalid.");
+            var pending = await store.GetAsync(firstId)
+                ?? throw new InvalidOperationException("Enqueued Outbox message was not found.");
+            Require(
+                pending.Status == OutboxMessageStatus.Pending && pending.Attempts == 0,
+                "Enqueued state is invalid.");
             Require(pending.PayloadJson == firstDraft.PayloadJson, "Outbox payload must be preserved exactly.");
 
             var firstClaim = await store.ClaimAsync("worker-a", 10, TimeSpan.FromMinutes(5), now);
@@ -52,8 +55,11 @@ internal static class OutboxJourney
             await RequireThrowsAsync<OutboxLeaseException>(
                 async () => await store.CompleteAsync(firstId, "worker-b", now.AddMinutes(2)));
             await store.CompleteAsync(firstId, "worker-a", now.AddMinutes(2));
-            var processed = await store.GetAsync(firstId);
-            Require(processed is { Status: OutboxMessageStatus.Processed, ProcessedAtUtc: not null }, "Completion state is invalid.");
+            var processed = await store.GetAsync(firstId)
+                ?? throw new InvalidOperationException("Completed Outbox message was not found.");
+            Require(
+                processed.Status == OutboxMessageStatus.Processed && processed.ProcessedAtUtc is not null,
+                "Completion state is invalid.");
 
             var retryId = Guid.NewGuid();
             var retryDraft = Draft(retryId, "book.chapter-ready", "{\"chapter\":1}", now);
@@ -66,8 +72,11 @@ internal static class OutboxJourney
                 new string('x', 3_000),
                 now.AddMinutes(1),
                 now.AddMinutes(10));
-            var failed = await store.GetAsync(retryId);
-            Require(failed is { Status: OutboxMessageStatus.Failed, Attempts: 1 }, "Failure state is invalid.");
+            var failed = await store.GetAsync(retryId)
+                ?? throw new InvalidOperationException("Failed Outbox message was not found.");
+            Require(
+                failed.Status == OutboxMessageStatus.Failed && failed.Attempts == 1,
+                "Failure state is invalid.");
             Require(failed.LastError?.Length == 2_048, "Failure error must be bounded.");
             Require(
                 (await store.ClaimAsync("worker-b", 10, TimeSpan.FromMinutes(5), now.AddMinutes(9))).Count == 0,
