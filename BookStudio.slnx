@@ -4,6 +4,7 @@
     <Project Path="src/BookStudio.Application/BookStudio.Application.csproj" />
     <Project Path="src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
     <Project Path="src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+    <Project Path="src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
     <Project Path="src/BookStudio.OpenCode/BookStudio.OpenCode.csproj" />
     <Project Path="src/BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
     <Project Path="src/BookStudio.Worker/BookStudio.Worker.csproj" />
@@ -18,5 +19,6 @@
     <Project Path="tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj" />
     <Project Path="tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj" />
     <Project Path="tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj" />
+    <Project Path="tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj" />
   </Folder>
 </Solution>
