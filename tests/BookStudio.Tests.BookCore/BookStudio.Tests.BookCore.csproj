@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.BookCore</AssemblyName>
+    <RootNamespace>BookStudio.Tests.BookCore</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+  </ItemGroup>
+</Project>

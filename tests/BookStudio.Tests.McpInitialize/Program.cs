@@ -72,9 +72,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
         Require(
             result.GetProperty("protocolVersion").GetString() == "2025-11-25",
             "Current protocol version was not echoed.");
-        Require(
-            !result.GetProperty("capabilities").EnumerateObject().Any(),
-            "VS-020 must advertise no optional capabilities.");
+        AssertCumulativeCapabilities(result.GetProperty("capabilities"));
         var serverInfo = result.GetProperty("serverInfo");
         Require(serverInfo.GetProperty("name").GetString() == "bookstudio", "Server name mismatch.");
         Require(serverInfo.GetProperty("title").GetString() == "BookStudio MCP", "Server title mismatch.");
@@ -82,8 +80,8 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
             !string.IsNullOrWhiteSpace(serverInfo.GetProperty("version").GetString()),
             "Server version is missing.");
         Require(
-            result.GetProperty("instructions").GetString()?.Contains("No tools", StringComparison.Ordinal) == true,
-            "Initialize instructions must disclose the empty feature surface.");
+            result.GetProperty("instructions").GetString()?.Contains("artifact", StringComparison.OrdinalIgnoreCase) == true,
+            "Initialize instructions must disclose the active cumulative feature surface.");
     }
 
     await server.SendAsync(CurrentInitializeRequest(6));
@@ -104,7 +102,7 @@ static async Task RunPrimaryLifecycleAsync(string secretToken)
     }
 
     await server.SendAsync(
-        "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}");
+        "{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"unknown/method\"}");
     using (var missingMethod = await server.ReadJsonAsync())
     {
         AssertNumericId(missingMethod.RootElement, 8);
@@ -177,6 +175,29 @@ static string CurrentInitializeRequest(int id) =>
     "\"protocolVersion\":\"2025-11-25\"," +
     "\"capabilities\":{}," +
     "\"clientInfo\":{\"name\":\"integration-client\",\"title\":\"Integration Client\",\"version\":\"1.0.0\"}}}";
+
+static void AssertCumulativeCapabilities(JsonElement capabilities)
+{
+    Require(capabilities.EnumerateObject().Count() == 2, "Initialize advertised an unexpected capability count.");
+    var tools = capabilities.GetProperty("tools");
+    Require(!tools.GetProperty("listChanged").GetBoolean(), "tools.listChanged must be false.");
+    var resources = capabilities.GetProperty("resources");
+    Require(!resources.GetProperty("subscribe").GetBoolean(), "resources.subscribe must be false.");
+    Require(!resources.GetProperty("listChanged").GetBoolean(), "resources.listChanged must be false.");
+    foreach (var forbidden in new[]
+             {
+                 "prompts",
+                 "logging",
+                 "completions",
+                 "sampling",
+                 "roots",
+                 "tasks",
+                 "experimental",
+             })
+    {
+        Require(!capabilities.TryGetProperty(forbidden, out _), $"Unexpected capability advertised: {forbidden}");
+    }
+}
 
 static void AssertError(JsonElement response, int expectedCode)
 {
