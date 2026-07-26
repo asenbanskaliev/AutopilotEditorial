@@ -7,4 +7,10 @@
     <ProjectReference Include="../BookStudio.Application/BookStudio.Application.csproj" />
     <ProjectReference Include="../BookStudio.Domain/BookStudio.Domain.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Persistence/Sqlite/Migrations/*.sql" />
+  </ItemGroup>
 </Project>
