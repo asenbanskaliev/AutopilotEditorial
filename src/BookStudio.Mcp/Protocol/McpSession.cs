@@ -18,13 +18,14 @@ public sealed class McpSession
     private const int MaximumProtocolVersionLength = 32;
     private const int MaximumImplementationFieldLength = 128;
     private const int MaximumImplementationTitleLength = 256;
-    private const string Instructions =
-        "BookStudio MCP lifecycle is initialized. No tools, resources or prompts are exposed in this foundation slice.";
-
-    private static readonly IReadOnlyDictionary<string, object> EmptyCapabilities =
-        new Dictionary<string, object>(StringComparer.Ordinal);
 
     private readonly HashSet<string> _usedRequestIds = new(StringComparer.Ordinal);
+    private readonly IMcpFeatureRouter _features;
+
+    public McpSession(IMcpFeatureRouter? features = null)
+    {
+        _features = features ?? EmptyMcpFeatureRouter.Instance;
+    }
 
     public McpSessionState State { get; private set; } = McpSessionState.Created;
 
@@ -32,12 +33,18 @@ public sealed class McpSession
 
     public McpImplementationInfo? ClientInfo { get; private set; }
 
-    public McpDispatchResult Dispatch(JsonElement message)
+    public async ValueTask<McpDispatchResult> DispatchAsync(
+        JsonElement message,
+        CancellationToken cancellationToken = default)
     {
         JsonElement? readableId = TryGetReadableId(message);
         try
         {
-            return DispatchCore(message);
+            return await DispatchCoreAsync(message, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception)
         {
@@ -55,7 +62,9 @@ public sealed class McpSession
         State = McpSessionState.Closed;
     }
 
-    private McpDispatchResult DispatchCore(JsonElement message)
+    private async ValueTask<McpDispatchResult> DispatchCoreAsync(
+        JsonElement message,
+        CancellationToken cancellationToken)
     {
         if (State == McpSessionState.Closed)
         {
@@ -112,21 +121,38 @@ public sealed class McpSession
             }
         }
 
-        if (message.TryGetProperty("params", out var parameters) &&
-            parameters.ValueKind != JsonValueKind.Object)
+        JsonElement? parameters = null;
+        if (message.TryGetProperty("params", out var parameterElement))
         {
-            return hasId
-                ? InvalidParams(requestId, "params must be an object when present.")
-                : McpDispatchResult.NoResponse("MCP_INVALID_NOTIFICATION_PARAMS");
+            if (parameterElement.ValueKind != JsonValueKind.Object)
+            {
+                return hasId
+                    ? InvalidParams(requestId, "params must be an object when present.")
+                    : McpDispatchResult.NoResponse("MCP_INVALID_NOTIFICATION_PARAMS");
+            }
+            parameters = parameterElement;
         }
 
-        return method switch
+        if (method == "ping")
         {
-            "ping" => HandlePing(hasId, requestId),
-            "initialize" => HandleInitialize(message, hasId, requestId),
-            "notifications/initialized" => HandleInitializedNotification(hasId, requestId),
-            _ => HandleUnknownMethod(method, hasId, requestId),
-        };
+            return HandlePing(hasId, requestId);
+        }
+        if (method == "initialize")
+        {
+            return HandleInitialize(message, hasId, requestId);
+        }
+        if (method == "notifications/initialized")
+        {
+            return HandleInitializedNotification(hasId, requestId);
+        }
+
+        return await HandleFeatureOrUnknownMethodAsync(
+                method,
+                parameters,
+                hasId,
+                requestId,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private static McpDispatchResult HandlePing(bool hasId, JsonElement requestId)
@@ -170,14 +196,22 @@ public sealed class McpSession
         ClientInfo = parsed.ClientInfo;
         State = McpSessionState.InitializeResponded;
 
+        var instructions = _features.Instructions;
+        if (string.IsNullOrWhiteSpace(instructions) ||
+            instructions.Length > 1024 ||
+            instructions.Any(char.IsControl))
+        {
+            throw new InvalidOperationException("MCP feature instructions are invalid.");
+        }
+
         var result = new McpInitializeResult(
             negotiatedVersion,
-            EmptyCapabilities,
+            _features.Capabilities,
             new McpImplementationInfo(
                 "bookstudio",
                 GetServerVersion(),
                 "BookStudio MCP"),
-            Instructions);
+            instructions);
 
         return new McpDispatchResult(JsonRpcMessageWriter.Result(requestId, result));
     }
@@ -205,10 +239,12 @@ public sealed class McpSession
                 : "MCP_INITIALIZED_BEFORE_INITIALIZE");
     }
 
-    private McpDispatchResult HandleUnknownMethod(
+    private async ValueTask<McpDispatchResult> HandleFeatureOrUnknownMethodAsync(
         string method,
+        JsonElement? parameters,
         bool hasId,
-        JsonElement requestId)
+        JsonElement requestId,
+        CancellationToken cancellationToken)
     {
         if (!hasId)
         {
@@ -223,6 +259,17 @@ public sealed class McpSession
                     JsonRpcErrorCodes.ServerNotInitialized,
                     "Server not initialized"),
                 "MCP_SERVER_NOT_INITIALIZED");
+        }
+
+        var featureResult = await _features.TryDispatchAsync(
+                method,
+                parameters,
+                requestId,
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (featureResult is not null)
+        {
+            return featureResult;
         }
 
         return new McpDispatchResult(
