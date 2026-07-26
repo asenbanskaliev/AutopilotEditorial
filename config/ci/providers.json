@@ -119,6 +119,12 @@
       "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj", "--no-build", "-c", "Release"]
     },
     {
+      "id": "dotnet.book-authoring-integration",
+      "capability": "integration",
+      "localEquivalentAllowed": true,
+      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj", "--no-build", "-c", "Release"]
+    },
+    {
       "id": "dotnet.build-test",
       "capability": "dotnet",
       "localEquivalentAllowed": true,
