@@ -2,7 +2,6 @@ using BookStudio.Application.Diagnostics;
 using BookStudio.Application.Persistence;
 using BookStudio.Infrastructure.Diagnostics;
 using BookStudio.Infrastructure.Persistence.Sqlite;
-using Microsoft.AspNetCore.StaticFiles;
 
 namespace BookStudio.ControlCenter;
 
@@ -66,10 +65,10 @@ public static class ControlCenterApplication
             context.Response.OnStarting(() =>
             {
                 context.Response.Headers[CorrelationHeader] = correlationId;
-                context.Response.Headers.ContentSecurityPolicy = ContentSecurityPolicy;
-                context.Response.Headers.XContentTypeOptions = "nosniff";
-                context.Response.Headers.ReferrerPolicy = "no-referrer";
-                context.Response.Headers.XFrameOptions = "DENY";
+                context.Response.Headers["Content-Security-Policy"] = ContentSecurityPolicy;
+                context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+                context.Response.Headers["Referrer-Policy"] = "no-referrer";
+                context.Response.Headers["X-Frame-Options"] = "DENY";
                 context.Response.Headers["Permissions-Policy"] =
                     "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
                 return Task.CompletedTask;
