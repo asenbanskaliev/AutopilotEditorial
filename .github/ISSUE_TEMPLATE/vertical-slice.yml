@@ -1,0 +1,35 @@
+name: Complete Program Vertical Slice
+description: SDD + Dual TDD + M-Audit slice
+title: "[SLICE] "
+labels: ["type:vertical-slice", "status:specification"]
+body:
+  - type: input
+    id: slice
+    attributes:
+      label: Slice ID
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Program phase
+    validations:
+      required: true
+  - type: textarea
+    id: intent
+    attributes:
+      label: IntentSpec
+    validations:
+      required: true
+  - type: textarea
+    id: journey
+    attributes:
+      label: End-to-end journey
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Dual TDD plan
+    validations:
+      required: true
