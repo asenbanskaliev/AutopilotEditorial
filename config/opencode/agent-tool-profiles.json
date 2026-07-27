@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": 1,
+  "profiles": [
+    {
+      "profileId": "artifact-reader",
+      "version": 1,
+      "workflow": "artifact-review",
+      "role": "reader",
+      "allowedCapabilities": [
+        "artifact.read"
+      ],
+      "allowedTools": [
+        "book.artifact.compare",
+        "book.artifact.get"
+      ],
+      "forbiddenCapabilities": [
+        "draft.validate",
+        "draft.write",
+        "operations.read",
+        "quality.audit",
+        "quality.gate",
+        "release.prepare",
+        "release.preflight"
+      ],
+      "forbiddenTools": [
+        "book.audit.run",
+        "book.draft.register",
+        "book.draft.validate",
+        "book.gate.evaluate",
+        "book.ops.diagnostics",
+        "book.ops.status",
+        "book.preflight.run",
+        "book.release.prepare"
+      ],
+      "requiresHumanApproval": false,
+      "maximumToolCalls": 32,
+      "maximumParallelTools": 4
+    },
+    {
+      "profileId": "draft-author",
+      "version": 1,
+      "workflow": "draft-authoring",
+      "role": "author",
+      "allowedCapabilities": [
+        "artifact.read",
+        "draft.validate",
+        "draft.write"
+      ],
+      "allowedTools": [
+        "book.artifact.get",
+        "book.draft.register",
+        "book.draft.validate"
+      ],
+      "forbiddenCapabilities": [
+        "operations.read",
+        "release.prepare",
+        "release.preflight"
+      ],
+      "forbiddenTools": [
+        "book.ops.diagnostics",
+        "book.ops.status",
+        "book.preflight.run",
+        "book.release.prepare"
+      ],
+      "requiresHumanApproval": true,
+      "maximumToolCalls": 48,
+      "maximumParallelTools": 4
+    },
+    {
+      "profileId": "quality-auditor",
+      "version": 1,
+      "workflow": "quality-review",
+      "role": "auditor",
+      "allowedCapabilities": [
+        "artifact.read",
+        "quality.audit",
+        "quality.gate"
+      ],
+      "allowedTools": [
+        "book.artifact.compare",
+        "book.artifact.get",
+        "book.audit.run",
+        "book.gate.evaluate"
+      ],
+      "forbiddenCapabilities": [
+        "draft.write",
+        "operations.read",
+        "release.prepare"
+      ],
+      "forbiddenTools": [
+        "book.draft.register",
+        "book.ops.diagnostics",
+        "book.ops.status",
+        "book.release.prepare"
+      ],
+      "requiresHumanApproval": false,
+      "maximumToolCalls": 40,
+      "maximumParallelTools": 4
+    },
+    {
+      "profileId": "release-producer",
+      "version": 1,
+      "workflow": "release-preparation",
+      "role": "producer",
+      "allowedCapabilities": [
+        "artifact.read",
+        "release.prepare",
+        "release.preflight"
+      ],
+      "allowedTools": [
+        "book.artifact.compare",
+        "book.artifact.get",
+        "book.preflight.run",
+        "book.release.prepare"
+      ],
+      "forbiddenCapabilities": [
+        "draft.write",
+        "operations.read"
+      ],
+      "forbiddenTools": [
+        "book.draft.register",
+        "book.ops.diagnostics",
+        "book.ops.status"
+      ],
+      "requiresHumanApproval": true,
+      "maximumToolCalls": 24,
+      "maximumParallelTools": 2
+    },
+    {
+      "profileId": "operations-observer",
+      "version": 1,
+      "workflow": "operations-diagnostics",
+      "role": "observer",
+      "allowedCapabilities": [
+        "operations.read"
+      ],
+      "allowedTools": [
+        "book.ops.diagnostics",
+        "book.ops.status"
+      ],
+      "forbiddenCapabilities": [
+        "draft.write",
+        "release.prepare"
+      ],
+      "forbiddenTools": [
+        "book.draft.register",
+        "book.release.prepare"
+      ],
+      "requiresHumanApproval": false,
+      "maximumToolCalls": 16,
+      "maximumParallelTools": 2
+    }
+  ]
+}
