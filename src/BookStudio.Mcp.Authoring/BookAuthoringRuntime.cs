@@ -6,16 +6,15 @@ namespace BookStudio.Mcp.Authoring;
 /// <summary>Lazily composes the draft authoring use case for one MCP authoring process.</summary>
 public sealed class BookAuthoringRuntime : IAsyncDisposable
 {
-    private readonly string _workspaceRoot;
+    private readonly McpHostOptions _options;
     private readonly object _gate = new();
     private FileArtifactStore? _store;
     private DraftAuthoringService? _service;
     private int _disposed;
 
-    public BookAuthoringRuntime(string workspaceRoot)
+    public BookAuthoringRuntime(McpHostOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
-        _workspaceRoot = Path.GetFullPath(workspaceRoot);
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     public IDraftAuthoringService GetService()
@@ -29,7 +28,12 @@ public sealed class BookAuthoringRuntime : IAsyncDisposable
                 return _service;
             }
 
-            _store = new FileArtifactStore(FileArtifactStoreOptions.Create(_workspaceRoot));
+            _store = new FileArtifactStore(
+                FileArtifactStoreOptions.Create(
+                    _options.WorkspaceRoot,
+                    _options.MaximumArtifactBytes,
+                    _options.MaximumStoreBytes,
+                    _options.MaximumStoreFiles));
             _service = new DraftAuthoringService(_store);
             return _service;
         }
