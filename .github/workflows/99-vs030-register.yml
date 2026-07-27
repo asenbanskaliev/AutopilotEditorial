@@ -1,9 +1,9 @@
 name: VS-030 Registration
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/VS-030-opencode-compatibility
+      - main
     paths:
       - .github/workflows/99-vs030-register.yml
 
