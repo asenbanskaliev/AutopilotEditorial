@@ -8,6 +8,7 @@ public static class BookOpsPromptCatalog
     public static VersionedMcpPromptCatalog Catalog { get; } = new(
     [
         new VersionedMcpPrompt(
+            name: "book.ops.inspect-readiness.v1",
             version: "1",
             resourceUri: "book://prompts/book-ops/inspect-readiness/v1",
             title: "Inspect BookStudio readiness",
