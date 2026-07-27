@@ -8,6 +8,7 @@ public static class BookQualityPromptCatalog
     public static VersionedMcpPromptCatalog Catalog { get; } = new(
     [
         new VersionedMcpPrompt(
+            name: "book.quality.assess-draft.v1",
             version: "1",
             resourceUri: "book://prompts/book-quality/assess-draft/v1",
             title: "Assess immutable draft quality",
