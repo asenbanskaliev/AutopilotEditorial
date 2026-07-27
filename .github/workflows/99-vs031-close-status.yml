@@ -1,5 +1,6 @@
 name: VS-031 Status Synchronization
 
+# One-shot audited synchronization for the verified slice state.
 on:
   pull_request:
     branches:
