@@ -140,7 +140,7 @@ public sealed class AgentToolProfileResolver : IAgentToolProfileResolver
 
 public static class AgentToolProfileFingerprint
 {
-    public static string Compute(EffectiveAgentToolProfile profile)
+    internal static string Compute(EffectiveAgentToolProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);

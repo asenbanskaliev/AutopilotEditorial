@@ -121,7 +121,7 @@ public sealed record AgentToolProfileProductLimits(
 
 public sealed class EffectiveAgentToolProfile : IEquatable<EffectiveAgentToolProfile>
 {
-    public EffectiveAgentToolProfile(
+    internal EffectiveAgentToolProfile(
         int catalogVersion,
         string profileId,
         int profileVersion,

@@ -10,7 +10,7 @@ public sealed record OpenCodeAgentToolSupport(
 
 public sealed class OpenCodeMappedAgentToolProfile
 {
-    public OpenCodeMappedAgentToolProfile(
+    internal OpenCodeMappedAgentToolProfile(
         IReadOnlyList<string> allowedTools,
         IReadOnlyList<string> deniedTools,
         bool denyByDefault,
