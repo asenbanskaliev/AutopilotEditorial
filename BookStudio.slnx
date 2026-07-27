@@ -28,5 +28,6 @@
     <Project Path="tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj" />
     <Project Path="tests/BookStudio.Tests.PromptsResources/BookStudio.Tests.PromptsResources.csproj" />
     <Project Path="tests/BookStudio.Tests.McpConformance/BookStudio.Tests.McpConformance.csproj" />
+    <Project Path="tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj" />
   </Folder>
 </Solution>
