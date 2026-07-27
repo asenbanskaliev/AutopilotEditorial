@@ -1,5 +1,6 @@
 name: VS-032 Registration Migration
 
+# One-shot migration; removed after the permanent commit is confirmed.
 on:
   pull_request:
     branches:
@@ -32,7 +33,6 @@ jobs:
               anchor = '    {"name":"BookStudio.Tests.OpenCodeSessionLifecycle"'
               start = text.index(anchor)
               end = text.index('\n  ]', start)
-              line = text[start:end]
               text = text[:end] + ',\n' + entry + text[end:]
               architecture.write_text(text, encoding="utf-8")
 
