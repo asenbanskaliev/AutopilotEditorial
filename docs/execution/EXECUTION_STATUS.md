@@ -6,5 +6,5 @@
 - State: VERIFIED
 - Open PR: #35
 - Blocking gate: final checks and merge
-- Next action: re-run all gates on the audited commit, mark PR ready and merge
+- Next action: validate audited head 99992a8, mark PR ready and merge
 - Full program gate: NOT_READY
