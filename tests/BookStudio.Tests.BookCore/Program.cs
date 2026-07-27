@@ -121,15 +121,16 @@ static async Task VerifyBookCoreJourneyAsync(
     {
         var result = initialized.RootElement.GetProperty("result");
         var capabilities = result.GetProperty("capabilities");
-        Require(capabilities.EnumerateObject().Count() == 2, "Initialize advertised unexpected capabilities.");
+        Require(capabilities.EnumerateObject().Count() == 3, "Initialize advertised unexpected capabilities.");
         var tools = capabilities.GetProperty("tools");
         Require(!tools.GetProperty("listChanged").GetBoolean(), "tools.listChanged must be false.");
         var resources = capabilities.GetProperty("resources");
         Require(!resources.GetProperty("subscribe").GetBoolean(), "resources.subscribe must be false.");
         Require(!resources.GetProperty("listChanged").GetBoolean(), "resources.listChanged must be false.");
+        var prompts = capabilities.GetProperty("prompts");
+        Require(!prompts.GetProperty("listChanged").GetBoolean(), "prompts.listChanged must be false.");
         foreach (var forbidden in new[]
                  {
-                     "prompts",
                      "logging",
                      "completions",
                      "sampling",
@@ -177,29 +178,42 @@ static async Task VerifyBookCoreJourneyAsync(
     }
 
     await server.SendRequestAsync(3, "resources/list", new { });
-    string nextCursor;
-    var schemaUris = new List<string>();
+    string cursor;
+    var resourceUris = new List<string>();
     using (var firstResources = await server.ReadJsonAsync())
     {
         var result = firstResources.RootElement.GetProperty("result");
-        schemaUris.AddRange(result.GetProperty("resources").EnumerateArray()
+        resourceUris.AddRange(result.GetProperty("resources").EnumerateArray()
             .Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
-        nextCursor = result.GetProperty("nextCursor").GetString()
+        cursor = result.GetProperty("nextCursor").GetString()
             ?? throw new InvalidOperationException("First resource page did not provide a cursor.");
     }
 
-    await server.SendRequestAsync(4, "resources/list", new { cursor = nextCursor });
+    await server.SendRequestAsync(4, "resources/list", new { cursor });
     using (var secondResources = await server.ReadJsonAsync())
     {
         var result = secondResources.RootElement.GetProperty("result");
-        schemaUris.AddRange(result.GetProperty("resources").EnumerateArray()
+        resourceUris.AddRange(result.GetProperty("resources").EnumerateArray()
             .Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
+        cursor = result.GetProperty("nextCursor").GetString()
+            ?? throw new InvalidOperationException("Second resource page did not provide a cursor.");
+    }
+
+    await server.SendRequestAsync(100, "resources/list", new { cursor });
+    using (var thirdResources = await server.ReadJsonAsync())
+    {
+        var result = thirdResources.RootElement.GetProperty("result");
+        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(resources.Length == 1, "Third resource page size mismatch.");
+        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
         Require(!result.TryGetProperty("nextCursor", out _), "Last resource page must not have a cursor.");
     }
-    Require(schemaUris.Count == 6, "Schema resource count mismatch.");
-    Require(schemaUris.SequenceEqual(schemaUris.OrderBy(value => value, StringComparer.Ordinal)), "Schema resources are not ordinally sorted.");
+    Require(resourceUris.Count == 7, "Merged resource count mismatch.");
+    Require(resourceUris.Count(uri => uri.StartsWith("book://schemas/book-core/", StringComparison.Ordinal)) == 6, "Schema resource count mismatch.");
+    Require(resourceUris.Contains("book://prompts/book-core/inspect-artifact/v1"), "book-core prompt resource is missing.");
+    Require(resourceUris.SequenceEqual(resourceUris.OrderBy(value => value, StringComparer.Ordinal)), "Resources are not ordinally sorted.");
 
-    await server.SendRequestAsync(5, "resources/list", new { cursor = nextCursor + "x" });
+    await server.SendRequestAsync(5, "resources/list", new { cursor = cursor + "x" });
     using (var invalidCursor = await server.ReadJsonAsync())
     {
         AssertJsonRpcError(invalidCursor.RootElement, -32602);
