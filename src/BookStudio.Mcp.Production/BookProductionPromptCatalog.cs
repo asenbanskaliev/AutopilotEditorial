@@ -8,6 +8,7 @@ public static class BookProductionPromptCatalog
     public static VersionedMcpPromptCatalog Catalog { get; } = new(
     [
         new VersionedMcpPrompt(
+            name: "book.production.preflight-release.v1",
             version: "1",
             resourceUri: "book://prompts/book-production/preflight-release/v1",
             title: "Preflight immutable release",
