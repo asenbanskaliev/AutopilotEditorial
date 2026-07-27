@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bookstudio.local/schemas/model-benchmarks.schema.json",
+  "title": "BookStudio model benchmark catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "catalogVersion", "measuredAtEpochSeconds", "models", "rolePolicies"],
+  "properties": {
+    "schemaVersion": {"const": "1.0.0"},
+    "catalogVersion": {"type": "integer", "minimum": 1},
+    "measuredAtEpochSeconds": {"type": "integer", "minimum": 0},
+    "models": {"type": "array", "minItems": 1, "maxItems": 256},
+    "rolePolicies": {"type": "array", "minItems": 1, "maxItems": 256}
+  }
+}
