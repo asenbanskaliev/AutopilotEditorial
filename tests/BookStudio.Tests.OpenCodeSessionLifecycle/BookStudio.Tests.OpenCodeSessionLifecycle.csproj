@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.OpenCodeSessionLifecycle</AssemblyName>
+    <RootNamespace>BookStudio.Tests.OpenCodeSessionLifecycle</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../../src/BookStudio.OpenCode/BookStudio.OpenCode.csproj" />
+  </ItemGroup>
+</Project>
