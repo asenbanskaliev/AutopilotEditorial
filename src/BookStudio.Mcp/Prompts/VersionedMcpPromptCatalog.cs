@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using BookStudio.Mcp.BookCore;
 
 namespace BookStudio.Mcp.Prompts;
 
@@ -56,7 +57,7 @@ public sealed class VersionedMcpPromptCatalog
 
     public IReadOnlyList<McpPromptDefinition> Definitions { get; }
 
-    public IReadOnlyList<BookCore.McpResourceDefinition> Resources { get; }
+    public IReadOnlyList<McpResourceDefinition> Resources { get; }
 
     public IReadOnlyDictionary<string, string> ResourceDocuments { get; }
 
