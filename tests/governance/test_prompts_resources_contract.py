@@ -41,11 +41,10 @@ class PromptsResourcesContractTests(unittest.TestCase):
         content = (MCP / "Prompts/PromptEnabledFeatureRouter.cs").read_text(encoding="utf-8")
         for token in (
             '"prompts"',
-            '"prompts/list"',
-            '"prompts/get"',
-            "McpPromptDispatcher",
+            "McpPromptDispatcher.TryDispatch",
             "Concat(prompts.Resources)",
             "HandlePromptResourceRead",
+            "MergeCapabilities",
             "McpCursorCodec",
         ):
             self.assertIn(token, content)
