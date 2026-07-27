@@ -1,0 +1,45 @@
+name: VS-030 Journey Call Fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/99-vs030-fix-entrypoint.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/VS-030-opencode-compatibility
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Replace invalid void await exactly once
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tests/BookStudio.Tests.OpenCodeCompatibility/OpenCodeCompatibilityJourney.cs")
+          text = path.read_text(encoding="utf-8")
+          old = "        await EndpointValidationAsync().ConfigureAwait(false);"
+          new = "        EndpointValidation();"
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one journey call, found {text.count(old)}")
+          text = text.replace(old, new, 1)
+          declaration = "    private void EndpointValidationAsync()"
+          if text.count(declaration) != 1:
+              raise SystemExit(f"Expected one endpoint validation declaration, found {text.count(declaration)}")
+          path.write_text(text.replace(declaration, "    private void EndpointValidation()", 1), encoding="utf-8")
+          PY
+      - name: Commit correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/BookStudio.Tests.OpenCodeCompatibility/OpenCodeCompatibilityJourney.cs
+          git commit -m "VS-030 fix endpoint validation invocation"
+          git push origin HEAD:agent/VS-030-opencode-compatibility
