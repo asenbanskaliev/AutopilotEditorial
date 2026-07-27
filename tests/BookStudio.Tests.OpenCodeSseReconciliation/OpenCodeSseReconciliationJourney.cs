@@ -200,7 +200,8 @@ internal sealed class OpenCodeSseReconciliationJourney
         var items = await TakeUntilAsync(
             reconciler,
             new OpenCodeEventWatchRequest(OpenCodeEventScopes.Project),
-            item => item.Source == OpenCodeEventSources.Poll &&
+            item => streamCalls >= 2 &&
+                    item.Source == OpenCodeEventSources.Poll &&
                     item.SessionId == "ses_repair" &&
                     item.Status?.Type == OpenCodeSessionStatusTypes.Idle,
             timeout: TimeSpan.FromSeconds(3)).ConfigureAwait(false);
