@@ -3,144 +3,28 @@
   "selectionPolicy": "priority-then-capability",
   "fallbackPolicy": "exact-or-approved-equivalent",
   "providers": [
-    {
-      "id": "github-hosted-default",
-      "type": "github-hosted",
-      "enabled": true,
-      "priority": 10,
-      "capabilities": ["governance", "lightweight", "dotnet-baseline", "integration"],
-      "evidenceLevel": "native-check",
-      "availability": "runtime",
-      "secretRefs": []
-    },
-    {
-      "id": "github-self-hosted-default",
-      "type": "github-self-hosted",
-      "enabled": true,
-      "priority": 20,
-      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration", "render"],
-      "evidenceLevel": "native-check",
-      "availability": "runtime",
-      "runnerLabels": ["self-hosted", "windows"],
-      "secretRefs": []
-    },
-    {
-      "id": "circleci-default",
-      "type": "circleci",
-      "enabled": false,
-      "priority": 30,
-      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration"],
-      "evidenceLevel": "provider-artifact",
-      "availability": "runtime",
-      "secretRefs": ["CIRCLECI_TOKEN"]
-    },
-    {
-      "id": "local-evidence-default",
-      "type": "local-evidence",
-      "enabled": true,
-      "priority": 40,
-      "capabilities": ["governance", "dotnet-baseline", "dotnet", "integration"],
-      "evidenceLevel": "hashed-local-artifact",
-      "availability": "runtime",
-      "secretRefs": []
-    }
+    {"id":"github-hosted-default","type":"github-hosted","enabled":true,"priority":10,"capabilities":["governance","lightweight","dotnet-baseline","integration"],"evidenceLevel":"native-check","availability":"runtime","secretRefs":[]},
+    {"id":"github-self-hosted-default","type":"github-self-hosted","enabled":true,"priority":20,"capabilities":["governance","dotnet-baseline","dotnet","integration","render"],"evidenceLevel":"native-check","availability":"runtime","runnerLabels":["self-hosted","windows"],"secretRefs":[]},
+    {"id":"circleci-default","type":"circleci","enabled":false,"priority":30,"capabilities":["governance","dotnet-baseline","dotnet","integration"],"evidenceLevel":"provider-artifact","availability":"runtime","secretRefs":["CIRCLECI_TOKEN"]},
+    {"id":"local-evidence-default","type":"local-evidence","enabled":true,"priority":40,"capabilities":["governance","dotnet-baseline","dotnet","integration"],"evidenceLevel":"hashed-local-artifact","availability":"runtime","secretRefs":[]}
   ],
   "contracts": [
-    {
-      "id": "governance.echo",
-      "capability": "governance",
-      "localEquivalentAllowed": true,
-      "command": ["python", "-c", "print('ok')"]
-    },
-    {
-      "id": "governance.plan-integrity",
-      "capability": "governance",
-      "localEquivalentAllowed": true,
-      "command": ["python", "scripts/verify_plan_integrity.py"]
-    },
-    {
-      "id": "governance.pr-mode",
-      "capability": "governance",
-      "localEquivalentAllowed": true,
-      "command": ["python", "scripts/verify_completion.py", "--pr-mode"]
-    },
-    {
-      "id": "dotnet.solution-baseline",
-      "capability": "dotnet-baseline",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "build", "BookStudio.slnx", "--no-restore", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.sqlite-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.artifact-store-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.outbox-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.api-health-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.control-center-shell-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.opentelemetry-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.mcp-initialize-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.book-core-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.book-authoring-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.book-quality-integration",
-      "capability": "integration",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "run", "--project", "tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj", "--no-build", "-c", "Release"]
-    },
-    {
-      "id": "dotnet.build-test",
-      "capability": "dotnet",
-      "localEquivalentAllowed": true,
-      "command": ["dotnet", "test", "BookStudio.slnx", "-c", "Release"]
-    },
-    {
-      "id": "release.full-program",
-      "capability": "governance",
-      "localEquivalentAllowed": false,
-      "command": ["python", "scripts/verify_completion.py", "--full-program"]
-    }
+    {"id":"governance.echo","capability":"governance","localEquivalentAllowed":true,"command":["python","-c","print('ok')"]},
+    {"id":"governance.plan-integrity","capability":"governance","localEquivalentAllowed":true,"command":["python","scripts/verify_plan_integrity.py"]},
+    {"id":"governance.pr-mode","capability":"governance","localEquivalentAllowed":true,"command":["python","scripts/verify_completion.py","--pr-mode"]},
+    {"id":"dotnet.solution-baseline","capability":"dotnet-baseline","localEquivalentAllowed":true,"command":["dotnet","build","BookStudio.slnx","--no-restore","-c","Release"]},
+    {"id":"dotnet.sqlite-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Integration/BookStudio.Tests.Integration.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.artifact-store-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Artifacts/BookStudio.Tests.Artifacts.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.outbox-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Outbox/BookStudio.Tests.Outbox.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.api-health-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.control-center-shell-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Api/BookStudio.Tests.Api.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.opentelemetry-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.Observability/BookStudio.Tests.Observability.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.mcp-initialize-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.McpInitialize/BookStudio.Tests.McpInitialize.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.book-core-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookCore/BookStudio.Tests.BookCore.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.book-authoring-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.book-quality-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.book-production-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.build-test","capability":"dotnet","localEquivalentAllowed":true,"command":["dotnet","test","BookStudio.slnx","-c","Release"]},
+    {"id":"release.full-program","capability":"governance","localEquivalentAllowed":false,"command":["python","scripts/verify_completion.py","--full-program"]}
   ]
 }

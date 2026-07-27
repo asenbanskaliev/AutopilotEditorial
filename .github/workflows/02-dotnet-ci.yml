@@ -58,6 +58,8 @@ jobs:
         run: dotnet run --project tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj --no-build -c Release
       - name: Run book-quality integration journey
         run: dotnet run --project tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj --no-build -c Release
+      - name: Run book-production integration journey
+        run: dotnet run --project tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj --no-build -c Release
       - name: Generate normalized build evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
@@ -91,6 +93,9 @@ jobs:
       - name: Generate normalized book-quality evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.book-quality-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-book-quality-integration.json -- dotnet run --project tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj --no-build -c Release
+      - name: Generate normalized book-production evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.book-production-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-book-production-integration.json -- dotnet run --project tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4
