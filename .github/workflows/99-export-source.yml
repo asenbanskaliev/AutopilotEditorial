@@ -1,8 +1,8 @@
 name: Temporary Source Export
 on:
-  push:
+  pull_request:
     branches:
-      - agent/VS-034-model-benchmarks
+      - main
 permissions:
   contents: read
 jobs:
