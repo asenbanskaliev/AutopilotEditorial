@@ -2,16 +2,18 @@
 
 ## Trigger
 
-The real solution build, architecture fitness and session lifecycle journey passed, but two static assertions targeted formatting or the wrong responsibility:
+The real solution build, architecture fitness and session lifecycle journey passed, but three static expectations targeted formatting, duplicated literals or the wrong responsibility:
 
 1. the adapter contract searched for the isolated literals `"prompt_async"` and `"abort"`, while the implementation uses the exact path suffixes `"/prompt_async"` and `"/abort"`;
-2. the contract searched for `Authorization` in the generic socket server, while authentication policy and assertions live in `OpenCodeSessionLifecycleJourney` and the server intentionally records headers generically.
+2. the contract searched for `Authorization` in the generic socket server, while authentication policy and assertions live in `OpenCodeSessionLifecycleJourney` and the server intentionally records headers generically;
+3. the ledger contract searched for duplicated lowercase error-code strings, while the ledger correctly references the provider-neutral constants `OpenCodeSessionErrorCodes.IdempotencyConflict` and `OpenCodeSessionErrorCodes.IdempotencyCapacityExceeded` owned by Application.
 
 ## Approved test change
 
 - assert the exact path suffixes `"/prompt_async"` and `"/abort"` in the adapter;
 - keep `TcpListener`, `Content-Length` and request recording assertions in the server;
-- assert `Authorization` in the journey where Basic-auth behavior and no-leak requirements are exercised.
+- assert `Authorization` in the journey where Basic-auth behavior and no-leak requirements are exercised;
+- assert the typed Application error-code constants in the ledger rather than duplicating their string values.
 
 ## Preserved requirements
 
@@ -20,6 +22,7 @@ The real solution build, architecture fitness and session lifecycle journey pass
 - every request header remains captured by the contractual server;
 - the journey still requires Basic Authorization on health, OpenAPI and session mutation requests;
 - credentials must not appear in results or errors;
+- idempotency conflicts and capacity exhaustion retain stable provider-neutral codes;
 - no functional scenario, method/path inventory, bound, idempotency assertion or cancellation check is removed.
 
 ## Test Auditor decision
