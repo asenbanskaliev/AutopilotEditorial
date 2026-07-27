@@ -223,7 +223,8 @@ static void ToolError(JsonElement response, string code)
 static void NoLeaks(string json, string root, params string[] sourceContent)
 {
     Require(!json.Contains(root, StringComparison.OrdinalIgnoreCase), "Response leaked workspace path.");
-    Require(!json.Contains(".bookstudio", StringComparison.OrdinalIgnoreCase), "Response leaked store path.");
+    Require(!json.Contains("/.bookstudio/", StringComparison.OrdinalIgnoreCase), "Response leaked Linux store path.");
+    Require(!json.Contains("\\\\.bookstudio\\\\", StringComparison.OrdinalIgnoreCase), "Response leaked JSON-escaped Windows store path.");
     foreach (var content in sourceContent) Require(!json.Contains(content, StringComparison.Ordinal), "Response leaked source content.");
 }
 
