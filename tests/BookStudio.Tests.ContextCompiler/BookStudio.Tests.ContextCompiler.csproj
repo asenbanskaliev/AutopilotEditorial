@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.ContextCompiler</AssemblyName>
+    <RootNamespace>BookStudio.Tests.ContextCompiler</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+  </ItemGroup>
+</Project>
