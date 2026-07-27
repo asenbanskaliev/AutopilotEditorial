@@ -111,8 +111,8 @@ class OpenCodeSessionLifecycleContractTests(unittest.TestCase):
         for token in (
             "SHA256",
             "ConcurrentDictionary",
-            "idempotency_conflict",
-            "idempotency_capacity_exceeded",
+            "OpenCodeSessionErrorCodes.IdempotencyConflict",
+            "OpenCodeSessionErrorCodes.IdempotencyCapacityExceeded",
             "TryRemove",
         ):
             self.assertIn(token, ledger)
