@@ -13,7 +13,10 @@ catch (Exception exception)
     var code = exception is OpenCodeEventReconciliationException reconciliation
         ? reconciliation.Code
         : "none";
+    var detail = exception is InvalidOperationException
+        ? exception.Message.Replace('\r', ' ').Replace('\n', ' ')
+        : "none";
     Console.Error.WriteLine(
-        $"OPENCODE_SSE_RECONCILIATION_FAIL type={exception.GetType().Name} code={code}");
+        $"OPENCODE_SSE_RECONCILIATION_FAIL type={exception.GetType().Name} code={code} detail={detail}");
     return 1;
 }
