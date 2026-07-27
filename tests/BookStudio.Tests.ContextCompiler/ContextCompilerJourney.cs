@@ -1,4 +1,5 @@
 using BookStudio.Application.OpenCode;
+using Compiler = BookStudio.Application.OpenCode.ContextCompiler;
 
 namespace BookStudio.Tests.ContextCompiler;
 
@@ -20,7 +21,7 @@ internal sealed class ContextCompilerJourney
 
     private void DeterministicOrdering()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         var request = Request([
             Source("u", ContextTrustLabels.Untrusted, 0, "UU"),
             Source("v", ContextTrustLabels.Verified, 5, "VV"),
@@ -29,16 +30,19 @@ internal sealed class ContextCompilerJourney
         ]);
         var first = compiler.Compile(request);
         var second = compiler.Compile(request with { Sources = request.Sources.Reverse().ToArray() });
-        Require(first == second, "Equivalent source orders did not compile deterministically.");
+        Require(first.ManifestFingerprint == second.ManifestFingerprint,
+            "Equivalent source orders produced different fingerprints.");
+        Require(first.Entries.SequenceEqual(second.Entries),
+            "Equivalent source orders produced different entries.");
         Require(first.Entries.Select(item => item.SourceId).SequenceEqual(["s", "v", "x", "u"]),
             "Trust precedence was not preserved.");
-        Require(ContextCompiler.Verify(first), "Manifest fingerprint verification failed.");
+        Require(Compiler.Verify(first), "Manifest fingerprint verification failed.");
         _scenarios++;
     }
 
     private void BudgetAndTrustCaps()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         var request = Request([
             Source("system", ContextTrustLabels.System, 0, "12345"),
             Source("verified", ContextTrustLabels.Verified, 0, "abcdef"),
@@ -55,7 +59,7 @@ internal sealed class ContextCompilerJourney
 
     private void RequiredSourcesFailClosed()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         RequireCode(
             () => compiler.Compile(Request([
                 Source("required", ContextTrustLabels.Verified, 0, "abcdef", required: true),
@@ -66,7 +70,7 @@ internal sealed class ContextCompilerJourney
 
     private void DuplicateSourcesRejected()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         var source = Source("duplicate", ContextTrustLabels.Verified, 0, "a");
         RequireCode(
             () => compiler.Compile(Request([source, source])),
@@ -76,7 +80,7 @@ internal sealed class ContextCompilerJourney
 
     private void IntegrityRejected()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         var invalid = Source("invalid", ContextTrustLabels.Verified, 0, "content") with
         {
             ContentSha256 = new string('0', 64),
@@ -89,7 +93,7 @@ internal sealed class ContextCompilerJourney
 
     private void CancellationDoesNotMutate()
     {
-        var compiler = new ContextCompiler();
+        var compiler = new Compiler();
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         try
@@ -131,7 +135,7 @@ internal sealed class ContextCompilerJourney
             required,
             MediaType: "text/plain",
             content,
-            ContextCompiler.Sha256(content));
+            Compiler.Sha256(content));
 
     private static IReadOnlyDictionary<string, int> Caps(int system, int verified, int user, int untrusted) =>
         new Dictionary<string, int>(StringComparer.Ordinal)
