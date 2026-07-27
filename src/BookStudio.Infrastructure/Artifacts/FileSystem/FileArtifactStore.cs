@@ -9,6 +9,8 @@ namespace BookStudio.Infrastructure.Artifacts.FileSystem;
 public sealed class FileArtifactStore : IArtifactStore
 {
     private const string ManifestSchemaVersion = "1.0.0";
+    private const long ManifestQuotaReserveBytes = 64L * 1024L;
+
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = false,
@@ -19,6 +21,7 @@ public sealed class FileArtifactStore : IArtifactStore
     private readonly string _manifestsRoot;
     private readonly string _tempRoot;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _artifactLocks = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _writeGate = new(1, 1);
     private int _disposed;
 
     public FileArtifactStore(FileArtifactStoreOptions options)
@@ -61,48 +64,88 @@ public sealed class FileArtifactStore : IArtifactStore
         try
         {
             var (sha256, length) = await WriteAndHashTempAsync(
-                request.Content,
-                contentTempPath,
-                cancellationToken).ConfigureAwait(false);
-            var blobPath = await PromoteBlobAsync(
-                contentTempPath,
-                sha256,
-                length,
-                cancellationToken).ConfigureAwait(false);
+                    request.Content,
+                    contentTempPath,
+                    cancellationToken)
+                .ConfigureAwait(false);
 
-            var artifactLock = _artifactLocks.GetOrAdd(artifactId, static _ => new SemaphoreSlim(1, 1));
-            await artifactLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var artifactLock = _artifactLocks.GetOrAdd(
+                artifactId,
+                static _ => new SemaphoreSlim(1, 1));
+            await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var manifestDirectory = ArtifactPathPolicy.Confine(_manifestsRoot, artifactId);
-                ArtifactPathPolicy.CreateDirectorySecure(_options.StoreRoot, manifestDirectory);
-                var requiredVersion = GetRequiredVersion(manifestDirectory);
-                if (request.ExpectedVersion != requiredVersion)
+                await artifactLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+                try
                 {
-                    throw new ArtifactVersionConflictException(
+                    var manifestDirectory = ArtifactPathPolicy.Confine(_manifestsRoot, artifactId);
+                    ArtifactPathPolicy.CreateDirectorySecure(_options.StoreRoot, manifestDirectory);
+                    var requiredVersion = GetRequiredVersion(manifestDirectory);
+                    if (request.ExpectedVersion != requiredVersion)
+                    {
+                        throw new ArtifactVersionConflictException(
+                            artifactId,
+                            request.ExpectedVersion,
+                            requiredVersion);
+                    }
+
+                    var manifest = new ArtifactManifest(
+                        ManifestSchemaVersion,
                         artifactId,
                         request.ExpectedVersion,
-                        requiredVersion);
-                }
+                        sha256,
+                        length,
+                        mediaType,
+                        DateTimeOffset.UtcNow);
+                    var manifestPayload = JsonSerializer.SerializeToUtf8Bytes(manifest, JsonOptions);
+                    if (manifestPayload.LongLength > ManifestQuotaReserveBytes)
+                    {
+                        throw new ArtifactStoreException("Artifact manifest exceeded its bounded quota reserve.");
+                    }
 
-                ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
-                var manifest = new ArtifactManifest(
-                    ManifestSchemaVersion,
-                    artifactId,
-                    request.ExpectedVersion,
-                    sha256,
-                    length,
-                    mediaType,
-                    DateTimeOffset.UtcNow);
-                await PublishManifestAsync(
-                    manifestDirectory,
-                    manifest,
-                    cancellationToken).ConfigureAwait(false);
-                return manifest;
+                    var blobPath = GetBlobPath(sha256);
+                    var blobExists = File.Exists(blobPath);
+                    if (blobExists)
+                    {
+                        ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
+                    }
+                    EnsureWriteQuota(
+                        additionalBytes: checked((blobExists ? 0L : length) + manifestPayload.LongLength),
+                        additionalFiles: blobExists ? 1 : 2);
+
+                    var promotion = await PromoteBlobAsync(
+                            contentTempPath,
+                            sha256,
+                            length,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    try
+                    {
+                        await PublishManifestAsync(
+                                manifestDirectory,
+                                manifest,
+                                manifestPayload,
+                                cancellationToken)
+                            .ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        if (promotion.Created)
+                        {
+                            DeleteIfExists(promotion.Path);
+                        }
+                        throw;
+                    }
+                    return manifest;
+                }
+                finally
+                {
+                    artifactLock.Release();
+                }
             }
             finally
             {
-                artifactLock.Release();
+                _writeGate.Release();
             }
         }
         finally
@@ -142,9 +185,10 @@ public sealed class FileArtifactStore : IArtifactStore
                 _options.BufferSize,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             manifest = await JsonSerializer.DeserializeAsync<ArtifactManifest>(
-                stream,
-                JsonOptions,
-                cancellationToken).ConfigureAwait(false);
+                    stream,
+                    JsonOptions,
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (JsonException exception)
         {
@@ -162,7 +206,8 @@ public sealed class FileArtifactStore : IArtifactStore
         CancellationToken cancellationToken = default)
     {
         EnsureActive();
-        var manifest = await GetManifestAsync(artifactId, version, cancellationToken).ConfigureAwait(false);
+        var manifest = await GetManifestAsync(artifactId, version, cancellationToken)
+            .ConfigureAwait(false);
         var blobPath = GetBlobPath(manifest.Sha256);
         ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
         if (!File.Exists(blobPath))
@@ -172,7 +217,8 @@ public sealed class FileArtifactStore : IArtifactStore
 
         if (verifyIntegrity)
         {
-            await VerifyBlobAsync(blobPath, manifest, cancellationToken).ConfigureAwait(false);
+            await VerifyBlobAsync(blobPath, manifest, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return new FileStream(
@@ -202,13 +248,14 @@ public sealed class FileArtifactStore : IArtifactStore
         var versions = Directory.EnumerateFiles(directory, "*.json", SearchOption.TopDirectoryOnly)
             .Select(path => Path.GetFileNameWithoutExtension(path))
             .Select(value => int.TryParse(value, out var parsed) ? parsed : -1)
-            .Where(version => version > 0)
+            .Where(item => item > 0)
             .Order()
             .ToArray();
         var manifests = new List<ArtifactManifest>(versions.Length);
-        foreach (var version in versions)
+        foreach (var item in versions)
         {
-            manifests.Add(await GetManifestAsync(artifactId, version, cancellationToken).ConfigureAwait(false));
+            manifests.Add(await GetManifestAsync(artifactId, item, cancellationToken)
+                .ConfigureAwait(false));
         }
         return manifests;
     }
@@ -219,15 +266,23 @@ public sealed class FileArtifactStore : IArtifactStore
         CancellationToken cancellationToken = default)
     {
         await using var stream = await OpenReadAsync(
-            artifactId,
-            version,
-            verifyIntegrity: true,
-            cancellationToken).ConfigureAwait(false);
+                artifactId,
+                version,
+                verifyIntegrity: true,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public ValueTask DisposeAsync()
     {
-        Interlocked.Exchange(ref _disposed, 1);
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            _writeGate.Dispose();
+            foreach (var artifactLock in _artifactLocks.Values)
+            {
+                artifactLock.Dispose();
+            }
+        }
         return ValueTask.CompletedTask;
     }
 
@@ -249,7 +304,9 @@ public sealed class FileArtifactStore : IArtifactStore
 
         while (true)
         {
-            var read = await source.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)
+            var read = await source.ReadAsync(
+                    buffer.AsMemory(0, buffer.Length),
+                    cancellationToken)
                 .ConfigureAwait(false);
             if (read == 0)
             {
@@ -262,7 +319,10 @@ public sealed class FileArtifactStore : IArtifactStore
                 throw new ArtifactSizeLimitExceededException(_options.MaximumArtifactBytes);
             }
             hasher.AppendData(buffer, 0, read);
-            await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            await destination.WriteAsync(
+                    buffer.AsMemory(0, read),
+                    cancellationToken)
+                .ConfigureAwait(false);
         }
 
         await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -271,7 +331,86 @@ public sealed class FileArtifactStore : IArtifactStore
         return (sha256, length);
     }
 
-    private async Task<string> PromoteBlobAsync(
+    private void EnsureWriteQuota(long additionalBytes, int additionalFiles)
+    {
+        var usage = MeasureStore();
+        long observedBytes;
+        long observedFiles;
+        try
+        {
+            observedBytes = checked(usage.Bytes + additionalBytes);
+            observedFiles = checked(usage.Files + additionalFiles);
+        }
+        catch (OverflowException)
+        {
+            throw new ArtifactStoreQuotaExceededException(
+                "bytes",
+                _options.MaximumStoreBytes,
+                long.MaxValue);
+        }
+
+        if (observedBytes > _options.MaximumStoreBytes)
+        {
+            throw new ArtifactStoreQuotaExceededException(
+                "bytes",
+                _options.MaximumStoreBytes,
+                observedBytes);
+        }
+        if (observedFiles > _options.MaximumStoreFiles)
+        {
+            throw new ArtifactStoreQuotaExceededException(
+                "files",
+                _options.MaximumStoreFiles,
+                observedFiles);
+        }
+    }
+
+    private StoreUsage MeasureStore()
+    {
+        var blobs = MeasureTree(_blobsRoot);
+        var manifests = MeasureTree(_manifestsRoot);
+        return new StoreUsage(
+            checked(blobs.Bytes + manifests.Bytes),
+            checked(blobs.Files + manifests.Files));
+    }
+
+    private StoreUsage MeasureTree(string root)
+    {
+        ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, root);
+        if (!Directory.Exists(root))
+        {
+            return new StoreUsage(0, 0);
+        }
+
+        var pending = new Stack<string>();
+        pending.Push(root);
+        long bytes = 0;
+        long files = 0;
+        while (pending.Count > 0)
+        {
+            var directory = pending.Pop();
+            ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, directory);
+            foreach (var entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, entry);
+                var attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    throw new ArtifactStoreException("Links and reparse points are not allowed in the Artifact Store.");
+                }
+                if ((attributes & FileAttributes.Directory) != 0)
+                {
+                    pending.Push(entry);
+                    continue;
+                }
+                files = checked(files + 1L);
+                bytes = checked(bytes + new FileInfo(entry).Length);
+            }
+        }
+        return new StoreUsage(bytes, files);
+    }
+
+    private async Task<BlobPromotion> PromoteBlobAsync(
         string tempPath,
         string sha256,
         long length,
@@ -285,29 +424,32 @@ public sealed class FileArtifactStore : IArtifactStore
         try
         {
             File.Move(tempPath, blobPath);
+            ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
+            return new BlobPromotion(blobPath, Created: true);
         }
         catch (IOException) when (File.Exists(blobPath))
         {
             await VerifyBlobAsync(
-                blobPath,
-                new ArtifactManifest(
-                    ManifestSchemaVersion,
-                    "deduplicated-blob",
-                    1,
-                    sha256,
-                    length,
-                    "application/octet-stream",
-                    DateTimeOffset.UnixEpoch),
-                cancellationToken).ConfigureAwait(false);
+                    blobPath,
+                    new ArtifactManifest(
+                        ManifestSchemaVersion,
+                        "deduplicated-blob",
+                        1,
+                        sha256,
+                        length,
+                        "application/octet-stream",
+                        DateTimeOffset.UnixEpoch),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
+            return new BlobPromotion(blobPath, Created: false);
         }
-
-        ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, blobPath);
-        return blobPath;
     }
 
     private async Task PublishManifestAsync(
         string manifestDirectory,
         ArtifactManifest manifest,
+        byte[] payload,
         CancellationToken cancellationToken)
     {
         var targetPath = GetManifestPath(manifest.ArtifactId, manifest.Version);
@@ -316,7 +458,6 @@ public sealed class FileArtifactStore : IArtifactStore
             $".{manifest.Version}.{Guid.NewGuid():N}.tmp");
         try
         {
-            var payload = JsonSerializer.SerializeToUtf8Bytes(manifest, JsonOptions);
             await using (var stream = new FileStream(
                              tempPath,
                              FileMode.CreateNew,
@@ -369,7 +510,9 @@ public sealed class FileArtifactStore : IArtifactStore
             FileOptions.Asynchronous | FileOptions.SequentialScan);
         while (true)
         {
-            var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)
+            var read = await stream.ReadAsync(
+                    buffer.AsMemory(0, buffer.Length),
+                    cancellationToken)
                 .ConfigureAwait(false);
             if (read == 0)
             {
@@ -380,14 +523,18 @@ public sealed class FileArtifactStore : IArtifactStore
         }
 
         var actualHash = Convert.ToHexString(hasher.GetHashAndReset()).ToLowerInvariant();
-        if (length != manifest.Length || !string.Equals(actualHash, manifest.Sha256, StringComparison.Ordinal))
+        if (length != manifest.Length ||
+            !string.Equals(actualHash, manifest.Sha256, StringComparison.Ordinal))
         {
             throw new ArtifactIntegrityException(
                 $"Artifact blob integrity mismatch. Expected {manifest.Sha256}/{manifest.Length}, actual {actualHash}/{length}.");
         }
     }
 
-    private void ValidateManifest(ArtifactManifest? manifest, string artifactId, int version)
+    private void ValidateManifest(
+        ArtifactManifest? manifest,
+        string artifactId,
+        int version)
     {
         if (manifest is null ||
             !string.Equals(manifest.SchemaVersion, ManifestSchemaVersion, StringComparison.Ordinal) ||
@@ -410,7 +557,10 @@ public sealed class FileArtifactStore : IArtifactStore
             return 1;
         }
         ArtifactPathPolicy.EnsureNoLinks(_options.StoreRoot, manifestDirectory);
-        var maximum = Directory.EnumerateFiles(manifestDirectory, "*.json", SearchOption.TopDirectoryOnly)
+        var maximum = Directory.EnumerateFiles(
+                manifestDirectory,
+                "*.json",
+                SearchOption.TopDirectoryOnly)
             .Select(path => Path.GetFileNameWithoutExtension(path))
             .Select(value => int.TryParse(value, out var version) ? version : 0)
             .DefaultIfEmpty(0)
@@ -439,4 +589,8 @@ public sealed class FileArtifactStore : IArtifactStore
             File.Delete(path);
         }
     }
+
+    private sealed record StoreUsage(long Bytes, long Files);
+
+    private sealed record BlobPromotion(string Path, bool Created);
 }

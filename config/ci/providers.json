@@ -27,6 +27,7 @@
     {"id":"dotnet.book-ops-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.prompts-resources-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.PromptsResources/BookStudio.Tests.PromptsResources.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.mcp-conformance-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.McpConformance/BookStudio.Tests.McpConformance.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.mcp-security-sandbox-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.build-test","capability":"dotnet","localEquivalentAllowed":true,"command":["dotnet","test","BookStudio.slnx","-c","Release"]},
     {"id":"release.full-program","capability":"governance","localEquivalentAllowed":false,"command":["python","scripts/verify_completion.py","--full-program"]}
   ]

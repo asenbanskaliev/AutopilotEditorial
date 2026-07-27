@@ -79,29 +79,34 @@ static async Task VerifyMissingWorkspaceAsync(string workspaceRoot)
     }
 
     var resourceUris = new List<string>();
-    await ops.SendRequestAsync(3, "resources/list", new { });
-    string cursor;
-    using (var resourcesPage1 = await ops.ReadJsonAsync())
+    string? cursor = null;
+    var resourceRequestId = 1000;
+    do
     {
-        var result = resourcesPage1.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 3, "Ops resources first page size mismatch.");
-        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
-        cursor = result.GetProperty("nextCursor").GetString()!;
+        if (cursor is null)
+        {
+            await ops.SendRequestAsync(resourceRequestId++, "resources/list", new { });
+        }
+        else
+        {
+            await ops.SendRequestAsync(resourceRequestId++, "resources/list", new { cursor });
+        }
+        using var resourcePage = await ops.ReadJsonAsync();
+        var result = resourcePage.RootElement.GetProperty("result");
+        var page = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(page.Length > 0, "Ops resource pagination returned an empty page.");
+        resourceUris.AddRange(page.Select(item => item.GetProperty("uri").GetString()!));
+        cursor = result.TryGetProperty("nextCursor", out var nextCursor)
+            ? nextCursor.GetString()
+            : null;
+        Require(resourceRequestId <= 1020, "Ops resource pagination did not terminate.");
     }
-    await ops.SendRequestAsync(4, "resources/list", new { cursor });
-    using (var resourcesPage2 = await ops.ReadJsonAsync())
-    {
-        var result = resourcesPage2.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 3, "Ops resources second page size mismatch.");
-        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
-        Require(!result.TryGetProperty("nextCursor", out _), "Ops resources returned an unexpected third page.");
-    }
-    Require(resourceUris.Count == 6, "Ops merged resource count mismatch.");
+    while (cursor is not null);
+    Require(resourceUris.Count == 7, "Ops merged resource count mismatch.");
     Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Ops resources are not ordinally sorted.");
     Require(resourceUris.Contains("book://ops/capabilities"), "Ops capability resource is missing.");
     Require(resourceUris.Contains("book://prompts/book-ops/inspect-readiness/v1"), "Ops prompt resource is missing.");
+    Require(resourceUris.Contains("book://security/sandbox-policy"), "Ops sandbox policy resource is missing.");
 
     await ops.SendRequestAsync(5, "resources/read", new { uri = "book://ops/capabilities" });
     string capabilityResource;

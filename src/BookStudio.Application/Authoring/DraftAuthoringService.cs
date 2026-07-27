@@ -85,6 +85,12 @@ public sealed partial class DraftAuthoringService : IDraftAuthoringService
         {
             throw new DraftAuthoringException("draft_too_large", "Draft content exceeds the configured artifact limit.");
         }
+        catch (ArtifactStoreQuotaExceededException)
+        {
+            throw new DraftAuthoringException(
+                "artifact_store_quota_exceeded",
+                "Artifact Store quota prevents publishing this draft version.");
+        }
         catch (ArtifactIntegrityException)
         {
             throw new DraftAuthoringException("artifact_integrity_failed", "Draft storage integrity verification failed.");

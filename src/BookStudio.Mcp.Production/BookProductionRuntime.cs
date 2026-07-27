@@ -6,16 +6,15 @@ namespace BookStudio.Mcp.Production;
 /// <summary>Lazily composes release production use cases for one MCP process.</summary>
 public sealed class BookProductionRuntime : IAsyncDisposable
 {
-    private readonly string _workspaceRoot;
+    private readonly McpHostOptions _options;
     private readonly object _gate = new();
     private FileArtifactStore? _store;
-    private ReleaseProductionService? _service;
+    private IReleaseProductionService? _service;
     private int _disposed;
 
-    public BookProductionRuntime(string workspaceRoot)
+    public BookProductionRuntime(McpHostOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
-        _workspaceRoot = Path.GetFullPath(workspaceRoot);
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     public IReleaseProductionService GetService()
@@ -29,8 +28,14 @@ public sealed class BookProductionRuntime : IAsyncDisposable
                 return _service;
             }
 
-            _store = new FileArtifactStore(FileArtifactStoreOptions.Create(_workspaceRoot));
-            _service = new ReleaseProductionService(_store);
+            _store = new FileArtifactStore(
+                FileArtifactStoreOptions.Create(
+                    _options.WorkspaceRoot,
+                    _options.MaximumArtifactBytes,
+                    _options.MaximumStoreBytes,
+                    _options.MaximumStoreFiles));
+            _service = new QuotaSafeReleaseProductionService(
+                new ReleaseProductionService(_store));
             return _service;
         }
     }

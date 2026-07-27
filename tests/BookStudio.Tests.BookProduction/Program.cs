@@ -89,29 +89,34 @@ async Task VerifyProductionAsync(string root)
     }
 
     var resourceUris = new List<string>();
-    await production.SendRequestAsync(3, "resources/list", new { });
-    string cursor;
-    using (var page1 = await production.ReadAsync())
+    string? cursor = null;
+    var resourceRequestId = 1000;
+    do
     {
-        var result = page1.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 4, "Production resources first page mismatch.");
-        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString()!));
-        cursor = result.GetProperty("nextCursor").GetString()!;
+        if (cursor is null)
+        {
+            await production.SendRequestAsync(resourceRequestId++, "resources/list", new { });
+        }
+        else
+        {
+            await production.SendRequestAsync(resourceRequestId++, "resources/list", new { cursor });
+        }
+        using var resourcePage = await production.ReadAsync();
+        var result = resourcePage.RootElement.GetProperty("result");
+        var page = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(page.Length > 0, "Production resource pagination returned an empty page.");
+        resourceUris.AddRange(page.Select(item => item.GetProperty("uri").GetString()!));
+        cursor = result.TryGetProperty("nextCursor", out var nextCursor)
+            ? nextCursor.GetString()
+            : null;
+        Require(resourceRequestId <= 1020, "Production resource pagination did not terminate.");
     }
-    await production.SendRequestAsync(4, "resources/list", new { cursor });
-    using (var page2 = await production.ReadAsync())
-    {
-        var result = page2.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 4, "Production resources second page mismatch.");
-        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString()!));
-        Require(!result.TryGetProperty("nextCursor", out _), "Production resources returned an unexpected third page.");
-    }
-    Require(resourceUris.Count == 8, "Production merged resource count mismatch.");
+    while (cursor is not null);
+    Require(resourceUris.Count == 9, "Production merged resource count mismatch.");
     Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Production resources are not ordinally sorted.");
     Require(resourceUris.Contains("book://production/profiles/release-basic"), "release-basic profile missing.");
     Require(resourceUris.Contains("book://prompts/book-production/preflight-release/v1"), "Production prompt resource missing.");
+    Require(resourceUris.Contains("book://security/sandbox-policy"), "Production sandbox policy resource is missing.");
 
     await production.SendRequestAsync(5, "resources/read", new { uri = "book://production/profiles/release-basic" });
     using (var profile = await production.ReadAsync())

@@ -6,16 +6,15 @@ namespace BookStudio.Mcp.BookCore;
 /// <summary>Lazily composes the real artifact query use case for one MCP process.</summary>
 public sealed class BookCoreRuntime : IAsyncDisposable
 {
-    private readonly string _workspaceRoot;
+    private readonly McpHostOptions _options;
     private readonly object _gate = new();
     private FileArtifactStore? _store;
     private ArtifactQueryService? _service;
     private int _disposed;
 
-    public BookCoreRuntime(string workspaceRoot)
+    public BookCoreRuntime(McpHostOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
-        _workspaceRoot = Path.GetFullPath(workspaceRoot);
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     public IArtifactQueryService GetQueryService()
@@ -35,7 +34,11 @@ public sealed class BookCoreRuntime : IAsyncDisposable
             }
 
             _store = new FileArtifactStore(
-                FileArtifactStoreOptions.Create(_workspaceRoot));
+                FileArtifactStoreOptions.Create(
+                    _options.WorkspaceRoot,
+                    _options.MaximumArtifactBytes,
+                    _options.MaximumStoreBytes,
+                    _options.MaximumStoreFiles));
             _service = new ArtifactQueryService(_store);
             return _service;
         }

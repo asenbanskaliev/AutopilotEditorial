@@ -3,6 +3,7 @@ using BookStudio.Mcp;
 using BookStudio.Mcp.BookCore;
 using BookStudio.Mcp.Prompts;
 using BookStudio.Mcp.Protocol;
+using BookStudio.Mcp.Security;
 using BookStudio.Mcp.Transport;
 
 Console.InputEncoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
@@ -26,14 +27,20 @@ Console.CancelKeyPress += (_, eventArgs) =>
     shutdown.Cancel();
 };
 
-var runtime = new BookCoreRuntime(options.WorkspaceRoot);
+var runtime = new BookCoreRuntime(options);
 var boundedFeatures = new BookCoreFeatureRouter(
     runtime.GetQueryService,
     runtime.DisposeAsync);
-await using var features = new PromptEnabledFeatureRouter(
+var sandboxFeatures = new SandboxEnabledFeatureRouter(
     boundedFeatures,
-    BookCorePromptCatalog.Catalog,
+    options,
     BookCoreToolCatalog.SchemaResources,
+    resourceCursorScope: "core-sandbox-resources",
+    resourcePageSize: 3);
+await using var features = new PromptEnabledFeatureRouter(
+    sandboxFeatures,
+    BookCorePromptCatalog.Catalog,
+    sandboxFeatures.Resources,
     resourceCursorScope: "resources",
     resourcePageSize: 3);
 var session = new McpSession(features);
