@@ -1,10 +1,10 @@
 # Execution Status
 
-- Program version: 0.11.0
+- Program version: 0.12.0
 - Current phase: F3-OPENCODE
-- Current slice: VS-033 — Agent tool profiles
-- State: VERIFIED
-- Open PR: #50
-- Blocking gate: final audited-head validation and merge
-- Next action: validate final head, merge PR #50 and activate VS-034 — Role/model assignments
+- Current slice: VS-035 — Context compiler
+- State: READY
+- Open PR: none
+- Blocking gate: none
+- Next action: implement context manifest, deterministic budget allocation, trust labels, provenance binding and integration evidence
 - Full program gate: NOT_READY
