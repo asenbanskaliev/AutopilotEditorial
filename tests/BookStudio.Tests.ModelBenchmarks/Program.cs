@@ -11,5 +11,6 @@ catch (Exception exception)
 {
     Console.Error.WriteLine(
         $"OPENCODE_MODEL_BENCHMARKS_FAIL type={exception.GetType().Name} message={exception.Message}");
+    Console.Error.WriteLine(exception.StackTrace);
     return 1;
 }
