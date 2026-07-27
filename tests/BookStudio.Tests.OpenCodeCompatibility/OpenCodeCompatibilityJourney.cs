@@ -40,7 +40,7 @@ internal sealed class OpenCodeCompatibilityJourney
         await OversizedSpecificationAsync().ConfigureAwait(false);
         await TimeoutAsync().ConfigureAwait(false);
         await ExternalCancellationAsync().ConfigureAwait(false);
-        await EndpointValidationAsync().ConfigureAwait(false);
+        EndpointValidation();
 
         return new OpenCodeCompatibilityJourneyReport(
             _scenarioCount,
@@ -239,7 +239,7 @@ internal sealed class OpenCodeCompatibilityJourney
         Record(server, expectedRequests: 1);
     }
 
-    private void EndpointValidationAsync()
+    private void EndpointValidation()
     {
         Expect<ArgumentException>(() => OpenCodeEndpointOptions.Create("http://example.com/"));
         Expect<ArgumentException>(() => OpenCodeEndpointOptions.Create("ftp://127.0.0.1/"));
