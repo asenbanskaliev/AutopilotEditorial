@@ -17,7 +17,12 @@ jobs:
       - run: python scripts/verify_plan_integrity.py
       - run: python scripts/verify_completion.py --pr-mode
       - run: python scripts/validate_ci_providers.py
-      - run: python -m unittest discover -s tests/governance -p "test_*.py" -v
+      - name: Run governance contract tests
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/ci
+          python -m unittest discover -s tests/governance -p "test_*.py" -v 2>&1 | tee artifacts/ci/governance-tests.log
       - name: Generate normalized local evidence
         if: always()
         run: |
@@ -33,5 +38,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: governance-ci-evidence
-          path: artifacts/ci/*.json
+          path: artifacts/ci/*
           if-no-files-found: error
