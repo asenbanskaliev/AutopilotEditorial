@@ -2,7 +2,7 @@
 
 ## Status
 
-`SPECIFICATION`
+`VERIFIED`
 
 ## Objective
 
