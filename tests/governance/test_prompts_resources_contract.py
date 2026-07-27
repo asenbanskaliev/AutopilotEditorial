@@ -64,8 +64,20 @@ class PromptsResourcesContractTests(unittest.TestCase):
             "InvalidParams",
             "McpCursorCodec",
             "arguments",
+            "TryReadArguments",
+            "prompt.Render",
+        ):
+            self.assertIn(token, content)
+
+    def test_versioned_prompt_owns_typed_bounded_rendering(self) -> None:
+        content = (MCP / "Prompts/VersionedMcpPrompt.cs").read_text(encoding="utf-8")
+        for token in (
+            "McpGetPromptResult",
             "McpPromptMessage",
             "McpTextContent",
+            "MaximumRenderedMessageLength",
+            "BuildResourceJson",
+            "ValidateNameResourceParity",
         ):
             self.assertIn(token, content)
 
