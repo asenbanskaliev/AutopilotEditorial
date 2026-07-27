@@ -5,6 +5,8 @@
     <RootNamespace>BookStudio.Tests.McpSecuritySandbox</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Application/BookStudio.Application.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj" />
     <ProjectReference Include="../../src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
     <ProjectReference Include="../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
     <ProjectReference Include="../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj" />
