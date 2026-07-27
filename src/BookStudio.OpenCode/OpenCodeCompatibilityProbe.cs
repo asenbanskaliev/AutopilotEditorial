@@ -384,17 +384,44 @@ public sealed class OpenCodeCompatibilityProbe : IOpenCodeCompatibilityProbe, IA
             version,
             orderedDetected,
             missing,
-            BuildFacts(requestCount, state != OpenCodeCompatibilityStates.Unhealthy, openApiVersion));
+            BuildFacts(requestCount, ResolveHealthFact(state, version, orderedDetected), openApiVersion));
+    }
+
+    private static bool? ResolveHealthFact(
+        string state,
+        string? version,
+        IReadOnlyList<string> detected)
+    {
+        if (state == OpenCodeCompatibilityStates.Unhealthy)
+        {
+            return false;
+        }
+        if (state == OpenCodeCompatibilityStates.Degraded)
+        {
+            return true;
+        }
+        if (state == OpenCodeCompatibilityStates.AuthenticationRequired &&
+            version is not null &&
+            detected.Contains(OpenCodeFeatureIds.Health, StringComparer.Ordinal))
+        {
+            return true;
+        }
+        return null;
     }
 
     private static IReadOnlyDictionary<string, string> BuildFacts(
         int requestCount,
-        bool healthy,
+        bool? healthy,
         string? openApiVersion)
     {
         var facts = new SortedDictionary<string, string>(StringComparer.Ordinal)
         {
-            ["healthy"] = healthy ? "true" : "false",
+            ["healthy"] = healthy switch
+            {
+                true => "true",
+                false => "false",
+                null => "unknown",
+            },
             ["requests"] = requestCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
         };
         if (openApiVersion is not null)

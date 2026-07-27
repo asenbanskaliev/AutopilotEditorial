@@ -116,6 +116,8 @@ The report includes:
 - sorted missing required features;
 - bounded evidence facts without endpoint credentials or response bodies.
 
+The `healthy` evidence fact is tri-state: `true` only after a valid `healthy=true` response, `false` only after a valid `healthy=false` response, and `unknown` when authentication, transport, status, bounds or payload validation prevents health determination.
+
 ## Security and operational requirements
 
 - no automatic retry in this slice;

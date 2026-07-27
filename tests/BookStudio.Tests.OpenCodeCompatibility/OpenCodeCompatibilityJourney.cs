@@ -58,6 +58,7 @@ internal sealed class OpenCodeCompatibilityJourney
         Require(report.DetectedFeatures.SequenceEqual(OpenCodeFeatureIds.Required), "Detected feature matrix drifted.");
         Require(report.MissingRequiredFeatures.Count == 0, "Compatible server reported missing features.");
         Require(report.Facts["requests"] == "2", "Compatible probe request count drifted.");
+        Require(report.Facts["healthy"] == "true", "Compatible health fact drifted.");
         Record(server, expectedRequests: 2);
     }
 
@@ -69,6 +70,7 @@ internal sealed class OpenCodeCompatibilityJourney
         var report = await ProbeAsync(server).ConfigureAwait(false);
         Require(report.State == OpenCodeCompatibilityStates.Degraded, "Missing feature did not degrade compatibility.");
         Require(report.Code == "missing_required_features", "Missing feature code drifted.");
+        Require(report.Facts["healthy"] == "true", "Degraded compatible-health fact drifted.");
         Require(report.MissingRequiredFeatures.SequenceEqual([OpenCodeFeatureIds.SessionsAbort]),
             "Missing feature set was not exact.");
         Require(!report.DetectedFeatures.Contains(OpenCodeFeatureIds.SessionsAbort),
@@ -82,6 +84,7 @@ internal sealed class OpenCodeCompatibilityJourney
         var report = await ProbeAsync(server).ConfigureAwait(false);
         Require(report.State == OpenCodeCompatibilityStates.Unhealthy, "Unhealthy server state drifted.");
         Require(report.Code == "server_unhealthy", "Unhealthy server code drifted.");
+        Require(report.Facts["healthy"] == "false", "Unhealthy fact drifted.");
         Require(report.DetectedFeatures.SequenceEqual([OpenCodeFeatureIds.Health]),
             "Unhealthy server feature evidence drifted.");
         Record(server, expectedRequests: 1);
@@ -95,6 +98,7 @@ internal sealed class OpenCodeCompatibilityJourney
         Require(report.State == OpenCodeCompatibilityStates.AuthenticationRequired,
             "Unauthorized server state drifted.");
         Require(report.Code == "authentication_required", "Unauthorized code drifted.");
+        Require(report.Facts["healthy"] == "unknown", "Pre-health authentication fact must be unknown.");
         Record(server, expectedRequests: 1);
     }
 
@@ -132,6 +136,7 @@ internal sealed class OpenCodeCompatibilityJourney
         var report = await ProbeAsync(server).ConfigureAwait(false);
         Require(report.State == OpenCodeCompatibilityStates.Unavailable, "Malformed health was not unavailable.");
         Require(report.Code == "health_payload_invalid", "Malformed health code drifted.");
+        Require(report.Facts["healthy"] == "unknown", "Malformed health fact must be unknown.");
         Record(server, expectedRequests: 1);
     }
 
@@ -146,6 +151,7 @@ internal sealed class OpenCodeCompatibilityJourney
         var report = await ProbeAsync(server).ConfigureAwait(false);
         Require(report.State == OpenCodeCompatibilityStates.Degraded, "Invalid OpenAPI did not degrade.");
         Require(report.Code == "openapi_document_invalid", "Invalid OpenAPI code drifted.");
+        Require(report.Facts["healthy"] == "true", "Post-health OpenAPI failure fact drifted.");
         Record(server, expectedRequests: 2);
     }
 
@@ -217,6 +223,7 @@ internal sealed class OpenCodeCompatibilityJourney
         var report = await ProbeAsync(options).ConfigureAwait(false);
         Require(report.State == OpenCodeCompatibilityStates.Unavailable, "Timeout was not unavailable.");
         Require(report.Code == "request_timeout", "Timeout code drifted.");
+        Require(report.Facts["healthy"] == "unknown", "Pre-health timeout fact must be unknown.");
         Record(server, expectedRequests: 1);
     }
 
