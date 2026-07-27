@@ -1,0 +1,40 @@
+name: VS-028 Mechanical TCR
+
+on:
+  push:
+    branches:
+      - agent/VS-028-mcp-security-sandbox
+    paths:
+      - scripts/apply_vs028_tcr.py
+      - .github/workflows/99-vs028-mechanical-tcr.yml
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/VS-028-mcp-security-sandbox
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Apply approved TCR
+        run: python scripts/apply_vs028_tcr.py
+      - name: Commit cumulative journey updates
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            tests/BookStudio.Tests.BookCore/Program.cs \
+            tests/BookStudio.Tests.BookAuthoring/Program.cs \
+            tests/BookStudio.Tests.BookQuality/Program.cs \
+            tests/BookStudio.Tests.BookProduction/Program.cs \
+            tests/BookStudio.Tests.BookOps/Program.cs
+          git commit -m "VS-028 update cumulative resource journeys"
+          git push origin HEAD:agent/VS-028-mcp-security-sandbox
