@@ -182,15 +182,17 @@ class OpenCodeSseReconciliationContractTests(unittest.TestCase):
             "CancellationAndEarlyDisposalAsync",
             "NO_MUTATION",
             "NO_LEAKED_TASKS",
-            "SSE_RECONCILIATION_PASS",
+            "Authorization",
         ):
             self.assertIn(token, journey)
+
+        program = (TEST_PROJECT / "Program.cs").read_text(encoding="utf-8")
+        self.assertIn("OPENCODE_SSE_RECONCILIATION_PASS", program)
 
         server = (TEST_PROJECT / "ContractualOpenCodeSseServer.cs").read_text(encoding="utf-8")
         for token in (
             "TcpListener",
             "text/event-stream",
-            "Authorization",
             "Content-Length",
             "Requests",
             "ActiveConnections",
