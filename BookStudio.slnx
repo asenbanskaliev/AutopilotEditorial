@@ -7,6 +7,7 @@
     <Project Path="src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
     <Project Path="src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj" />
     <Project Path="src/BookStudio.Mcp.Production/BookStudio.Mcp.Production.csproj" />
+    <Project Path="src/BookStudio.Mcp.Ops/BookStudio.Mcp.Ops.csproj" />
     <Project Path="src/BookStudio.OpenCode/BookStudio.OpenCode.csproj" />
     <Project Path="src/BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
     <Project Path="src/BookStudio.Worker/BookStudio.Worker.csproj" />
@@ -24,5 +25,6 @@
     <Project Path="tests/BookStudio.Tests.BookAuthoring/BookStudio.Tests.BookAuthoring.csproj" />
     <Project Path="tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj" />
     <Project Path="tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj" />
+    <Project Path="tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj" />
   </Folder>
 </Solution>
