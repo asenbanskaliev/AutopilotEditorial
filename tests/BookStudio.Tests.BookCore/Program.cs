@@ -177,6 +177,7 @@ static async Task VerifyBookCoreJourneyAsync(
         }
     }
 
+    var resourceUris = new List<string>();
     string? cursor = null;
     string? lastCursor = null;
     var resourceRequestId = 1000;
