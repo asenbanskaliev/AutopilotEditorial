@@ -8,6 +8,7 @@ public static class BookAuthoringPromptCatalog
     public static VersionedMcpPromptCatalog Catalog { get; } = new(
     [
         new VersionedMcpPrompt(
+            name: "book.authoring.validate-draft.v1",
             version: "1",
             resourceUri: "book://prompts/book-authoring/validate-draft/v1",
             title: "Validate immutable draft",
