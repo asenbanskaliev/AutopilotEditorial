@@ -12,13 +12,14 @@ SHARED = [
     MCP / "Prompts/VersionedMcpPromptCatalog.cs",
     MCP / "Prompts/McpPromptDispatcher.cs",
     MCP / "Prompts/PromptArgumentRules.cs",
+    MCP / "Prompts/PromptEnabledFeatureRouter.cs",
 ]
 SERVER_CONTRACTS = {
-    "BookStudio.Mcp": ("BookCore/BookCorePromptCatalog.cs", "book.core.inspect-artifact.v1", "book://prompts/book-core/inspect-artifact/v1"),
-    "BookStudio.Mcp.Authoring": ("BookAuthoringPromptCatalog.cs", "book.authoring.validate-draft.v1", "book://prompts/book-authoring/validate-draft/v1"),
-    "BookStudio.Mcp.Quality": ("BookQualityPromptCatalog.cs", "book.quality.assess-draft.v1", "book://prompts/book-quality/assess-draft/v1"),
-    "BookStudio.Mcp.Production": ("BookProductionPromptCatalog.cs", "book.production.preflight-release.v1", "book://prompts/book-production/preflight-release/v1"),
-    "BookStudio.Mcp.Ops": ("BookOpsPromptCatalog.cs", "book.ops.inspect-readiness.v1", "book://prompts/book-ops/inspect-readiness/v1"),
+    "BookStudio.Mcp": ("BookCore/BookCorePromptCatalog.cs", "Program.cs", "BookCorePromptCatalog", "book.core.inspect-artifact.v1", "book://prompts/book-core/inspect-artifact/v1"),
+    "BookStudio.Mcp.Authoring": ("BookAuthoringPromptCatalog.cs", "Program.cs", "BookAuthoringPromptCatalog", "book.authoring.validate-draft.v1", "book://prompts/book-authoring/validate-draft/v1"),
+    "BookStudio.Mcp.Quality": ("BookQualityPromptCatalog.cs", "Program.cs", "BookQualityPromptCatalog", "book.quality.assess-draft.v1", "book://prompts/book-quality/assess-draft/v1"),
+    "BookStudio.Mcp.Production": ("BookProductionPromptCatalog.cs", "Program.cs", "BookProductionPromptCatalog", "book.production.preflight-release.v1", "book://prompts/book-production/preflight-release/v1"),
+    "BookStudio.Mcp.Ops": ("BookOpsPromptCatalog.cs", "Program.cs", "BookOpsPromptCatalog", "book.ops.inspect-readiness.v1", "book://prompts/book-ops/inspect-readiness/v1"),
 }
 
 
@@ -28,7 +29,7 @@ class PromptsResourcesContractTests(unittest.TestCase):
             self.assertTrue(path.exists(), f"Missing shared prompt contract: {path}")
 
     def test_each_bounded_server_has_versioned_prompt_catalog(self) -> None:
-        for project, (relative, prompt_name, resource_uri) in SERVER_CONTRACTS.items():
+        for project, (relative, _, _, prompt_name, resource_uri) in SERVER_CONTRACTS.items():
             path = ROOT / "src" / project / relative
             self.assertTrue(path.exists(), f"Missing prompt catalog: {path}")
             content = path.read_text(encoding="utf-8")
@@ -36,20 +37,25 @@ class PromptsResourcesContractTests(unittest.TestCase):
             self.assertIn(resource_uri, content)
             self.assertIn("VersionedMcpPromptCatalog", content)
 
-    def test_all_routers_dispatch_prompt_methods_and_advertise_capability(self) -> None:
-        routers = [
-            ROOT / "src/BookStudio.Mcp/BookCore/BookCoreFeatureRouter.cs",
-            ROOT / "src/BookStudio.Mcp.Authoring/BookAuthoringFeatureRouter.cs",
-            ROOT / "src/BookStudio.Mcp.Quality/BookQualityFeatureRouter.cs",
-            ROOT / "src/BookStudio.Mcp.Production/BookProductionFeatureRouter.cs",
-            ROOT / "src/BookStudio.Mcp.Ops/BookOpsFeatureRouter.cs",
-        ]
-        for router in routers:
-            content = router.read_text(encoding="utf-8")
-            self.assertIn('"prompts"', content)
-            self.assertIn('"prompts/list"', content)
-            self.assertIn('"prompts/get"', content)
-            self.assertIn("McpPromptDispatcher", content)
+    def test_shared_decorator_dispatches_prompts_and_merges_resources(self) -> None:
+        content = (MCP / "Prompts/PromptEnabledFeatureRouter.cs").read_text(encoding="utf-8")
+        for token in (
+            '"prompts"',
+            '"prompts/list"',
+            '"prompts/get"',
+            "McpPromptDispatcher",
+            "Concat(prompts.Resources)",
+            "HandlePromptResourceRead",
+            "McpCursorCodec",
+        ):
+            self.assertIn(token, content)
+
+    def test_all_composition_roots_enable_matching_prompt_catalog(self) -> None:
+        for project, (_, program_relative, catalog_name, _, _) in SERVER_CONTRACTS.items():
+            program = ROOT / "src" / project / program_relative
+            content = program.read_text(encoding="utf-8")
+            self.assertIn("PromptEnabledFeatureRouter", content)
+            self.assertIn(catalog_name + ".Catalog", content)
 
     def test_prompt_dispatcher_has_strict_list_get_contract(self) -> None:
         content = (MCP / "Prompts/McpPromptDispatcher.cs").read_text(encoding="utf-8")
