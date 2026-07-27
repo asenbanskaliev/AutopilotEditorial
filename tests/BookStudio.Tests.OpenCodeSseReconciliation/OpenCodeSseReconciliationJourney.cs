@@ -200,10 +200,11 @@ internal sealed class OpenCodeSseReconciliationJourney
         var items = await TakeUntilAsync(
             reconciler,
             new OpenCodeEventWatchRequest(OpenCodeEventScopes.Project),
-            item => streamCalls >= 2 &&
-                    item.Source == OpenCodeEventSources.Poll &&
-                    item.SessionId == "ses_repair" &&
-                    item.Status?.Type == OpenCodeSessionStatusTypes.Idle,
+            items => streamCalls >= 2 &&
+                     items.Any(item =>
+                         item.Source == OpenCodeEventSources.Poll &&
+                         item.SessionId == "ses_repair" &&
+                         item.Status?.Type == OpenCodeSessionStatusTypes.Idle),
             timeout: TimeSpan.FromSeconds(3)).ConfigureAwait(false);
         Require(streamCalls >= 2, "EOF did not reconnect the project stream.");
         Require(statusCalls >= 2, "EOF/reconnect did not trigger status repair.");
