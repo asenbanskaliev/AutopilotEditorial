@@ -43,12 +43,14 @@ static async Task VerifyMissingWorkspaceAsync(string workspaceRoot)
         var server = result.GetProperty("serverInfo");
         Require(server.GetProperty("name").GetString() == "bookstudio-ops", "Ops server name mismatch.");
         Require(server.GetProperty("title").GetString() == "BookStudio Operations MCP", "Ops server title mismatch.");
-        var capabilities = result.GetProperty("capabilities")
+        var capabilities = result.GetProperty("capabilities");
+        var names = capabilities
             .EnumerateObject()
             .Select(property => property.Name)
             .Order()
             .ToArray();
-        Require(capabilities.SequenceEqual(new[] { "resources", "tools" }), "Ops capabilities are not exact.");
+        Require(names.SequenceEqual(new[] { "prompts", "resources", "tools" }), "Ops capabilities are not exact.");
+        Require(!capabilities.GetProperty("prompts").GetProperty("listChanged").GetBoolean(), "Ops prompts.listChanged must be false.");
     }
     await ops.SendNotificationAsync("notifications/initialized", new { });
 
@@ -76,6 +78,7 @@ static async Task VerifyMissingWorkspaceAsync(string workspaceRoot)
             "Reserved Autopilot tool was advertised.");
     }
 
+    var resourceUris = new List<string>();
     await ops.SendRequestAsync(3, "resources/list", new { });
     string cursor;
     using (var resourcesPage1 = await ops.ReadJsonAsync())
@@ -83,18 +86,22 @@ static async Task VerifyMissingWorkspaceAsync(string workspaceRoot)
         var result = resourcesPage1.RootElement.GetProperty("result");
         var resources = result.GetProperty("resources").EnumerateArray().ToArray();
         Require(resources.Length == 3, "Ops resources first page size mismatch.");
-        Require(
-            resources.Any(resource => resource.GetProperty("uri").GetString() == "book://ops/capabilities"),
-            "Ops capability resource is missing.");
+        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
         cursor = result.GetProperty("nextCursor").GetString()!;
     }
     await ops.SendRequestAsync(4, "resources/list", new { cursor });
     using (var resourcesPage2 = await ops.ReadJsonAsync())
     {
         var result = resourcesPage2.RootElement.GetProperty("result");
-        Require(result.GetProperty("resources").GetArrayLength() == 2, "Ops resources second page size mismatch.");
+        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(resources.Length == 3, "Ops resources second page size mismatch.");
+        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
         Require(!result.TryGetProperty("nextCursor", out _), "Ops resources returned an unexpected third page.");
     }
+    Require(resourceUris.Count == 6, "Ops merged resource count mismatch.");
+    Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Ops resources are not ordinally sorted.");
+    Require(resourceUris.Contains("book://ops/capabilities"), "Ops capability resource is missing.");
+    Require(resourceUris.Contains("book://prompts/book-ops/inspect-readiness/v1"), "Ops prompt resource is missing.");
 
     await ops.SendRequestAsync(5, "resources/read", new { uri = "book://ops/capabilities" });
     string capabilityResource;
