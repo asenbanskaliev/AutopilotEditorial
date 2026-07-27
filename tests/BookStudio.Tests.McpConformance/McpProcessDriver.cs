@@ -62,18 +62,16 @@ internal sealed class McpProcessDriver : IAsyncDisposable
 
     public Task SendRequestAsync(string id, string method, object? parameters = null)
     {
-        var message = parameters is null
-            ? new { jsonrpc = "2.0", id, method }
-            : new { jsonrpc = "2.0", id, method, @params = parameters };
-        return SendRawAsync(JsonSerializer.Serialize(message));
+        return parameters is null
+            ? SendRawAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id, method }))
+            : SendRawAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", id, method, @params = parameters }));
     }
 
     public Task SendNotificationAsync(string method, object? parameters = null)
     {
-        var message = parameters is null
-            ? new { jsonrpc = "2.0", method }
-            : new { jsonrpc = "2.0", method, @params = parameters };
-        return SendRawAsync(JsonSerializer.Serialize(message));
+        return parameters is null
+            ? SendRawAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", method }))
+            : SendRawAsync(JsonSerializer.Serialize(new { jsonrpc = "2.0", method, @params = parameters }));
     }
 
     public async Task<JsonDocument> ReadJsonAsync()
