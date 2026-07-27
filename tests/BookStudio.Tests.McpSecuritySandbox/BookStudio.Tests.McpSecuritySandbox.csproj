@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.McpSecuritySandbox</AssemblyName>
+    <RootNamespace>BookStudio.Tests.McpSecuritySandbox</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Production/BookStudio.Mcp.Production.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Ops/BookStudio.Mcp.Ops.csproj" />
+  </ItemGroup>
+</Project>
