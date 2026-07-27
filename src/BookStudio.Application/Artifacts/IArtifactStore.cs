@@ -71,3 +71,30 @@ public sealed class ArtifactSizeLimitExceededException : ArtifactStoreException
 
     public long MaximumLength { get; }
 }
+
+public sealed class ArtifactStoreQuotaExceededException : ArtifactStoreException
+{
+    public ArtifactStoreQuotaExceededException(
+        string quota,
+        long maximum,
+        long observed)
+        : base("Artifact Store quota was exceeded.")
+    {
+        if (quota is not "bytes" and not "files")
+        {
+            throw new ArgumentException("Quota kind is invalid.", nameof(quota));
+        }
+        if (maximum < 1 || observed < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(maximum));
+        }
+
+        Quota = quota;
+        Maximum = maximum;
+        Observed = observed;
+    }
+
+    public string Quota { get; }
+    public long Maximum { get; }
+    public long Observed { get; }
+}
