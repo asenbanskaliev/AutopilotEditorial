@@ -1,6 +1,6 @@
 namespace BookStudio.OpenCode;
 
-/// <summary>Identifies the OpenCode external-adapter assembly for architecture and integration discovery.</summary>
+/// <summary>Identifies the OpenCode external-adapter assembly for compatibility, session-lifecycle and integration discovery.</summary>
 public static class AssemblyMarker
 {
 }
