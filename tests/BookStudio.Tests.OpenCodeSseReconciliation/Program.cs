@@ -19,7 +19,10 @@ catch (Exception exception)
     var scenario = "unknown";
     foreach (var line in (exception.StackTrace ?? string.Empty).Split('\n'))
     {
-        if (!line.Contains("OpenCodeSseReconciliationJourney.", StringComparison.Ordinal))
+        if (!line.Contains("OpenCodeSseReconciliationJourney.", StringComparison.Ordinal) ||
+            line.Contains("TakeUntilAsync", StringComparison.Ordinal) ||
+            line.Contains("TakeAsync", StringComparison.Ordinal) ||
+            line.Contains("RunAsync", StringComparison.Ordinal))
         {
             continue;
         }
