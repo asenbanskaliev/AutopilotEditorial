@@ -1,15 +1,17 @@
-# Agent instructions — Agent tool profiles journey
+# BookStudio.Tests.AgentToolProfiles Agent Rules
 
-## Ownership
-
-This project owns the executable dual-TDD journey for VS-033.
-
-## Invariants
+## Allowed
 
 - Use the real Application catalog/resolver and the real OpenCode loader/mapper.
-- Do not replace policy resolution with mocks.
-- No network, process, filesystem enumeration or provider mutation is permitted.
-- Catalog loading may read only the explicit repository-controlled JSON file used by the scenario.
-- Every rejection must be asserted by stable code, never by sensitive message content.
-- Concurrency scenarios must await every task.
-- A failed scenario may not be deleted or weakened without a TestChangeRequest.
+- Load only the explicit repository-controlled profile JSON used by the scenario.
+- Assert stable rejection codes, deterministic fingerprints, limit monotonicity and exact policy mapping.
+- Run bounded concurrent resolution and await every task.
+- Record only sanitized gate markers and aggregate scenario counts.
+
+## Forbidden
+
+- Do not replace policy resolution or provider mapping with mocks.
+- Do not contact networks, create processes, enumerate directories or mutate provider/session state.
+- Do not print prompts, credentials, provider payloads, internal catalog paths or rejected sensitive values.
+- Do not remove or weaken a failed scenario without a TestChangeRequest.
+- Do not leave background work running after a scenario.
