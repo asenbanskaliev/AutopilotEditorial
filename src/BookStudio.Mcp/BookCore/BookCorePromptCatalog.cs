@@ -8,6 +8,7 @@ public static class BookCorePromptCatalog
     public static VersionedMcpPromptCatalog Catalog { get; } = new(
     [
         new VersionedMcpPrompt(
+            name: "book.core.inspect-artifact.v1",
             version: "1",
             resourceUri: "book://prompts/book-core/inspect-artifact/v1",
             title: "Inspect immutable artifact",
