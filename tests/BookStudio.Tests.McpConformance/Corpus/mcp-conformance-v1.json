@@ -1,0 +1,195 @@
+{
+  "schemaVersion": "1.0.0",
+  "protocolVersion": "2025-11-25",
+  "cases": [
+    {
+      "id": "empty-message",
+      "phase": "created",
+      "payload": "",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "root-whitespace",
+      "phase": "created",
+      "payload": "   ",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "parse-truncated",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\"",
+      "expectedCode": -32700,
+      "expectedId": null
+    },
+    {
+      "id": "parse-trailing-comma",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-parse-comma\",\"method\":\"ping\",}",
+      "expectedCode": -32700,
+      "expectedId": null
+    },
+    {
+      "id": "parse-comment",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-parse-comment\",\"method\":\"ping\"/*x*/}",
+      "expectedCode": -32700,
+      "expectedId": null
+    },
+    {
+      "id": "root-null",
+      "phase": "created",
+      "payload": "null",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "root-array",
+      "phase": "created",
+      "payload": "[]",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "root-string",
+      "phase": "created",
+      "payload": "\"text\"",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "jsonrpc-missing",
+      "phase": "created",
+      "payload": "{\"id\":\"c-jsonrpc-missing\",\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-jsonrpc-missing"
+    },
+    {
+      "id": "jsonrpc-wrong",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"1.0\",\"id\":\"c-jsonrpc-wrong\",\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-jsonrpc-wrong"
+    },
+    {
+      "id": "jsonrpc-number",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":2,\"id\":\"c-jsonrpc-number\",\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-jsonrpc-number"
+    },
+    {
+      "id": "method-missing",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-method-missing\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-method-missing"
+    },
+    {
+      "id": "method-number",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-method-number\",\"method\":7}",
+      "expectedCode": -32600,
+      "expectedId": "c-method-number"
+    },
+    {
+      "id": "method-empty",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-method-empty\",\"method\":\"\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-method-empty"
+    },
+    {
+      "id": "method-control",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-method-control\",\"method\":\"bad\\u0000method\"}",
+      "expectedCode": -32600,
+      "expectedId": "c-method-control"
+    },
+    {
+      "id": "id-boolean",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":true,\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "id-object",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":{},\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "id-array",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":[],\"method\":\"ping\"}",
+      "expectedCode": -32600,
+      "expectedId": null
+    },
+    {
+      "id": "params-array",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-params-array\",\"method\":\"ping\",\"params\":[]}",
+      "expectedCode": -32602,
+      "expectedId": "c-params-array"
+    },
+    {
+      "id": "feature-before-initialize",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-feature-before-init\",\"method\":\"tools/list\"}",
+      "expectedCode": -32002,
+      "expectedId": "c-feature-before-init"
+    },
+    {
+      "id": "initialize-missing-params",
+      "phase": "created",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"c-initialize-missing\",\"method\":\"initialize\"}",
+      "expectedCode": -32602,
+      "expectedId": "c-initialize-missing"
+    },
+    {
+      "id": "unknown-method-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-unknown\",\"method\":\"unknown/conformance\"}",
+      "expectedCode": -32601,
+      "expectedId": "r-unknown"
+    },
+    {
+      "id": "params-string-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-params-string\",\"method\":\"tools/list\",\"params\":\"invalid\"}",
+      "expectedCode": -32602,
+      "expectedId": "r-params-string"
+    },
+    {
+      "id": "params-null-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-params-null\",\"method\":\"resources/list\",\"params\":null}",
+      "expectedCode": -32602,
+      "expectedId": "r-params-null"
+    },
+    {
+      "id": "prompts-cursor-number-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-prompts-cursor\",\"method\":\"prompts/list\",\"params\":{\"cursor\":1}}",
+      "expectedCode": -32602,
+      "expectedId": "r-prompts-cursor"
+    },
+    {
+      "id": "initialize-again-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-initialize-again\",\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{},\"clientInfo\":{\"name\":\"again\",\"version\":\"1\"}}}",
+      "expectedCode": -32600,
+      "expectedId": "r-initialize-again"
+    },
+    {
+      "id": "initialized-with-id-ready",
+      "phase": "ready",
+      "payload": "{\"jsonrpc\":\"2.0\",\"id\":\"r-initialized-request\",\"method\":\"notifications/initialized\"}",
+      "expectedCode": -32600,
+      "expectedId": "r-initialized-request"
+    }
+  ]
+}
