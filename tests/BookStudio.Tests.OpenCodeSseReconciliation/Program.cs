@@ -16,7 +16,19 @@ catch (Exception exception)
     var detail = exception is InvalidOperationException
         ? exception.Message.Replace('\r', ' ').Replace('\n', ' ')
         : "none";
+    var scenario = "unknown";
+    foreach (var line in (exception.StackTrace ?? string.Empty).Split('\n'))
+    {
+        if (!line.Contains("OpenCodeSseReconciliationJourney.", StringComparison.Ordinal))
+        {
+            continue;
+        }
+        var start = line.IndexOf("OpenCodeSseReconciliationJourney.", StringComparison.Ordinal);
+        var end = line.IndexOf('(', start);
+        scenario = end > start ? line[start..end] : "journey";
+        break;
+    }
     Console.Error.WriteLine(
-        $"OPENCODE_SSE_RECONCILIATION_FAIL type={exception.GetType().Name} code={code} detail={detail}");
+        $"OPENCODE_SSE_RECONCILIATION_FAIL type={exception.GetType().Name} code={code} detail={detail} scenario={scenario}");
     return 1;
 }
