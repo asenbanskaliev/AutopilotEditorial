@@ -19,6 +19,7 @@ internal sealed class OpenCodeSseReconciliationJourney
         await ProjectStreamAsync().ConfigureAwait(false);
         await GlobalStreamAsync().ConfigureAwait(false);
         await DeduplicationAsync().ConfigureAwait(false);
+        await StatusCacheBoundedAsync().ConfigureAwait(false);
         await EofReconnectAndPollingAsync().ConfigureAwait(false);
         await MalformedReconnectAsync().ConfigureAwait(false);
         await StallReconnectAsync().ConfigureAwait(false);
@@ -168,6 +169,51 @@ internal sealed class OpenCodeSseReconciliationJourney
             "Event-id deduplication failed.");
         Require(items.Count(item => item.ProviderType == "fingerprint.event") == 1,
             "Payload-fingerprint deduplication failed.");
+        await RecordAndRequireClosedAsync(server).ConfigureAwait(false);
+        _scenarios++;
+        _events += items.Count;
+    }
+
+    private async Task StatusCacheBoundedAsync()
+    {
+        var statusCalls = 0;
+        await using var server = new ContractualOpenCodeSseServer((request, _) =>
+        {
+            if (request.Path == "/event")
+            {
+                return ValueTask.FromResult(ContractualSseResponse.Sse([
+                    ContractualSseChunk.Utf8("data: {\"type\":\"server.connected\",\"properties\":{}}\n\n"),
+                    ContractualSseChunk.Utf8("id: cache-a\ndata: {\"type\":\"session.status\",\"properties\":{\"sessionID\":\"ses_cache_a\",\"status\":{\"type\":\"busy\"}}}\n\n"),
+                    ContractualSseChunk.Utf8("id: cache-b\ndata: {\"type\":\"session.status\",\"properties\":{\"sessionID\":\"ses_cache_b\",\"status\":{\"type\":\"busy\"}}}\n\n"),
+                    ContractualSseChunk.Utf8("id: cache-c\ndata: {\"type\":\"session.status\",\"properties\":{\"sessionID\":\"ses_cache_c\",\"status\":{\"type\":\"busy\"}}}\n\n"),
+                ]));
+            }
+            if (request.Path == "/session/status")
+            {
+                var call = Interlocked.Increment(ref statusCalls);
+                return ValueTask.FromResult(call == 1
+                    ? StatusSnapshot()
+                    : StatusSnapshot(("ses_cache_a", "busy")));
+            }
+            return ValueTask.FromResult(Route(request));
+        });
+        await using var reconciler = OpenCodeEventReconciler.Create(
+            Endpoint(server),
+            Options(
+                maximumStatusEntries: 2,
+                initialDelay: TimeSpan.FromMilliseconds(10),
+                maximumDelay: TimeSpan.FromMilliseconds(20)));
+        var items = await TakeUntilAsync(
+            reconciler,
+            new OpenCodeEventWatchRequest(OpenCodeEventScopes.Project),
+            item => item.Source == OpenCodeEventSources.Poll &&
+                    item.SessionId == "ses_cache_a" &&
+                    item.Status?.Type == OpenCodeSessionStatusTypes.Busy &&
+                    item.ReconciliationReason == OpenCodeReconciliationReasons.Eof,
+            timeout: TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+        Require(statusCalls >= 2, "Bounded status-cache scenario did not poll after EOF.");
+        Require(items.Count(item => item.SessionId == "ses_cache_a") == 2,
+            "Status cache did not evict and re-observe the oldest session deterministically.");
         await RecordAndRequireClosedAsync(server).ConfigureAwait(false);
         _scenarios++;
         _events += items.Count;
@@ -507,6 +553,7 @@ internal sealed class OpenCodeSseReconciliationJourney
     private static OpenCodeEventReconciliationOptions Options(
         OpenCodeSseParserOptions? parser = null,
         int maximumFaults = 4,
+        int maximumStatusEntries = 100,
         TimeSpan? initialDelay = null,
         TimeSpan? maximumDelay = null) =>
         new(
@@ -515,7 +562,7 @@ internal sealed class OpenCodeSseReconciliationJourney
                 StallTimeout = TimeSpan.FromMilliseconds(300),
             },
             MaximumResponseBytes: 64 * 1024,
-            MaximumStatusEntries: 100,
+            MaximumStatusEntries: maximumStatusEntries,
             BoundedChannelCapacity: 32,
             MaximumDedupeEntries: 128,
             InitialReconnectDelay: initialDelay ?? TimeSpan.FromMilliseconds(20),

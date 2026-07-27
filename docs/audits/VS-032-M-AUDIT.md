@@ -7,16 +7,14 @@
 ## M1 — Specification
 
 - La reconciliación depende de VS-031, pero mantiene una frontera Application independiente del transporte.
-- La Spec limita la superficie remota a tres GET:
-  - `/event`;
-  - `/global/event`;
-  - `/session/status`.
+- La superficie remota está limitada a tres GET: `/event`, `/global/event` y `/session/status`.
 - Project y global SSE se combinan con polling exclusivamente read-only.
-- El parser define UTF-8 estricto, framing SSE y límites aplicados durante lectura.
-- `server.connected` es handshake obligatorio del stream project.
+- El parser define UTF-8 estricto, framing SSE y límites aplicados durante la lectura.
+- `server.connected` es el handshake obligatorio del stream project.
 - Estados conocidos y desconocidos se normalizan sin conservar bodies crudos.
 - Deduplicación, backoff, polling, secuencia local, filtrado y task ownership están especificados.
-- No se permite prompt, abort, sesión, modelo, provider, shell, command, file ni otra mutación.
+- Tanto cada snapshot como el historial acumulado de estados están acotados.
+- No se permite prompt, abort, creación de sesión, selección de modelo/provider, shell, command, file ni otra mutación.
 
 ## M2 — Implementation
 
@@ -32,11 +30,16 @@
 - `OpenCodeEventNormalizer` reconoce las formas project y global, `server.connected`, `session.status` y eventos desconocidos.
 - `OpenCodeSessionStatusParser` es compartido por lifecycle y reconciliación.
 - `OpenCodeEventDeduplicator` utiliza namespace por source, event ID o SHA-256 de payload acotado, con expulsión FIFO determinista.
+- `OpenCodeBoundedStatusCache`:
+  - tiene capacidad exacta `MaximumStatusEntries`;
+  - actualiza sesiones existentes sin consumir slots;
+  - expulsa FIFO al insertar una sesión nueva en capacidad;
+  - mantiene acotado el historial entre snapshots.
 - `OpenCodeEventReconciler`:
   - exige health, events.project, events.global y sessions.status;
   - ejecuta como máximo dos pumps SSE y un trigger periódico opcional;
   - usa un channel bounded con backpressure;
-  - conserva un cache acotado de estados y suprime snapshots sin cambio;
+  - suprime estados equivalentes conservados en el caché acotado;
   - emite secuencia local estrictamente creciente;
   - reconecta iterativamente con backoff acotado;
   - repara por polling tras connect, EOF, malformed, stall y reconnect;
@@ -51,40 +54,43 @@ Governance verifica:
 - compatibility gate y GET-only inventory;
 - ausencia de métodos y paths de mutación;
 - normalizer, dedupe y status parser compartido;
+- caché FIFO acumulativo acotado;
 - journey real, servidor socket, solución, arquitectura y CI.
 
-El journey contractual real cubre 12 grupos:
+El journey contractual real cubre 13 grupos:
 
 1. framing fragmentado, BOM, comentarios, CRLF, multi-line data y EOF incompleto;
 2. line, UTF-8, event-data y field-count bounds;
 3. project handshake y session.status;
 4. global wrapper, directory y retry status;
 5. dedupe por ID y fingerprint;
-6. EOF reconnect y polling repair busy→idle;
-7. malformed handshake reconnect;
-8. stall detection y reconnect;
-9. reconnect exhaustion;
-10. Basic auth y no-leak;
-11. session filter;
-12. cancellation, early disposal y active-connection cleanup.
+6. expulsión FIFO y reobservación del historial de estados con capacidad 2;
+7. EOF reconnect y polling repair busy→idle;
+8. malformed handshake reconnect;
+9. stall detection y reconnect;
+10. reconnect exhaustion;
+11. Basic auth y no-leak;
+12. session filter;
+13. cancellation, early disposal y active-connection cleanup.
 
 Resultado:
 
 ```text
-OPENCODE_SSE_RECONCILIATION_PASS scenarios=12 requests=52 events=27 gate=NO_MUTATION tasks=NO_LEAKED_TASKS
+OPENCODE_SSE_RECONCILIATION_PASS scenarios=13 requests=57 events=34 gate=NO_MUTATION tasks=NO_LEAKED_TASKS
 ```
 
 Todos los journeys acumulativos permanecen en PASS.
 
 ## M4 — Security and Operations
 
-- Las 52 requests son GET y pertenecen al inventario permitido.
+- Las 57 requests son GET y pertenecen al inventario permitido.
 - Basic auth se aplica a health, OpenAPI, streams y polling cuando está configurado.
 - El journey no imprime Authorization, endpoint, directory ni event body.
 - Los streams no se leen completos ni usan `ReadAsStringAsync`/`ReadToEndAsync`.
-- Channel, dedupe, snapshot, line, event, status y backoff están acotados.
+- Channel, dedupe, snapshot, historial de estados, line, event, status y backoff están acotados.
 - No existe retry handler HTTP; el reconnect es explícito y cancelable.
-- Misma status por SSE/poll no genera duplicados.
+- El mismo status por SSE/poll no genera duplicados mientras permanece en el caché.
+- La expulsión por capacidad permite reobservar posteriormente una sesión sin crecer sin límite.
 - Ausencia de una sesión en snapshot no implica idle, delete ni completion.
 - Early disposal y caller cancellation dejan `ActiveConnections == 0`.
 - No quedan scripts o workflows temporales.
@@ -92,9 +98,10 @@ Todos los journeys acumulativos permanecen en PASS.
 Riesgos residuales:
 
 - Dedupe y status cache son process-local; no ofrecen offsets durables tras restart.
+- Una sesión expulsada puede volver a emitirse aunque su estado no haya cambiado; es el coste explícito de memoria acotada.
 - El backoff determinista no incluye jitter; un despliegue multi-instancia deberá añadir coordinación/jitter.
 - Los unknown provider events se conservan por type, pero no por properties.
-- Polling repair no demuestra pérdida exacta de cada evento intermedio; garantiza estado actual observable.
+- Polling repair garantiza estado actual observable, no la secuencia completa de eventos intermedios perdidos.
 - La reconciliación no decide por sí sola que una ejecución editorial haya terminado correctamente.
 
 ## M5 — Product Flow
@@ -105,11 +112,11 @@ validate watch request
 → start bounded project/global pumps
 → parse strict SSE frames
 → normalize and deduplicate provider event
-→ update shared session-status cache
+→ update bounded cross-snapshot status cache
 → emit monotonic provider-neutral event
 → detect connect/EOF/malformed/stall
 → request bounded status snapshot
-→ emit only new or changed synthetic status
+→ emit only new, changed or previously evicted synthetic status
 → reconnect with bounded delay
 → cancel, dispose and await every owned task
 ```
@@ -118,44 +125,48 @@ validate watch request
 
 ### TCR-032-001
 
-Movió checks estáticos al owner correcto:
-
-- success marker en `Program.cs`;
-- auth en el journey;
-- socket genérico conserva captura de headers.
+Movió checks estáticos al owner correcto: success marker en `Program.cs`, auth en el journey y captura de headers en el socket genérico.
 
 ### TCR-032-002
 
-Corrigió la observación concurrente del escenario EOF:
-
-- el test espera que el historial contenga el status reparado;
-- y que la segunda conexión haya sido aceptada;
-- sin exigir que el reconciliador duplique un status sin cambios.
+Corrigió la observación concurrente del escenario EOF esperando tanto el status reparado en el historial como la segunda conexión aceptada, sin exigir duplicados de estado sin cambios.
 
 Ningún comportamiento observable fue eliminado o relajado.
 
+## Audit Remediation 001
+
+La revisión post-merge detectó que el diccionario de estados podía acumular IDs distintos durante toda la watch aunque cada snapshot estuviera acotado.
+
+Corrección:
+
+- `OpenCodeBoundedStatusCache` FIFO;
+- capacidad `MaximumStatusEntries`;
+- actualización in-place;
+- expulsión determinista;
+- escenario real `StatusCacheBoundedAsync`.
+
+La evidencia detallada está en `docs/evidence/VS-032/AUDIT_REMEDIATION_001.md` y la RetroSpec complementaria en `docs/retrospec/VS-032-AUDIT-REMEDIATION-001.md`.
+
 ## Meta-Audit
 
-- RED confirmado en head `0693391e54d2ec6857fca82b7e228166ce059c73`:
-  - Plan Integrity run `30290510142` PASS;
-  - Governance run `30290510010` FAIL esperado.
-- Primer build detectó accesibilidad de options; se hizo pública la configuración bounded requerida por consumidores/tests.
-- El primer journey detectó un mínimo arbitrario que impedía límites más estrictos; se permitió cualquier event bound positivo manteniendo máximo acotado.
-- Governance detectó únicamente ownership estático; TCR-032-001 lo corrigió sin tocar escenarios.
-- El escenario EOF reveló dos condiciones asíncronas observadas en orden incorrecto; TCR-032-002 espera ambas sin solicitar duplicados.
-- No quedan workflows, scripts de migración o triggers temporales.
-- El journey utiliza sockets loopback y adapter/parser reales; no mockea `IOpenCodeEventReconciler`.
-- Application, adapter, tests, solución, arquitectura, catálogo CI y workflow están enlazados.
+- RED original confirmado en head `0693391e54d2ec6857fca82b7e228166ce059c73`.
+- El parser, ownership estático y orden de observación EOF se corrigieron mediante los TCR documentados.
+- PR #45 fue fusionado después de Plan Integrity, Governance y .NET CI en PASS.
+- La revisión posterior identificó el único gap operativo de memoria acumulativa y abrió issue #48 / PR #49.
+- La remediación usa el adapter y servidor loopback reales; no mockea `IOpenCodeEventReconciler`.
+- El escenario 13 demuestra expulsión y reobservación, no solo presencia de tokens estáticos.
+- El workflow permanente conserva `contents: read` y no quedan scripts de migración.
+- Application, adapter, tests, solución, arquitectura, catálogo CI y workflow siguen enlazados.
 
-## Evidencia GREEN funcional
+## Evidencia GREEN de la remediación
 
-- Head funcional: `03d4131d17659f6f99fd9811d323c8eb1d1d1145`.
-- Plan Integrity: run `30298828504` PASS.
-- Governance: run `30298828480` PASS.
-- Governance artifact: `8665710933`.
-- Governance digest: `sha256:b97df5f9d5e6f805082eac94a85cb226b5b50adf6a4a299f5e06e176a0b70112`.
-- .NET CI: run `30298828509`, job `90086442096` PASS.
-- .NET artifact: `8665759132`.
-- .NET digest: `sha256:21a650edf0f6928f8eee50565a0d985c88214ac4c5a12072e48dac0f6a968da3`.
-- SSE stdout SHA-256: `bbe71acc6e7696d5446c562abe00058091f3a6f8b57a3b2f65e0bf74c07562f1`.
+- Head funcional: `bdfd3f2c8ccf60631341845d8e384e19779f42ea`.
+- Plan Integrity: run `30303256533` PASS.
+- Governance: run `30303256152` PASS.
+- Governance artifact: `8667391996`.
+- Governance digest: `sha256:4404b720bf7d5344960aabdbf3cbe43ec148d83dca6cb8e7a666343f53ef16f5`.
+- .NET CI: run `30303256913`, job `90101121629` PASS.
+- .NET artifact: `8667438911`.
+- .NET digest: `sha256:8a992a6a7dedc5e4b3ce0e9c0c30b305fd143d063f14dbfd947db83c9176ab9f`.
+- SSE stdout SHA-256: `59e891a1e1ff1886cf618c29fbc179bfcc9f637b9849e6f74e8d8ebf915d09d9`.
 - SSE stderr: vacío.

@@ -191,7 +191,7 @@ public sealed class OpenCodeEventReconciler : IOpenCodeEventReconciler, IAsyncDi
         }
         var completion = CompleteChannelWhenPumpsFinishAsync(pumps, channel.Writer);
         var deduplicator = new OpenCodeEventDeduplicator(_options.MaximumDedupeEntries);
-        var statuses = new Dictionary<string, OpenCodeSessionStatus>(StringComparer.Ordinal);
+        var statuses = new OpenCodeBoundedStatusCache(_options.MaximumStatusEntries);
         long sequence = 0;
 
         try
@@ -208,7 +208,7 @@ public sealed class OpenCodeEventReconciler : IOpenCodeEventReconciler, IAsyncDi
                         }
                         if (provider.Event.Status is not null && provider.Event.SessionId is not null)
                         {
-                            statuses[provider.Event.SessionId] = provider.Event.Status;
+                            statuses.Set(provider.Event.SessionId, provider.Event.Status);
                         }
                         if (!ShouldEmit(provider.Event.SessionId, provider.Event.Kind, request.SessionIdFilter))
                         {
@@ -251,11 +251,11 @@ public sealed class OpenCodeEventReconciler : IOpenCodeEventReconciler, IAsyncDi
                         }
                         foreach (var pair in snapshot)
                         {
-                            if (statuses.TryGetValue(pair.Key, out var previous) && previous == pair.Value)
+                            if (statuses.TryGet(pair.Key, out var previous) && previous == pair.Value)
                             {
                                 continue;
                             }
-                            statuses[pair.Key] = pair.Value;
+                            statuses.Set(pair.Key, pair.Value);
                             if (request.SessionIdFilter is not null &&
                                 !string.Equals(request.SessionIdFilter, pair.Key, StringComparison.Ordinal))
                             {
@@ -679,6 +679,42 @@ public sealed class OpenCodeEventReconciler : IOpenCodeEventReconciler, IAsyncDi
 
     private void ThrowIfDisposed() =>
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
+
+    private sealed class OpenCodeBoundedStatusCache
+    {
+        private readonly int _capacity;
+        private readonly Queue<string> _order = new();
+        private readonly Dictionary<string, OpenCodeSessionStatus> _values =
+            new(StringComparer.Ordinal);
+
+        public OpenCodeBoundedStatusCache(int capacity)
+        {
+            if (capacity < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(capacity));
+            }
+            _capacity = capacity;
+        }
+
+        public bool TryGet(string sessionId, out OpenCodeSessionStatus? status) =>
+            _values.TryGetValue(sessionId, out status);
+
+        public void Set(string sessionId, OpenCodeSessionStatus status)
+        {
+            if (_values.ContainsKey(sessionId))
+            {
+                _values[sessionId] = status;
+                return;
+            }
+            if (_values.Count >= _capacity)
+            {
+                var expired = _order.Dequeue();
+                _values.Remove(expired);
+            }
+            _values.Add(sessionId, status);
+            _order.Enqueue(sessionId);
+        }
+    }
 
     private abstract record InternalMessage;
     private sealed record ProviderMessage(OpenCodeNormalizedProviderEvent Event) : InternalMessage;

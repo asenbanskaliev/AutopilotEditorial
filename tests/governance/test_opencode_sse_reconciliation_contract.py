@@ -113,6 +113,8 @@ class OpenCodeSseReconciliationContractTests(unittest.TestCase):
             "MaximumReconnectDelay",
             "Basic",
             "Task.WhenAll",
+            "OpenCodeBoundedStatusCache",
+            "Queue<string>",
         ):
             self.assertIn(token, reconciler)
         for forbidden in (
@@ -173,6 +175,7 @@ class OpenCodeSseReconciliationContractTests(unittest.TestCase):
             "ProjectStreamAsync",
             "GlobalStreamAsync",
             "DeduplicationAsync",
+            "StatusCacheBoundedAsync",
             "EofReconnectAndPollingAsync",
             "MalformedReconnectAsync",
             "StallReconnectAsync",
