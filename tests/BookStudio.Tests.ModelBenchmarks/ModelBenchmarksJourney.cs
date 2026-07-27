@@ -233,7 +233,7 @@ internal sealed class ModelBenchmarksJourney
     {
         var models = BaseModels().ToArray();
         var localIndex = Array.FindIndex(models, item => item.ModelId == "model-local");
-        models[localIndex] = models[localIndex] with { ContextWindowTokens = 1_000 };
+        models[localIndex] = models[localIndex] with { ContextWindowTokens = 20_000 };
         var policy = Policy(
             "blocked-fallback-role",
             primary: ["model-alpha"],
