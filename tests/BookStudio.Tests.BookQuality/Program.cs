@@ -107,9 +107,10 @@ static async Task VerifyQualityJourneyAsync(
         var info = result.GetProperty("serverInfo");
         Require(info.GetProperty("name").GetString() == "bookstudio-quality", "Quality server name mismatch.");
         Require(info.GetProperty("title").GetString() == "BookStudio Quality MCP", "Quality server title mismatch.");
-        var capabilities = result.GetProperty("capabilities")
-            .EnumerateObject().Select(property => property.Name).Order().ToArray();
-        Require(capabilities.SequenceEqual(new[] { "resources", "tools" }), "Quality capabilities are not exact.");
+        var capabilities = result.GetProperty("capabilities");
+        var names = capabilities.EnumerateObject().Select(property => property.Name).Order().ToArray();
+        Require(names.SequenceEqual(new[] { "prompts", "resources", "tools" }), "Quality capabilities are not exact.");
+        Require(!capabilities.GetProperty("prompts").GetProperty("listChanged").GetBoolean(), "Quality prompts.listChanged must be false.");
     }
     await quality.SendNotificationAsync("notifications/initialized", new { });
 
@@ -130,6 +131,7 @@ static async Task VerifyQualityJourneyAsync(
         Require(!response.RootElement.GetRawText().Contains("book.repair.propose", StringComparison.Ordinal), "Reserved quality tool was advertised.");
     }
 
+    var resourceUris = new List<string>();
     await quality.SendRequestAsync(3, "resources/list", new { });
     string cursor;
     using (var page1 = await quality.ReadJsonAsync())
@@ -137,16 +139,23 @@ static async Task VerifyQualityJourneyAsync(
         var result = page1.RootElement.GetProperty("result");
         var resources = result.GetProperty("resources").EnumerateArray().ToArray();
         Require(resources.Length == 4, "Quality resources first page size mismatch.");
-        Require(resources.Any(resource => resource.GetProperty("uri").GetString() == "book://quality/profiles/draft-basic"), "draft-basic profile is missing.");
+        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
         cursor = result.GetProperty("nextCursor").GetString()!;
     }
     await quality.SendRequestAsync(4, "resources/list", new { cursor });
     using (var page2 = await quality.ReadJsonAsync())
     {
         var result = page2.RootElement.GetProperty("result");
-        Require(result.GetProperty("resources").GetArrayLength() == 3, "Quality resources second page size mismatch.");
+        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(resources.Length == 4, "Quality resources second page size mismatch.");
+        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
         Require(!result.TryGetProperty("nextCursor", out _), "Quality resources returned an unexpected third page.");
     }
+    Require(resourceUris.Count == 8, "Quality merged resource count mismatch.");
+    Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Quality resources are not ordinally sorted.");
+    Require(resourceUris.Contains("book://quality/profiles/draft-basic"), "draft-basic profile is missing.");
+    Require(resourceUris.Contains("book://prompts/book-quality/assess-draft/v1"), "Quality prompt resource is missing.");
+
     await quality.SendRequestAsync(5, "resources/read", new { uri = "book://quality/profiles/draft-basic" });
     using (var profile = await quality.ReadJsonAsync())
     {
