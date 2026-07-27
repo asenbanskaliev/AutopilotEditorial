@@ -73,6 +73,8 @@ jobs:
         run: dotnet run --project tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj --no-build -c Release
       - name: Run OpenCode session lifecycle integration journey
         run: dotnet run --project tests/BookStudio.Tests.OpenCodeSessionLifecycle/BookStudio.Tests.OpenCodeSessionLifecycle.csproj --no-build -c Release
+      - name: Run OpenCode SSE reconciliation integration journey
+        run: dotnet run --project tests/BookStudio.Tests.OpenCodeSseReconciliation/BookStudio.Tests.OpenCodeSseReconciliation.csproj --no-build -c Release
       - name: Generate normalized build evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
@@ -127,6 +129,9 @@ jobs:
       - name: Generate normalized OpenCode session lifecycle evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.opencode-session-lifecycle-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-opencode-session-lifecycle-integration.json -- dotnet run --project tests/BookStudio.Tests.OpenCodeSessionLifecycle/BookStudio.Tests.OpenCodeSessionLifecycle.csproj --no-build -c Release
+      - name: Generate normalized OpenCode SSE reconciliation evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.opencode-sse-reconciliation-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-opencode-sse-reconciliation-integration.json -- dotnet run --project tests/BookStudio.Tests.OpenCodeSseReconciliation/BookStudio.Tests.OpenCodeSseReconciliation.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4

@@ -186,7 +186,17 @@ public sealed class OpenCodeSessionLifecycleClient : IOpenCodeSessionLifecycle, 
             .ConfigureAwait(false);
         RequireStatus(response.StatusCode, HttpStatusCode.OK, OpenCodeSessionErrorCodes.StatusHttpStatus);
         RequireJson(response.MediaType, OpenCodeSessionErrorCodes.StatusPayloadInvalid);
-        return ParseStatuses(response.Payload);
+        try
+        {
+            return OpenCodeSessionStatusParser.ParseSnapshot(
+                response.Payload,
+                _options.MaximumStatusEntries);
+        }
+        catch (OpenCodeSessionStatusPayloadException)
+        {
+            throw new OpenCodeSessionLifecycleException(
+                OpenCodeSessionErrorCodes.StatusPayloadInvalid);
+        }
     }
 
     public async ValueTask<OpenCodePromptSubmission> SendPromptAsync(

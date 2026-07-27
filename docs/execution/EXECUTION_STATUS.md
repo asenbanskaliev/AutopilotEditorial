@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F3-OPENCODE
-- Current slice: VS-031 — Session lifecycle
-- State: VERIFIED
-- Open PR: #43
-- Blocking gate: final audited-head checks and merge
-- Next action: validate the final audited head, merge PR #43 and activate VS-032 — SSE reconciliation
+- Current slice: VS-032 — SSE reconciliation
+- State: SPECIFICATION
+- Open PR: pending
+- Blocking gate: SPEC_READY and DUAL_RED_CONFIRMED
+- Next action: capture RED and implement bounded project/global SSE reconciliation with polling repair
 - Full program gate: NOT_READY

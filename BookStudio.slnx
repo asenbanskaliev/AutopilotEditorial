@@ -31,5 +31,6 @@
     <Project Path="tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj" />
     <Project Path="tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj" />
     <Project Path="tests/BookStudio.Tests.OpenCodeSessionLifecycle/BookStudio.Tests.OpenCodeSessionLifecycle.csproj" />
+    <Project Path="tests/BookStudio.Tests.OpenCodeSseReconciliation/BookStudio.Tests.OpenCodeSseReconciliation.csproj" />
   </Folder>
 </Solution>
