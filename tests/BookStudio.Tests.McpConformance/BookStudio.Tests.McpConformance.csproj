@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.McpConformance</AssemblyName>
+    <RootNamespace>BookStudio.Tests.McpConformance</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Mcp/BookStudio.Mcp.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Production/BookStudio.Mcp.Production.csproj" />
+    <ProjectReference Include="../../src/BookStudio.Mcp.Ops/BookStudio.Mcp.Ops.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Corpus/mcp-conformance-v1.json" LogicalName="mcp-conformance-v1.json" />
+  </ItemGroup>
+</Project>
