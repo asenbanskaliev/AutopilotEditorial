@@ -27,35 +27,44 @@ jobs:
 
           architecture = Path("docs/architecture/architecture-policy.json")
           text = architecture.read_text(encoding="utf-8")
-          anchor = '    {"name":"BookStudio.Tests.McpSecuritySandbox","projectPath":"tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj","layer":"integration-test","outputAssemblyPath":"tests/BookStudio.Tests.McpSecuritySandbox/bin/Release/net10.0/BookStudio.Tests.McpSecuritySandbox.dll","allowedProjectReferences":["../../src/BookStudio.Application/BookStudio.Application.csproj","../../src/BookStudio.Infrastructure/BookStudio.Infrastructure.csproj","../../src/BookStudio.Mcp/BookStudio.Mcp.csproj","../../src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj","../../src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj","../../src/BookStudio.Mcp.Production/BookStudio.Mcp.Production.csproj","../../src/BookStudio.Mcp.Ops/BookStudio.Mcp.Ops.csproj"],"allowedBookStudioAssemblyReferences":["BookStudio.Application","BookStudio.Infrastructure","BookStudio.Mcp","BookStudio.Mcp.Authoring","BookStudio.Mcp.Quality","BookStudio.Mcp.Production","BookStudio.Mcp.Ops"],"packagePolicy":"none","agentsPath":"tests/BookStudio.Tests.McpSecuritySandbox/AGENTS.md","forbiddenNamespacePrefixes":[]}'
-          addition = anchor + ',\n    {"name":"BookStudio.Tests.OpenCodeCompatibility","projectPath":"tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj","layer":"integration-test","outputAssemblyPath":"tests/BookStudio.Tests.OpenCodeCompatibility/bin/Release/net10.0/BookStudio.Tests.OpenCodeCompatibility.dll","allowedProjectReferences":["../../src/BookStudio.Application/BookStudio.Application.csproj","../../src/BookStudio.OpenCode/BookStudio.OpenCode.csproj"],"allowedBookStudioAssemblyReferences":["BookStudio.Application","BookStudio.OpenCode"],"packagePolicy":"none","agentsPath":"tests/BookStudio.Tests.OpenCodeCompatibility/AGENTS.md","forbiddenNamespacePrefixes":[]}'
-          if text.count(anchor) != 1:
-              raise SystemExit(f"Expected one architecture anchor, found {text.count(anchor)}")
-          architecture.write_text(text.replace(anchor, addition, 1), encoding="utf-8")
+          if '"name":"BookStudio.Tests.OpenCodeCompatibility"' not in text:
+              marker = "\n  ]\n}"
+              if text.count(marker) != 1:
+                  raise SystemExit(f"Expected one architecture array close, found {text.count(marker)}")
+              project = '    {"name":"BookStudio.Tests.OpenCodeCompatibility","projectPath":"tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj","layer":"integration-test","outputAssemblyPath":"tests/BookStudio.Tests.OpenCodeCompatibility/bin/Release/net10.0/BookStudio.Tests.OpenCodeCompatibility.dll","allowedProjectReferences":["../../src/BookStudio.Application/BookStudio.Application.csproj","../../src/BookStudio.OpenCode/BookStudio.OpenCode.csproj"],"allowedBookStudioAssemblyReferences":["BookStudio.Application","BookStudio.OpenCode"],"packagePolicy":"none","agentsPath":"tests/BookStudio.Tests.OpenCodeCompatibility/AGENTS.md","forbiddenNamespacePrefixes":[]}'
+              text = text.replace(marker, ",\n" + project + marker, 1)
+              architecture.write_text(text, encoding="utf-8")
 
           providers = Path("config/ci/providers.json")
           text = providers.read_text(encoding="utf-8")
-          anchor = '    {"id":"dotnet.mcp-security-sandbox-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj","--no-build","-c","Release"]},\n    {"id":"dotnet.build-test"'
-          replacement = '    {"id":"dotnet.mcp-security-sandbox-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj","--no-build","-c","Release"]},\n    {"id":"dotnet.opencode-compatibility-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj","--no-build","-c","Release"]},\n    {"id":"dotnet.build-test"'
-          if text.count(anchor) != 1:
-              raise SystemExit(f"Expected one provider anchor, found {text.count(anchor)}")
-          providers.write_text(text.replace(anchor, replacement, 1), encoding="utf-8")
+          if '"id":"dotnet.opencode-compatibility-integration"' not in text:
+              anchor = '    {"id":"dotnet.build-test"'
+              if text.count(anchor) != 1:
+                  raise SystemExit(f"Expected one provider insertion point, found {text.count(anchor)}")
+              contract = '    {"id":"dotnet.opencode-compatibility-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj","--no-build","-c","Release"]},\n'
+              providers.write_text(text.replace(anchor, contract + anchor, 1), encoding="utf-8")
 
           workflow = Path(".github/workflows/02-dotnet-ci.yml")
           text = workflow.read_text(encoding="utf-8")
-          run_anchor = '      - name: Run MCP security sandbox integration journey\n        run: dotnet run --project tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj --no-build -c Release\n      - name: Generate normalized build evidence'
-          run_replacement = '      - name: Run MCP security sandbox integration journey\n        run: dotnet run --project tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj --no-build -c Release\n      - name: Run OpenCode compatibility integration journey\n        run: dotnet run --project tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj --no-build -c Release\n      - name: Generate normalized build evidence'
-          evidence_anchor = '      - name: Generate normalized MCP security sandbox evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.mcp-security-sandbox-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-mcp-security-sandbox-integration.json -- dotnet run --project tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj --no-build -c Release\n      - name: Upload .NET evidence'
-          evidence_replacement = '      - name: Generate normalized MCP security sandbox evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.mcp-security-sandbox-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-mcp-security-sandbox-integration.json -- dotnet run --project tests/BookStudio.Tests.McpSecuritySandbox/BookStudio.Tests.McpSecuritySandbox.csproj --no-build -c Release\n      - name: Generate normalized OpenCode compatibility evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.opencode-compatibility-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-opencode-compatibility-integration.json -- dotnet run --project tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj --no-build -c Release\n      - name: Upload .NET evidence'
-          if text.count(run_anchor) != 1:
-              raise SystemExit(f"Expected one workflow run anchor, found {text.count(run_anchor)}")
-          text = text.replace(run_anchor, run_replacement, 1)
-          if text.count(evidence_anchor) != 1:
-              raise SystemExit(f"Expected one workflow evidence anchor, found {text.count(evidence_anchor)}")
-          workflow.write_text(text.replace(evidence_anchor, evidence_replacement, 1), encoding="utf-8")
+          if "Run OpenCode compatibility integration journey" not in text:
+              anchor = '      - name: Generate normalized build evidence\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit(f"Expected one workflow run insertion point, found {text.count(anchor)}")
+              step = '      - name: Run OpenCode compatibility integration journey\n        run: dotnet run --project tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj --no-build -c Release\n'
+              text = text.replace(anchor, step + anchor, 1)
+          if "Generate normalized OpenCode compatibility evidence" not in text:
+              anchor = '      - name: Upload .NET evidence\n'
+              if text.count(anchor) != 1:
+                  raise SystemExit(f"Expected one workflow evidence insertion point, found {text.count(anchor)}")
+              step = '      - name: Generate normalized OpenCode compatibility evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.opencode-compatibility-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-opencode-compatibility-integration.json -- dotnet run --project tests/BookStudio.Tests.OpenCodeCompatibility/BookStudio.Tests.OpenCodeCompatibility.csproj --no-build -c Release\n'
+              text = text.replace(anchor, step + anchor, 1)
+          workflow.write_text(text, encoding="utf-8")
           PY
       - name: Commit permanent registrations
         run: |
+          if git diff --quiet; then
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/architecture/architecture-policy.json config/ci/providers.json .github/workflows/02-dotnet-ci.yml
