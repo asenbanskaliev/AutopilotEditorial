@@ -105,7 +105,7 @@ public static partial class OpenCodeOpenApiInspector
         if (string.IsNullOrWhiteSpace(path) ||
             path.Length > 512 ||
             path.Any(char.IsControl) ||
-            !path.StartsWith('/', StringComparison.Ordinal))
+            !path.StartsWith("/", StringComparison.Ordinal))
         {
             return string.Empty;
         }
