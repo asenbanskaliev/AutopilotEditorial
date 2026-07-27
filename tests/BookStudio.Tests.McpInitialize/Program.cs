@@ -178,15 +178,16 @@ static string CurrentInitializeRequest(int id) =>
 
 static void AssertCumulativeCapabilities(JsonElement capabilities)
 {
-    Require(capabilities.EnumerateObject().Count() == 2, "Initialize advertised an unexpected capability count.");
+    Require(capabilities.EnumerateObject().Count() == 3, "Initialize advertised an unexpected capability count.");
     var tools = capabilities.GetProperty("tools");
     Require(!tools.GetProperty("listChanged").GetBoolean(), "tools.listChanged must be false.");
     var resources = capabilities.GetProperty("resources");
     Require(!resources.GetProperty("subscribe").GetBoolean(), "resources.subscribe must be false.");
     Require(!resources.GetProperty("listChanged").GetBoolean(), "resources.listChanged must be false.");
+    var prompts = capabilities.GetProperty("prompts");
+    Require(!prompts.GetProperty("listChanged").GetBoolean(), "prompts.listChanged must be false.");
     foreach (var forbidden in new[]
              {
-                 "prompts",
                  "logging",
                  "completions",
                  "sampling",
