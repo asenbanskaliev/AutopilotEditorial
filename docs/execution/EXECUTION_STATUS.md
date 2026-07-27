@@ -3,8 +3,8 @@
 - Program version: 0.11.0
 - Current phase: F2-MCP
 - Current slice: VS-028 — MCP security sandbox
-- State: SPECIFICATION
-- Open PR: pending
-- Blocking gate: SPEC_READY and DUAL_RED_CONFIRMED
-- Next action: capture RED and implement host admission, quota enforcement and security policy conformance
+- State: VERIFIED
+- Open PR: #39
+- Blocking gate: final checks and merge
+- Next action: validate the audited head, mark PR ready and merge; then activate the first planned slice after F2-MCP
 - Full program gate: NOT_READY
