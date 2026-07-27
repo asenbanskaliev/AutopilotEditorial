@@ -6,16 +6,15 @@ namespace BookStudio.Mcp.Quality;
 /// <summary>Lazily composes the deterministic quality use case for one MCP process.</summary>
 public sealed class BookQualityRuntime : IAsyncDisposable
 {
-    private readonly string _workspaceRoot;
+    private readonly McpHostOptions _options;
     private readonly object _gate = new();
     private FileArtifactStore? _store;
     private QualityAssessmentService? _service;
     private int _disposed;
 
-    public BookQualityRuntime(string workspaceRoot)
+    public BookQualityRuntime(McpHostOptions options)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(workspaceRoot);
-        _workspaceRoot = Path.GetFullPath(workspaceRoot);
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     public IQualityAssessmentService GetService()
@@ -29,7 +28,12 @@ public sealed class BookQualityRuntime : IAsyncDisposable
                 return _service;
             }
 
-            _store = new FileArtifactStore(FileArtifactStoreOptions.Create(_workspaceRoot));
+            _store = new FileArtifactStore(
+                FileArtifactStoreOptions.Create(
+                    _options.WorkspaceRoot,
+                    _options.MaximumArtifactBytes,
+                    _options.MaximumStoreBytes,
+                    _options.MaximumStoreFiles));
             _service = new QualityAssessmentService(_store);
             return _service;
         }
