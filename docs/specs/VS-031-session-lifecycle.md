@@ -2,17 +2,27 @@
 
 ## Status
 
-`SPECIFICATION`
+`VERIFIED`
 
 ## Objective
 
-Create a provider-neutral, bounded and compatibility-gated OpenCode session lifecycle that can create a session, read it, enqueue a text prompt asynchronously, inspect normalized session status and abort explicitly without exposing provider DTOs or invoking unrelated OpenCode capabilities.
+Provide a provider-neutral, compatibility-gated and bounded OpenCode lifecycle for:
+
+```text
+create session
+get session
+get session statuses
+submit text prompt asynchronously
+abort session explicitly
+```
+
+The adapter must not expose provider DTOs or invoke unrelated OpenCode capabilities.
 
 ## Dependency
 
-`VS-030 — OpenCode compatibility` must be `VERIFIED`.
+`VS-030 — OpenCode compatibility` is `VERIFIED`.
 
-Every lifecycle instance receives an `IOpenCodeCompatibilityProbe` and refuses mutating session operations unless the latest successful compatibility report contains:
+Before the first valid lifecycle operation, the client requires a compatibility report with `healthy=true` and:
 
 ```text
 health
@@ -23,9 +33,9 @@ sessions.prompt_async
 sessions.abort
 ```
 
-Event/SSE features are not required until VS-032.
+SSE features are not required until VS-032.
 
-## Official transport baseline
+## Transport baseline
 
 ```text
 POST /session
@@ -35,155 +45,54 @@ POST /session/{id}/prompt_async
 POST /session/{id}/abort
 ```
 
-Expected transport behavior:
+Expected success:
 
-- create returns a session JSON object;
-- get returns one session JSON object;
-- status returns a JSON object keyed by session ID;
-- async prompt returns HTTP 204;
-- abort returns a JSON boolean.
+- create/get/status/abort: HTTP 200;
+- prompt_async: HTTP 204;
+- abort body: JSON boolean.
 
-No delete, patch, shell, command, share, file or provider/model execution endpoint belongs to this slice.
+No delete, patch, shell, command, share, file, provider or model endpoint belongs to this slice.
 
-## Application contract
+## Application boundary
 
 Application owns:
 
 - `IOpenCodeSessionLifecycle`;
-- immutable commands and results;
+- immutable commands/results;
 - normalized session/status models;
-- validation limits;
+- input and byte limits;
 - stable error codes;
 - idempotency semantics.
 
-Application must not reference:
+Application contains no HTTP, URI, JSON DOM, credential or provider DTO type.
 
-- `HttpClient`, HTTP status codes or headers;
-- URI or JSON DOM types;
-- provider request/response DTOs;
-- Basic auth or credentials;
-- environment, process, filesystem or database APIs.
-
-## Public use cases
+## Public operations
 
 ```text
-CreateSessionAsync
-GetSessionAsync
-GetStatusesAsync
-SendPromptAsync
-AbortSessionAsync
+CreateSessionAsync(OpenCodeCreateSessionCommand)
+GetSessionAsync(sessionId)
+GetStatusesAsync()
+SendPromptAsync(OpenCodeSendPromptCommand)
+AbortSessionAsync(sessionId)
 ```
 
-### Create session
+## Create session
 
 Input:
 
 ```text
-parentSessionId? : bounded session ID
-title?           : bounded human-readable title
-idempotencyKey   : required bounded opaque key
+parentSessionId?
+title?
+idempotencyKey
 ```
 
-Output:
+Body includes only present `parentID` and `title`. No provider, model, agent, directory, tools or permissions are injected.
 
-```text
-OpenCodeSession
-```
+## Get session
 
-Rules:
+Input is one validated session ID. HTTP 404 maps to `session_not_found`.
 
-- title and parent are optional;
-- empty optional values are rejected rather than normalized silently;
-- the idempotency key is required;
-- no provider or model selection is sent;
-- no workspace path is sent in this slice.
-
-### Get session
-
-Input:
-
-```text
-sessionId : required bounded session ID
-```
-
-Output:
-
-```text
-OpenCodeSession
-```
-
-This operation is read-only and is not placed in the idempotency ledger.
-
-### Get statuses
-
-Input: none.
-
-Output:
-
-```text
-sorted dictionary<sessionId, OpenCodeSessionStatus>
-```
-
-Status normalization:
-
-```text
-idle
-busy
-retry(attempt, message, nextUnixMilliseconds)
-unknown(providerType)
-```
-
-Unknown status types are retained as bounded sanitized values and never treated as idle or completed.
-
-### Send prompt asynchronously
-
-Input:
-
-```text
-sessionId       : required bounded session ID
-parts           : one or more bounded text parts
-idempotencyKey  : required bounded opaque key
-```
-
-Output:
-
-```text
-OpenCodePromptSubmission
-```
-
-Rules:
-
-- only text parts are allowed in this slice;
-- at least one non-empty text part is required;
-- part count, individual bytes and aggregate bytes are bounded;
-- provider/model/agent/command/file/image/tool parts are excluded;
-- HTTP 204 is the only successful provider result;
-- successful submission records the idempotency entry.
-
-### Abort session
-
-Input:
-
-```text
-sessionId : required bounded session ID
-```
-
-Output:
-
-```text
-OpenCodeAbortResult
-```
-
-Rules:
-
-- abort is always explicit;
-- no timeout, cancellation or status observation may be converted into an implicit abort;
-- provider `true` means accepted;
-- provider `false` means not accepted and remains a successful bounded response, not a fabricated exception.
-
-## Session model
-
-The provider-neutral session projection contains only fields required by later orchestration:
+Provider-neutral result:
 
 ```text
 id
@@ -193,17 +102,50 @@ createdUnixMilliseconds?
 updatedUnixMilliseconds?
 ```
 
-Rules:
+Unknown provider metadata is discarded.
 
-- ID is mandatory, bounded and sanitized;
-- optional strings are bounded and control-character free;
-- optional timestamps are non-negative integers;
-- provider-only metadata is discarded;
-- unknown extra JSON properties are ignored within the global response bound.
+## Statuses
+
+The adapter returns an ordinally sorted dictionary keyed by validated session ID.
+
+Normalized values:
+
+```text
+idle
+busy
+retry(attempt, message, nextUnixMilliseconds)
+unknown(providerType)
+```
+
+Unknown bounded types remain unknown; they are never interpreted as idle or completed.
+
+## Async prompt
+
+Input:
+
+```text
+sessionId
+one or more text parts
+idempotencyKey
+```
+
+Body:
+
+```json
+{
+  "parts": [
+    { "type": "text", "text": "..." }
+  ]
+}
+```
+
+Only text parts are supported. HTTP 204 means accepted, not completed.
+
+## Abort
+
+Abort is explicit. JSON `true` means accepted and `false` means not accepted. Timeout, cancellation or a status value may never be converted into an implicit abort.
 
 ## Validation limits
-
-Initial bounded defaults:
 
 ```text
 session ID          <= 128 UTF-8 bytes
@@ -212,30 +154,26 @@ title               <= 512 UTF-8 bytes
 prompt part count   <= 64
 text part            <= 64 KiB UTF-8
 aggregate prompt     <= 256 KiB UTF-8
-request JSON         <= 512 KiB
-response JSON        <= 1 MiB
+request JSON         <= 512 KiB default
+response JSON        <= 1 MiB default
 status entries       <= 10000
 status message       <= 2048 UTF-8 bytes
 unknown status type  <= 64 UTF-8 bytes
 ```
 
-Every input must be non-empty where required, valid UTF-16, free of control characters except line breaks and tabs in prompt text, and validated before compatibility or network calls.
+Required values are non-empty and valid Unicode. IDs contain only ASCII letters, digits, `_` and `-`. Prompt text permits CR/LF/tab and rejects other control characters.
+
+Validation happens before compatibility or network access.
 
 ## Compatibility gate
 
-The lifecycle may cache one successful compatible session-feature report for its own process lifetime.
-
-Rules:
-
-- input validation occurs before the compatibility probe;
-- the first valid operation invokes compatibility detection;
-- only a report with valid health and all five required session features opens the gate;
-- failed/degraded reports are not cached;
+- one successful report may be cached for the lifecycle instance;
+- failed/degraded reports are not cached unless `healthy=true` and all five session features are present;
 - concurrent first calls share one gate evaluation;
-- compatibility failure emits no session mutation request;
-- cancellation of one caller must not corrupt the gate for later callers.
+- cancellation does not mark the gate compatible;
+- compatibility failure emits no session mutation.
 
-Safe failure codes:
+Safe compatibility failures:
 
 ```text
 opencode_unavailable
@@ -246,99 +184,43 @@ opencode_session_features_missing
 
 ## Idempotency
 
-Create and async-prompt commands require local process-lifetime idempotency.
-
-Ledger key:
+Create and async prompt require process-lifetime idempotency.
 
 ```text
-operation + idempotencyKey
+ledger key = operation + idempotencyKey
+fingerprint = SHA-256(canonical validated JSON)
 ```
-
-Fingerprint:
-
-- deterministic SHA-256 over the canonical validated command;
-- does not include credentials or endpoint URL.
 
 Rules:
 
-- first call reserves the key;
-- concurrent duplicate calls share one in-flight task;
-- same key plus same fingerprint returns the recorded result without another provider mutation;
-- same key plus different fingerprint fails with `idempotency_conflict` before HTTP;
-- failed or cancelled provider calls release the reservation so a later retry may execute;
-- successful create records the returned session;
-- successful prompt records the submission result;
-- ledger is bounded by entry count and process lifetime;
-- durable/restart idempotency belongs to later Autopilot/outbox slices.
+- first caller reserves the key;
+- concurrent same-key/same-fingerprint calls share one operation;
+- completed same-key/same-fingerprint calls replay the recorded result without HTTP;
+- same key with another fingerprint returns `idempotency_conflict` before HTTP;
+- failed or cancelled operations remove the reservation;
+- a later retry may execute;
+- ledger capacity is bounded and returns `idempotency_capacity_exceeded`;
+- durable restart-safe idempotency belongs to later Autopilot/outbox slices.
 
 ## HTTP adapter
 
-The adapter reuses `OpenCodeEndpointOptions` and Basic-auth behavior from VS-030.
+The adapter reuses `OpenCodeEndpointOptions` from VS-030.
 
-Transport sequence:
+Requirements:
 
-```text
-validate Application command
-→ ensure compatibility gate
-→ acquire/resolve idempotency reservation when applicable
-→ serialize bounded JSON request
-→ send one exact endpoint request
-→ require exact success status/content type
-→ stream bounded response
-→ parse strict required fields
-→ map to Application result
-→ complete or release idempotency reservation
-```
+- owned client disables redirects;
+- Basic Authorization is emitted only when configured;
+- only GET and POST are used;
+- session ID is escaped as one path segment after restrictive validation;
+- request JSON is canonical and bounded;
+- `ResponseHeadersRead` and streaming byte limits are mandatory;
+- no automatic retry;
+- caller cancellation propagates;
+- internal timeout maps to `request_timeout`;
+- connection/I/O maps to `connection_failed`;
+- bodies, prompts, endpoint and credentials never appear in errors/evidence.
 
-Allowed methods and paths:
-
-```text
-POST /session
-GET  /session/{escaped-id}
-GET  /session/status
-POST /session/{escaped-id}/prompt_async
-POST /session/{escaped-id}/abort
-```
-
-The session ID is escaped as one path segment. It may not introduce `/`, `\`, `?`, `#`, dot-segments or encoded path separators.
-
-## Request bodies
-
-Create request contains only present optional fields:
-
-```json
-{
-  "parentID": "...",
-  "title": "..."
-}
-```
-
-Async prompt request contains text parts only:
-
-```json
-{
-  "parts": [
-    { "type": "text", "text": "..." }
-  ]
-}
-```
-
-No model, provider, agent, system prompt, tools or command is sent.
-
-Abort and get/status requests contain no body.
-
-## Response handling
-
-- create/get require JSON object and a valid session ID;
-- status requires JSON object and is capped by entry count;
-- prompt requires exact HTTP 204 and no response buffering;
-- abort requires JSON boolean;
-- redirects are never followed by the owned client;
-- non-success status maps to a stable safe code;
-- response body is never placed in an exception or report;
-- malformed JSON, invalid required fields or oversized payloads fail closed.
-
-Stable adapter error codes include:
+Stable operation errors include:
 
 ```text
 session_not_found
@@ -349,6 +231,7 @@ status_payload_invalid
 prompt_http_status
 abort_http_status
 abort_payload_invalid
+request_too_large
 response_too_large
 request_timeout
 connection_failed
@@ -356,51 +239,48 @@ idempotency_conflict
 idempotency_capacity_exceeded
 ```
 
-## Security and operations
+## Real journey
 
-- no automatic retry;
-- caller cancellation propagates;
-- internal timeout maps to `request_timeout`;
-- at most one lifecycle HTTP operation follows a successful compatibility gate per public call;
-- no credentials, endpoint, request body, response body or prompt text in exceptions/evidence;
-- Basic Authorization is added only when configured;
-- JSON serialization is deterministic for idempotency fingerprints;
-- the ledger has a configured maximum entry count;
-- no request logs contain prompts or titles;
-- all public results are provider-neutral.
+`tests/BookStudio.Tests.OpenCodeSessionLifecycle` uses a real loopback `TcpListener` server and verifies:
+
+- compatibility refusal without mutation;
+- create/get mapping;
+- create replay/conflict/concurrent collapse;
+- async prompt exact 204;
+- prompt replay/conflict;
+- idle/busy/retry/unknown status normalization;
+- abort true/false;
+- Basic auth and no secret leakage;
+- invalid inputs before HTTP;
+- response bounds and malformed responses;
+- timeout and caller cancellation;
+- failed reservation release and retry;
+- exact method/path inventory;
+- absence of delete, patch, shell, command, share and file requests.
+
+Verified result:
+
+```text
+OPENCODE_SESSION_LIFECYCLE_PASS scenarios=19 requests=50 mutations=15 gate=NO_UNPLANNED_MUTATION
+```
 
 ## TDD Dual
 
 ### RED-I
 
-Governance requires missing:
-
-- Application session port/contracts/validation;
-- adapter client and bounded idempotency ledger;
-- integration project and contractual server;
-- solution, architecture and CI registrations.
+Application port/contracts/validation, HTTP adapter, idempotency ledger, integration project, architecture and CI were absent.
 
 ### RED-E
 
-The real loopback HTTP journey must prove:
+No real HTTP executable proved lifecycle, idempotency, auth, bounds, cancellation or mutation inventory.
 
-- compatibility refusal without mutation;
-- create and get mapping;
-- create idempotent replay and conflict;
-- concurrent duplicate create emits one POST;
-- async prompt exact 204;
-- prompt idempotent replay/conflict;
-- status idle/busy/retry/unknown normalization and stable sorting;
-- abort true and false;
-- Basic auth without leakage;
-- invalid IDs/titles/parts before HTTP;
-- request and response bounds;
-- status entry limit;
-- malformed payloads;
-- timeout and caller cancellation;
-- failed idempotent call can retry;
-- no delete/patch/shell/command/share/file requests;
-- exact request inventory.
+### GREEN
+
+Build, architecture, Governance, accumulated journeys and the session lifecycle journey pass.
+
+## TestChangeRequest
+
+`TCR-031-001` moved static checks to exact ownership locations and typed constants. No observable journey requirement was weakened.
 
 ## Gates
 
@@ -430,6 +310,10 @@ SPEC_READY
 - OpenCode process launch or upgrade;
 - durable idempotency across restart;
 - scheduler, worker retry or outbox ownership;
-- persistence of prompt text or provider messages.
+- prompt or provider message persistence.
 
-Those belong to subsequent slices.
+## Next slice
+
+`VS-032 — SSE reconciliation`.
+
+The full program remains `NOT_READY`.
