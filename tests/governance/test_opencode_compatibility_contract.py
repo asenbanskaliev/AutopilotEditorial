@@ -59,8 +59,8 @@ class OpenCodeCompatibilityContractTests(unittest.TestCase):
     def test_adapter_enforces_health_openapi_auth_and_bounds(self) -> None:
         options = (ADAPTER / "OpenCodeEndpointOptions.cs").read_text(encoding="utf-8")
         for token in (
-            "http",
-            "https",
+            "Uri.UriSchemeHttp",
+            "Uri.UriSchemeHttps",
             "IsLoopback",
             "MaximumHealthBytes",
             "MaximumSpecificationBytes",
