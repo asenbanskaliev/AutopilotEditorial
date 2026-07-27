@@ -85,8 +85,8 @@ class OpenCodeSessionLifecycleContractTests(unittest.TestCase):
             "OpenCodeFeatureIds.SessionsAbort",
             '"session"',
             '"session/status"',
-            '"prompt_async"',
-            '"abort"',
+            '"/prompt_async"',
+            '"/abort"',
             "HttpMethod.Get",
             "HttpMethod.Post",
             "ResponseHeadersRead",
@@ -149,6 +149,7 @@ class OpenCodeSessionLifecycleContractTests(unittest.TestCase):
             "MalformedResponsesAsync",
             "TimeoutAndCancellationAsync",
             "FailedReservationCanRetryAsync",
+            "Authorization",
             "NO_UNPLANNED_MUTATION",
             "SESSION_LIFECYCLE_PASS",
         ):
@@ -157,7 +158,6 @@ class OpenCodeSessionLifecycleContractTests(unittest.TestCase):
         server = (TEST_PROJECT / "ContractualOpenCodeSessionServer.cs").read_text(encoding="utf-8")
         for token in (
             "TcpListener",
-            "Authorization",
             "Content-Length",
             "Requests",
         ):
