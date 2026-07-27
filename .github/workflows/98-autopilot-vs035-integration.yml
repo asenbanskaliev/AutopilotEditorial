@@ -1,0 +1,56 @@
+name: Autopilot VS-035 Integration
+on:
+  pull_request:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  integrate:
+    if: github.head_ref == 'agent/VS-035-context-compiler'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - name: Register architecture and CI
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+          policy_path = Path('docs/architecture/architecture-policy.json')
+          policy = json.loads(policy_path.read_text(encoding='utf-8'))
+          name = 'BookStudio.Tests.ContextCompiler'
+          if not any(item['name'] == name for item in policy['projects']):
+              policy['projects'].append({
+                  'name': name,
+                  'projectPath': 'tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj',
+                  'layer': 'integration-test',
+                  'outputAssemblyPath': 'tests/BookStudio.Tests.ContextCompiler/bin/Release/net10.0/BookStudio.Tests.ContextCompiler.dll',
+                  'allowedProjectReferences': ['../../src/BookStudio.Application/BookStudio.Application.csproj'],
+                  'allowedBookStudioAssemblyReferences': ['BookStudio.Application'],
+                  'packagePolicy': 'none',
+                  'agentsPath': 'tests/BookStudio.Tests.ContextCompiler/AGENTS.md',
+                  'forbiddenNamespacePrefixes': []
+              })
+          policy_path.write_text(json.dumps(policy, indent=2) + '\n', encoding='utf-8')
+
+          workflow_path = Path('.github/workflows/02-dotnet-ci.yml')
+          workflow = workflow_path.read_text(encoding='utf-8')
+          run_anchor = '      - name: Run model benchmarks integration journey\n        run: dotnet run --project tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj --no-build -c Release\n'
+          run_block = run_anchor + '      - name: Run context compiler integration journey\n        run: dotnet run --project tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj --no-build -c Release\n'
+          if 'Run context compiler integration journey' not in workflow:
+              workflow = workflow.replace(run_anchor, run_block)
+          evidence_anchor = '      - name: Generate normalized model benchmarks evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.model-benchmarks-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-model-benchmarks-integration.json -- dotnet run --project tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj --no-build -c Release\n'
+          evidence_block = evidence_anchor + '      - name: Generate normalized context compiler evidence\n        if: always()\n        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.context-compiler-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-context-compiler-integration.json -- dotnet run --project tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj --no-build -c Release\n'
+          if 'dotnet-context-compiler-integration.json' not in workflow:
+              workflow = workflow.replace(evidence_anchor, evidence_block)
+          workflow_path.write_text(workflow, encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name "bookstudio-autopilot"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/architecture/architecture-policy.json .github/workflows/02-dotnet-ci.yml
+          git commit -m "build(VS-035): integrate context compiler governance and CI"
+          git push origin HEAD:${{ github.head_ref }}
