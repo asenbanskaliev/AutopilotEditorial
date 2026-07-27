@@ -77,37 +77,33 @@ static async Task VerifyAuthoringJourneyAsync(string workspaceRoot)
     }
 
     var resourceUris = new List<string>();
-    await server.SendRequestAsync(3, "resources/list", new { });
-    string cursor;
-    using (var resourcesPage1 = await server.ReadJsonAsync())
+    string? cursor = null;
+    var resourceRequestId = 1000;
+    do
     {
-        var result = resourcesPage1.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources");
-        Require(resources.GetArrayLength() == 3, "Authoring resources first page size mismatch.");
-        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
-        cursor = result.GetProperty("nextCursor").GetString()!;
+        if (cursor is null)
+        {
+            await server.SendRequestAsync(resourceRequestId++, "resources/list", new { });
+        }
+        else
+        {
+            await server.SendRequestAsync(resourceRequestId++, "resources/list", new { cursor });
+        }
+        using var resourcePage = await server.ReadJsonAsync();
+        var result = resourcePage.RootElement.GetProperty("result");
+        var page = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(page.Length > 0, "Authoring resource pagination returned an empty page.");
+        resourceUris.AddRange(page.Select(item => item.GetProperty("uri").GetString()!));
+        cursor = result.TryGetProperty("nextCursor", out var nextCursor)
+            ? nextCursor.GetString()
+            : null;
+        Require(resourceRequestId <= 1020, "Authoring resource pagination did not terminate.");
     }
-    await server.SendRequestAsync(4, "resources/list", new { cursor });
-    using (var resourcesPage2 = await server.ReadJsonAsync())
-    {
-        var result = resourcesPage2.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources");
-        Require(resources.GetArrayLength() == 3, "Authoring resources second page size mismatch.");
-        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
-        cursor = result.GetProperty("nextCursor").GetString()!;
-    }
-    await server.SendRequestAsync(100, "resources/list", new { cursor });
-    using (var resourcesPage3 = await server.ReadJsonAsync())
-    {
-        var result = resourcesPage3.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources");
-        Require(resources.GetArrayLength() == 1, "Authoring resources third page size mismatch.");
-        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
-        Require(!result.TryGetProperty("nextCursor", out _), "Authoring resources returned an unexpected fourth page.");
-    }
-    Require(resourceUris.Count == 7, "Authoring merged resource count mismatch.");
+    while (cursor is not null);
+    Require(resourceUris.Count == 8, "Authoring merged resource count mismatch.");
     Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Authoring resources are not ordinally sorted.");
     Require(resourceUris.Contains("book://prompts/book-authoring/validate-draft/v1"), "Authoring prompt resource is missing.");
+    Require(resourceUris.Contains("book://security/sandbox-policy"), "Authoring sandbox policy resource is missing.");
     var schemaUri = resourceUris.First(uri => uri.StartsWith("book://schemas/book-authoring/", StringComparison.Ordinal));
 
     await server.SendRequestAsync(5, "resources/read", new { uri = schemaUri });

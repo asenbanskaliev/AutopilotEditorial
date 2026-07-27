@@ -132,29 +132,34 @@ static async Task VerifyQualityJourneyAsync(
     }
 
     var resourceUris = new List<string>();
-    await quality.SendRequestAsync(3, "resources/list", new { });
-    string cursor;
-    using (var page1 = await quality.ReadJsonAsync())
+    string? cursor = null;
+    var resourceRequestId = 1000;
+    do
     {
-        var result = page1.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 4, "Quality resources first page size mismatch.");
-        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
-        cursor = result.GetProperty("nextCursor").GetString()!;
+        if (cursor is null)
+        {
+            await quality.SendRequestAsync(resourceRequestId++, "resources/list", new { });
+        }
+        else
+        {
+            await quality.SendRequestAsync(resourceRequestId++, "resources/list", new { cursor });
+        }
+        using var resourcePage = await quality.ReadJsonAsync();
+        var result = resourcePage.RootElement.GetProperty("result");
+        var page = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(page.Length > 0, "Quality resource pagination returned an empty page.");
+        resourceUris.AddRange(page.Select(item => item.GetProperty("uri").GetString()!));
+        cursor = result.TryGetProperty("nextCursor", out var nextCursor)
+            ? nextCursor.GetString()
+            : null;
+        Require(resourceRequestId <= 1020, "Quality resource pagination did not terminate.");
     }
-    await quality.SendRequestAsync(4, "resources/list", new { cursor });
-    using (var page2 = await quality.ReadJsonAsync())
-    {
-        var result = page2.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 4, "Quality resources second page size mismatch.");
-        resourceUris.AddRange(resources.Select(resource => resource.GetProperty("uri").GetString()!));
-        Require(!result.TryGetProperty("nextCursor", out _), "Quality resources returned an unexpected third page.");
-    }
-    Require(resourceUris.Count == 8, "Quality merged resource count mismatch.");
+    while (cursor is not null);
+    Require(resourceUris.Count == 9, "Quality merged resource count mismatch.");
     Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Quality resources are not ordinally sorted.");
     Require(resourceUris.Contains("book://quality/profiles/draft-basic"), "draft-basic profile is missing.");
     Require(resourceUris.Contains("book://prompts/book-quality/assess-draft/v1"), "Quality prompt resource is missing.");
+    Require(resourceUris.Contains("book://security/sandbox-policy"), "Quality sandbox policy resource is missing.");
 
     await quality.SendRequestAsync(5, "resources/read", new { uri = "book://quality/profiles/draft-basic" });
     using (var profile = await quality.ReadJsonAsync())

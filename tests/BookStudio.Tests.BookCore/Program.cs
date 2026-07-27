@@ -177,43 +177,38 @@ static async Task VerifyBookCoreJourneyAsync(
         }
     }
 
-    await server.SendRequestAsync(3, "resources/list", new { });
-    string cursor;
-    var resourceUris = new List<string>();
-    using (var firstResources = await server.ReadJsonAsync())
+    string? cursor = null;
+    string? lastCursor = null;
+    var resourceRequestId = 1000;
+    do
     {
-        var result = firstResources.RootElement.GetProperty("result");
-        resourceUris.AddRange(result.GetProperty("resources").EnumerateArray()
-            .Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
-        cursor = result.GetProperty("nextCursor").GetString()
-            ?? throw new InvalidOperationException("First resource page did not provide a cursor.");
+        if (cursor is null)
+        {
+            await server.SendRequestAsync(resourceRequestId++, "resources/list", new { });
+        }
+        else
+        {
+            await server.SendRequestAsync(resourceRequestId++, "resources/list", new { cursor });
+        }
+        using var resourcePage = await server.ReadJsonAsync();
+        var result = resourcePage.RootElement.GetProperty("result");
+        var page = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(page.Length > 0, "Resource pagination returned an empty page.");
+        resourceUris.AddRange(page.Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
+        lastCursor = cursor;
+        cursor = result.TryGetProperty("nextCursor", out var nextCursor)
+            ? nextCursor.GetString()
+            : null;
+        Require(resourceRequestId <= 1020, "Resource pagination did not terminate.");
     }
-
-    await server.SendRequestAsync(4, "resources/list", new { cursor });
-    using (var secondResources = await server.ReadJsonAsync())
-    {
-        var result = secondResources.RootElement.GetProperty("result");
-        resourceUris.AddRange(result.GetProperty("resources").EnumerateArray()
-            .Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
-        cursor = result.GetProperty("nextCursor").GetString()
-            ?? throw new InvalidOperationException("Second resource page did not provide a cursor.");
-    }
-
-    await server.SendRequestAsync(100, "resources/list", new { cursor });
-    using (var thirdResources = await server.ReadJsonAsync())
-    {
-        var result = thirdResources.RootElement.GetProperty("result");
-        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
-        Require(resources.Length == 1, "Third resource page size mismatch.");
-        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString() ?? string.Empty));
-        Require(!result.TryGetProperty("nextCursor", out _), "Last resource page must not have a cursor.");
-    }
-    Require(resourceUris.Count == 7, "Merged resource count mismatch.");
+    while (cursor is not null);
+    Require(resourceUris.Count == 8, "Merged resource count mismatch.");
     Require(resourceUris.Count(uri => uri.StartsWith("book://schemas/book-core/", StringComparison.Ordinal)) == 6, "Schema resource count mismatch.");
     Require(resourceUris.Contains("book://prompts/book-core/inspect-artifact/v1"), "book-core prompt resource is missing.");
+    Require(resourceUris.Contains("book://security/sandbox-policy"), "Sandbox policy resource is missing.");
     Require(resourceUris.SequenceEqual(resourceUris.OrderBy(value => value, StringComparer.Ordinal)), "Resources are not ordinally sorted.");
 
-    await server.SendRequestAsync(5, "resources/list", new { cursor = cursor + "x" });
+    await server.SendRequestAsync(5, "resources/list", new { cursor = (lastCursor ?? throw new InvalidOperationException("No resource cursor was produced.")) + "x" });
     using (var invalidCursor = await server.ReadJsonAsync())
     {
         AssertJsonRpcError(invalidCursor.RootElement, -32602);
