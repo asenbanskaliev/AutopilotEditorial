@@ -43,3 +43,21 @@ Preserve all other endpoint, authentication, timeout, byte-bound, GET-only, Open
 ## Test Auditor decision
 
 **APPROVED** — the static contract is made more precise and aligned with the typed implementation while all observable requirements remain covered by integration tests.
+
+## TCR-030-002 — Health fact semantic correction
+
+### Trigger
+
+Meta-review found that reports produced before a valid health payload used `healthy=true` because the helper inferred health from every state except `unhealthy`.
+
+### Approved product and test change
+
+- make the `healthy` fact tri-state: `true`, `false` or `unknown`;
+- preserve `true` for degraded reports reached after a valid healthy response;
+- preserve `false` only for a valid `healthy=false` response;
+- use `unknown` for pre-health authentication, transport, timeout, status, bounds and malformed-health failures;
+- add cumulative assertions to the real HTTP journey without removing any scenario.
+
+### Test Auditor decision
+
+**APPROVED** — this corrects an observable semantic contradiction and strengthens the evidence contract without changing endpoint discovery, request count, authentication, bounds or feature detection.
