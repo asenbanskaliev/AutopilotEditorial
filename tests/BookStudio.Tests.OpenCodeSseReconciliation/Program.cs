@@ -1,3 +1,4 @@
+using BookStudio.Application.OpenCode;
 using BookStudio.Tests.OpenCodeSseReconciliation;
 
 try
@@ -7,8 +8,12 @@ try
         $"OPENCODE_SSE_RECONCILIATION_PASS scenarios={report.Scenarios} requests={report.Requests} events={report.Events} gate={report.MutationGate} tasks={report.TaskGate}");
     return 0;
 }
-catch
+catch (Exception exception)
 {
-    Console.Error.WriteLine("OPENCODE_SSE_RECONCILIATION_FAIL");
+    var code = exception is OpenCodeEventReconciliationException reconciliation
+        ? reconciliation.Code
+        : "none";
+    Console.Error.WriteLine(
+        $"OPENCODE_SSE_RECONCILIATION_FAIL type={exception.GetType().Name} code={code}");
     return 1;
 }
