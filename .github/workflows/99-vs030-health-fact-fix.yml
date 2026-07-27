@@ -1,5 +1,6 @@
 name: VS-030 Health Fact Fix
 
+# One-shot audited migration for TCR-030-002.
 on:
   pull_request:
     branches:
