@@ -174,6 +174,7 @@ public sealed class ModelBenchmarkCatalog
         }
 
         var unique = new HashSet<string>(StringComparer.Ordinal);
+        var normalized = new List<string>(values.Count);
         foreach (var source in values)
         {
             var value = ValidateIdentifier(source);
@@ -181,8 +182,9 @@ public sealed class ModelBenchmarkCatalog
             {
                 throw Invalid();
             }
+            normalized.Add(value);
         }
-        return Array.AsReadOnly(unique.Order(StringComparer.Ordinal).ToArray());
+        return Array.AsReadOnly(normalized.ToArray());
     }
 
     private static ModelBenchmarkDefinition NormalizeModel(
