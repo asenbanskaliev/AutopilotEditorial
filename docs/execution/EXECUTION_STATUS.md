@@ -3,8 +3,8 @@
 - Program version: 0.11.0
 - Current phase: F3-OPENCODE
 - Current slice: VS-030 — OpenCode compatibility
-- State: SPECIFICATION
-- Open PR: pending
-- Blocking gate: SPEC_READY and DUAL_RED_CONFIRMED
-- Next action: capture RED and implement bounded health plus OpenAPI feature detection
+- State: VERIFIED
+- Open PR: #41
+- Blocking gate: final audited-head checks and merge
+- Next action: validate the final audited head, merge PR #41 and activate VS-031 — Session lifecycle
 - Full program gate: NOT_READY
