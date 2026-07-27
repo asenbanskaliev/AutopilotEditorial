@@ -81,7 +81,7 @@ internal sealed class ModelBenchmarksJourney
         var models = BaseModels().ToArray();
         models[0] = models[0] with
         {
-            ContextWindowTokens = 2_000,
+            ContextWindowTokens = 20_000,
             BenchmarkEvidence = Evidence(score: 9_900),
         };
         models[1] = models[1] with { BenchmarkEvidence = Evidence(score: 8_000) };
