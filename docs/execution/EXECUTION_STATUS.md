@@ -2,9 +2,9 @@
 
 - Program version: 0.11.0
 - Current phase: F3-OPENCODE
-- Current slice: VS-030 — OpenCode compatibility
-- State: VERIFIED
-- Open PR: #41
-- Blocking gate: final audited-head checks and merge
-- Next action: validate the final audited head, merge PR #41 and activate VS-031 — Session lifecycle
+- Current slice: VS-031 — Session lifecycle
+- State: SPECIFICATION
+- Open PR: pending
+- Blocking gate: SPEC_READY and DUAL_RED_CONFIRMED
+- Next action: capture RED and implement compatibility-gated create/get/status/prompt_async/abort with bounded idempotency
 - Full program gate: NOT_READY
