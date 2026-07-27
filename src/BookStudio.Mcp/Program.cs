@@ -1,6 +1,7 @@
 using System.Text;
 using BookStudio.Mcp;
 using BookStudio.Mcp.BookCore;
+using BookStudio.Mcp.Prompts;
 using BookStudio.Mcp.Protocol;
 using BookStudio.Mcp.Transport;
 
@@ -26,9 +27,15 @@ Console.CancelKeyPress += (_, eventArgs) =>
 };
 
 var runtime = new BookCoreRuntime(options.WorkspaceRoot);
-await using var features = new BookCoreFeatureRouter(
+var boundedFeatures = new BookCoreFeatureRouter(
     runtime.GetQueryService,
     runtime.DisposeAsync);
+await using var features = new PromptEnabledFeatureRouter(
+    boundedFeatures,
+    BookCorePromptCatalog.Catalog,
+    BookCoreToolCatalog.SchemaResources,
+    resourceCursorScope: "resources",
+    resourcePageSize: 3);
 var session = new McpSession(features);
 var server = new StdioJsonRpcServer(
     Console.In,
