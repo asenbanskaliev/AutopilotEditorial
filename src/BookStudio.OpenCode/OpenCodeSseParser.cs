@@ -4,7 +4,7 @@ using BookStudio.Application.OpenCode;
 
 namespace BookStudio.OpenCode;
 
-internal sealed record OpenCodeSseParserOptions(
+public sealed record OpenCodeSseParserOptions(
     int MaximumLineBytes,
     int MaximumEventDataBytes,
     int MaximumFieldCount,
