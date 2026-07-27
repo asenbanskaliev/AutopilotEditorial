@@ -1,10 +1,11 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using BookStudio.Mcp.BookCore;
 
 namespace BookStudio.Mcp.Prompts;
 
 /// <summary>One immutable versioned MCP prompt and its canonical resource representation.</summary>
-public sealed class VersionedMcpPrompt
+public sealed partial class VersionedMcpPrompt
 {
     public const string ResourceMediaType =
         "application/vnd.bookstudio.prompt-template+json";
@@ -13,6 +14,7 @@ public sealed class VersionedMcpPrompt
     private readonly Func<IReadOnlyDictionary<string, string>, string> _renderer;
 
     public VersionedMcpPrompt(
+        string name,
         string version,
         string resourceUri,
         string title,
@@ -21,6 +23,7 @@ public sealed class VersionedMcpPrompt
         string messageTemplate,
         Func<IReadOnlyDictionary<string, string>, string> renderer)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(version);
         ArgumentException.ThrowIfNullOrWhiteSpace(resourceUri);
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
@@ -33,12 +36,18 @@ public sealed class VersionedMcpPrompt
         {
             throw new ArgumentException("Prompt version is invalid.", nameof(version));
         }
+        if (!PromptNameRegex().IsMatch(name) ||
+            !name.EndsWith(".v" + version, StringComparison.Ordinal))
+        {
+            throw new ArgumentException("Prompt name is invalid or does not match its version.", nameof(name));
+        }
         if (!Uri.TryCreate(resourceUri, UriKind.Absolute, out var uri) ||
             !string.Equals(uri.Scheme, "book", StringComparison.Ordinal) ||
             !resourceUri.EndsWith("/v" + version, StringComparison.Ordinal))
         {
             throw new ArgumentException("Prompt resource URI is invalid.", nameof(resourceUri));
         }
+        ValidateNameResourceParity(name, resourceUri, version);
         if (title.Length > 128 || description.Length > 512 ||
             title.Any(char.IsControl) || description.Any(char.IsControl))
         {
@@ -50,7 +59,6 @@ public sealed class VersionedMcpPrompt
             throw new ArgumentException("Prompt message template is invalid.", nameof(messageTemplate));
         }
 
-        var name = PromptNameFromResource(resourceUri, version);
         var normalizedArguments = arguments
             .OrderBy(argument => argument.Name, StringComparer.Ordinal)
             .ToArray();
@@ -135,7 +143,8 @@ public sealed class VersionedMcpPrompt
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
     }
 
-    private static string PromptNameFromResource(
+    private static void ValidateNameResourceParity(
+        string name,
         string resourceUri,
         string version)
     {
@@ -147,7 +156,7 @@ public sealed class VersionedMcpPrompt
             throw new ArgumentException("Prompt resource URI shape is invalid.", nameof(resourceUri));
         }
 
-        var context = segments[0] switch
+        var expectedContext = segments[0] switch
         {
             "book-core" => "core",
             "book-authoring" => "authoring",
@@ -158,7 +167,13 @@ public sealed class VersionedMcpPrompt
                 "Prompt bounded context is invalid.",
                 nameof(resourceUri)),
         };
-        return $"book.{context}.{segments[1]}.v{version}";
+        var expectedName = $"book.{expectedContext}.{segments[1]}.v{version}";
+        if (!string.Equals(name, expectedName, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "Prompt name and resource URI do not describe the same versioned prompt.",
+                nameof(name));
+        }
     }
 
     private static void ValidateArguments(
@@ -192,4 +207,7 @@ public sealed class VersionedMcpPrompt
     private static bool ContainsForbiddenControl(string value) =>
         value.Any(character =>
             char.IsControl(character) && character is not '\r' and not '\n' and not '\t');
+
+    [GeneratedRegex("^book\\.[a-z][a-z0-9-]{0,31}\\.[a-z0-9][a-z0-9-]{0,63}\\.v[1-9][0-9]{0,7}$", RegexOptions.CultureInvariant)]
+    private static partial Regex PromptNameRegex();
 }
