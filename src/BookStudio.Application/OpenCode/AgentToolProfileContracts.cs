@@ -194,5 +194,15 @@ public sealed class EffectiveAgentToolProfile : IEquatable<EffectiveAgentToolPro
 
     public override bool Equals(object? obj) => Equals(obj as EffectiveAgentToolProfile);
 
+    public static bool operator ==(
+        EffectiveAgentToolProfile? left,
+        EffectiveAgentToolProfile? right) =>
+        ReferenceEquals(left, right) || (left?.Equals(right) ?? false);
+
+    public static bool operator !=(
+        EffectiveAgentToolProfile? left,
+        EffectiveAgentToolProfile? right) =>
+        !(left == right);
+
     public override int GetHashCode() => StringComparer.Ordinal.GetHashCode(Fingerprint);
 }

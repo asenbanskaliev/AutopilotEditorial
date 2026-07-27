@@ -5,6 +5,8 @@ namespace BookStudio.Tests.AgentToolProfiles;
 
 internal sealed class AgentToolProfilesJourney
 {
+    private const string MutationGateMarker = "mutation=NONE";
+
     private int _scenarios;
     private int _profiles;
     private readonly HashSet<string> _fingerprints = new(StringComparer.Ordinal);
