@@ -3,8 +3,8 @@
 - Program version: 0.11.0
 - Current phase: F2-MCP
 - Current slice: VS-027 — MCP conformance
-- State: SPECIFICATION
-- Open PR: pending
-- Blocking gate: SPEC_READY and DUAL_RED_CONFIRMED
-- Next action: capture RED and implement deterministic subprocess conformance across five MCP servers
+- State: VERIFIED
+- Open PR: #37
+- Blocking gate: final checks and merge
+- Next action: re-run all gates on the audited commit, mark PR ready and merge
 - Full program gate: NOT_READY
