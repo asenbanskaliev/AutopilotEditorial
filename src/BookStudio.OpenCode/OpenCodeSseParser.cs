@@ -32,7 +32,7 @@ public sealed record OpenCodeSseParserOptions(
         {
             throw new ArgumentOutOfRangeException(nameof(MaximumLineBytes));
         }
-        if (MaximumEventDataBytes is < 64 or > 4 * 1024 * 1024)
+        if (MaximumEventDataBytes is < 1 or > 4 * 1024 * 1024)
         {
             throw new ArgumentOutOfRangeException(nameof(MaximumEventDataBytes));
         }
