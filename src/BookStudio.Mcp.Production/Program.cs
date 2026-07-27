@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using BookStudio.Mcp;
+using BookStudio.Mcp.Prompts;
 using BookStudio.Mcp.Protocol;
 using BookStudio.Mcp.Transport;
 
@@ -31,14 +32,26 @@ public static class Program
         };
 
         var runtime = new BookProductionRuntime(options.WorkspaceRoot);
-        await using var features = new BookProductionFeatureRouter(runtime.GetService, runtime.DisposeAsync);
+        var boundedFeatures = new BookProductionFeatureRouter(
+            runtime.GetService,
+            runtime.DisposeAsync);
+        await using var features = new PromptEnabledFeatureRouter(
+            boundedFeatures,
+            BookProductionPromptCatalog.Catalog,
+            BookProductionToolCatalog.Resources,
+            resourceCursorScope: "production-resources",
+            resourcePageSize: 4);
         var session = new McpSession(
             features,
             new McpImplementationInfo(
                 "bookstudio-production",
                 GetVersion(),
                 "BookStudio Production MCP"));
-        var server = new StdioJsonRpcServer(Console.In, Console.Out, Console.Error, session);
+        var server = new StdioJsonRpcServer(
+            Console.In,
+            Console.Out,
+            Console.Error,
+            session);
         return await server.RunAsync(shutdown.Token).ConfigureAwait(false);
     }
 
