@@ -3,6 +3,7 @@ using System.Text;
 using BookStudio.Mcp;
 using BookStudio.Mcp.Prompts;
 using BookStudio.Mcp.Protocol;
+using BookStudio.Mcp.Security;
 using BookStudio.Mcp.Transport;
 
 namespace BookStudio.Mcp.Ops;
@@ -36,10 +37,16 @@ public static class Program
         var boundedFeatures = new BookOpsFeatureRouter(
             runtime.GetService,
             runtime.DisposeAsync);
-        await using var features = new PromptEnabledFeatureRouter(
+        var sandboxFeatures = new SandboxEnabledFeatureRouter(
             boundedFeatures,
-            BookOpsPromptCatalog.Catalog,
+            options,
             BookOpsToolCatalog.Resources,
+            resourceCursorScope: "ops-sandbox-resources",
+            resourcePageSize: 3);
+        await using var features = new PromptEnabledFeatureRouter(
+            sandboxFeatures,
+            BookOpsPromptCatalog.Catalog,
+            sandboxFeatures.Resources,
             resourceCursorScope: "ops-resources",
             resourcePageSize: 3);
         var session = new McpSession(
