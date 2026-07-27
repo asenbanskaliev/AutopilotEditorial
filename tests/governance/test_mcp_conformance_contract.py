@@ -59,9 +59,20 @@ class McpConformanceContractTests(unittest.TestCase):
             "128",
             "SHA256",
             "MaximumMessageBytes",
-            "MCP_CONFORMANCE_PASS",
         ):
             self.assertIn(token, runner)
+
+    def test_entrypoint_emits_exact_conformance_report(self) -> None:
+        program = (PROJECT / "Program.cs").read_text(encoding="utf-8")
+        for token in (
+            "MCP_CONFORMANCE_PASS",
+            "report.Servers",
+            "report.CorpusCases",
+            "report.FuzzCases",
+            "report.Seed",
+            "report.Sha256",
+        ):
+            self.assertIn(token, program)
 
     def test_driver_uses_subprocess_stdio_and_timeouts(self) -> None:
         driver = (PROJECT / "McpProcessDriver.cs").read_text(encoding="utf-8")
