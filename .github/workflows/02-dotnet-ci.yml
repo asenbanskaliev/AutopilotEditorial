@@ -62,6 +62,8 @@ jobs:
         run: dotnet run --project tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj --no-build -c Release
       - name: Run book-ops integration journey
         run: dotnet run --project tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj --no-build -c Release
+      - name: Run prompts-resources integration journey
+        run: dotnet run --project tests/BookStudio.Tests.PromptsResources/BookStudio.Tests.PromptsResources.csproj --no-build -c Release
       - name: Generate normalized build evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
@@ -101,6 +103,9 @@ jobs:
       - name: Generate normalized book-ops evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.book-ops-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-book-ops-integration.json -- dotnet run --project tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj --no-build -c Release
+      - name: Generate normalized prompts-resources evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.prompts-resources-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-prompts-resources-integration.json -- dotnet run --project tests/BookStudio.Tests.PromptsResources/BookStudio.Tests.PromptsResources.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4

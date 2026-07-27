@@ -53,7 +53,10 @@ static async Task VerifyAuthoringJourneyAsync(string workspaceRoot)
         Require(serverInfo.GetProperty("name").GetString() == "bookstudio-authoring", "Authoring server name mismatch.");
         Require(serverInfo.GetProperty("title").GetString() == "BookStudio Authoring MCP", "Authoring server title mismatch.");
         var capabilities = result.GetProperty("capabilities");
-        Require(capabilities.EnumerateObject().Select(property => property.Name).Order().SequenceEqual(new[] { "resources", "tools" }), "Authoring capabilities are not exact.");
+        Require(
+            capabilities.EnumerateObject().Select(property => property.Name).Order().SequenceEqual(new[] { "prompts", "resources", "tools" }),
+            "Authoring capabilities are not exact.");
+        Require(!capabilities.GetProperty("prompts").GetProperty("listChanged").GetBoolean(), "Authoring prompts.listChanged must be false.");
     }
     await server.SendNotificationAsync("notifications/initialized", new { });
 
@@ -73,23 +76,40 @@ static async Task VerifyAuthoringJourneyAsync(string workspaceRoot)
         Require(validate.GetProperty("annotations").GetProperty("idempotentHint").GetBoolean(), "Validate tool idempotent annotation mismatch.");
     }
 
+    var resourceUris = new List<string>();
     await server.SendRequestAsync(3, "resources/list", new { });
-    string schemaUri;
     string cursor;
     using (var resourcesPage1 = await server.ReadJsonAsync())
     {
         var result = resourcesPage1.RootElement.GetProperty("result");
-        Require(result.GetProperty("resources").GetArrayLength() == 3, "Authoring resources first page size mismatch.");
-        schemaUri = result.GetProperty("resources")[0].GetProperty("uri").GetString()!;
+        var resources = result.GetProperty("resources");
+        Require(resources.GetArrayLength() == 3, "Authoring resources first page size mismatch.");
+        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
         cursor = result.GetProperty("nextCursor").GetString()!;
     }
     await server.SendRequestAsync(4, "resources/list", new { cursor });
     using (var resourcesPage2 = await server.ReadJsonAsync())
     {
         var result = resourcesPage2.RootElement.GetProperty("result");
-        Require(result.GetProperty("resources").GetArrayLength() == 3, "Authoring resources second page size mismatch.");
-        Require(!result.TryGetProperty("nextCursor", out _), "Authoring resources returned an unexpected third page.");
+        var resources = result.GetProperty("resources");
+        Require(resources.GetArrayLength() == 3, "Authoring resources second page size mismatch.");
+        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
+        cursor = result.GetProperty("nextCursor").GetString()!;
     }
+    await server.SendRequestAsync(100, "resources/list", new { cursor });
+    using (var resourcesPage3 = await server.ReadJsonAsync())
+    {
+        var result = resourcesPage3.RootElement.GetProperty("result");
+        var resources = result.GetProperty("resources");
+        Require(resources.GetArrayLength() == 1, "Authoring resources third page size mismatch.");
+        resourceUris.AddRange(resources.EnumerateArray().Select(item => item.GetProperty("uri").GetString()!));
+        Require(!result.TryGetProperty("nextCursor", out _), "Authoring resources returned an unexpected fourth page.");
+    }
+    Require(resourceUris.Count == 7, "Authoring merged resource count mismatch.");
+    Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Authoring resources are not ordinally sorted.");
+    Require(resourceUris.Contains("book://prompts/book-authoring/validate-draft/v1"), "Authoring prompt resource is missing.");
+    var schemaUri = resourceUris.First(uri => uri.StartsWith("book://schemas/book-authoring/", StringComparison.Ordinal));
+
     await server.SendRequestAsync(5, "resources/read", new { uri = schemaUri });
     using (var schema = await server.ReadJsonAsync())
     {

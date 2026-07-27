@@ -72,6 +72,11 @@ async Task VerifyProductionAsync(string root)
         var result = response.RootElement.GetProperty("result");
         Require(result.GetProperty("serverInfo").GetProperty("name").GetString() == "bookstudio-production", "Production identity mismatch.");
         Require(result.GetProperty("serverInfo").GetProperty("title").GetString() == "BookStudio Production MCP", "Production title mismatch.");
+        var capabilities = result.GetProperty("capabilities");
+        Require(
+            capabilities.EnumerateObject().Select(property => property.Name).Order().SequenceEqual(new[] { "prompts", "resources", "tools" }),
+            "Production capabilities are not exact.");
+        Require(!capabilities.GetProperty("prompts").GetProperty("listChanged").GetBoolean(), "Production prompts.listChanged must be false.");
     }
     await production.SendNotificationAsync("notifications/initialized", new { });
 
@@ -83,20 +88,31 @@ async Task VerifyProductionAsync(string root)
         Require(!response.RootElement.GetRawText().Contains("book.render.preview", StringComparison.Ordinal), "Reserved render tool was advertised.");
     }
 
+    var resourceUris = new List<string>();
     await production.SendRequestAsync(3, "resources/list", new { });
     string cursor;
     using (var page1 = await production.ReadAsync())
     {
         var result = page1.RootElement.GetProperty("result");
-        Require(result.GetProperty("resources").GetArrayLength() == 4, "Production resources first page mismatch.");
-        Require(result.GetProperty("resources").EnumerateArray().Any(item => item.GetProperty("uri").GetString() == "book://production/profiles/release-basic"), "release-basic profile missing.");
+        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(resources.Length == 4, "Production resources first page mismatch.");
+        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString()!));
         cursor = result.GetProperty("nextCursor").GetString()!;
     }
     await production.SendRequestAsync(4, "resources/list", new { cursor });
     using (var page2 = await production.ReadAsync())
     {
-        Require(page2.RootElement.GetProperty("result").GetProperty("resources").GetArrayLength() == 3, "Production resources second page mismatch.");
+        var result = page2.RootElement.GetProperty("result");
+        var resources = result.GetProperty("resources").EnumerateArray().ToArray();
+        Require(resources.Length == 4, "Production resources second page mismatch.");
+        resourceUris.AddRange(resources.Select(item => item.GetProperty("uri").GetString()!));
+        Require(!result.TryGetProperty("nextCursor", out _), "Production resources returned an unexpected third page.");
     }
+    Require(resourceUris.Count == 8, "Production merged resource count mismatch.");
+    Require(resourceUris.SequenceEqual(resourceUris.OrderBy(uri => uri, StringComparer.Ordinal)), "Production resources are not ordinally sorted.");
+    Require(resourceUris.Contains("book://production/profiles/release-basic"), "release-basic profile missing.");
+    Require(resourceUris.Contains("book://prompts/book-production/preflight-release/v1"), "Production prompt resource missing.");
+
     await production.SendRequestAsync(5, "resources/read", new { uri = "book://production/profiles/release-basic" });
     using (var profile = await production.ReadAsync())
     {
@@ -224,7 +240,7 @@ static void NoLeaks(string json, string root, params string[] sourceContent)
 {
     Require(!json.Contains(root, StringComparison.OrdinalIgnoreCase), "Response leaked workspace path.");
     Require(!json.Contains("/.bookstudio/", StringComparison.OrdinalIgnoreCase), "Response leaked Linux store path.");
-    Require(!json.Contains("\\\\.bookstudio\\\\", StringComparison.OrdinalIgnoreCase), "Response leaked JSON-escaped Windows store path.");
+    Require(!json.Contains("\\.bookstudio\\", StringComparison.OrdinalIgnoreCase), "Response leaked JSON-escaped Windows store path.");
     foreach (var content in sourceContent) Require(!json.Contains(content, StringComparison.Ordinal), "Response leaked source content.");
 }
 

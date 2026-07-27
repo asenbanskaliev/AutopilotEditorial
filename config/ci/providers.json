@@ -25,6 +25,7 @@
     {"id":"dotnet.book-quality-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookQuality/BookStudio.Tests.BookQuality.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.book-production-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookProduction/BookStudio.Tests.BookProduction.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.book-ops-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.BookOps/BookStudio.Tests.BookOps.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.prompts-resources-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.PromptsResources/BookStudio.Tests.PromptsResources.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.build-test","capability":"dotnet","localEquivalentAllowed":true,"command":["dotnet","test","BookStudio.slnx","-c","Release"]},
     {"id":"release.full-program","capability":"governance","localEquivalentAllowed":false,"command":["python","scripts/verify_completion.py","--full-program"]}
   ]

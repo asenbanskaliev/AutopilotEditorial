@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using BookStudio.Mcp;
+using BookStudio.Mcp.Prompts;
 using BookStudio.Mcp.Protocol;
 using BookStudio.Mcp.Transport;
 
@@ -32,9 +33,15 @@ public static class Program
         };
 
         var runtime = new BookQualityRuntime(options.WorkspaceRoot);
-        await using var features = new BookQualityFeatureRouter(
+        var boundedFeatures = new BookQualityFeatureRouter(
             runtime.GetService,
             runtime.DisposeAsync);
+        await using var features = new PromptEnabledFeatureRouter(
+            boundedFeatures,
+            BookQualityPromptCatalog.Catalog,
+            BookQualityToolCatalog.Resources,
+            resourceCursorScope: "quality-resources",
+            resourcePageSize: 4);
         var session = new McpSession(
             features,
             new McpImplementationInfo(
