@@ -1,4 +1,5 @@
 using BookStudio.Tests.Integration;
+using BookStudio.Tests.Outbox;
 using Microsoft.Data.Sqlite;
 
 var workspaceRoot = Path.Combine(
@@ -9,13 +10,14 @@ Directory.CreateDirectory(workspaceRoot);
 
 try
 {
-    await OutboxJourney.RunAsync(workspaceRoot);
-    Console.WriteLine("Outbox integration PASS: idempotency, leases, retry, reclaim and restart verified.");
+    await OutboxJourney.RunAsync(Path.Combine(workspaceRoot, "legacy"));
+    await TransactionalOutboxJourney.RunAsync(Path.Combine(workspaceRoot, "transactional"));
+    Console.WriteLine("TRANSACTIONAL_OUTBOX_PASS atomic_commit=PASS atomic_rollback=PASS idempotency=PASS crash_recovery=PASS at_least_once=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("Outbox integration FAIL: " + exception);
+    Console.Error.WriteLine("TRANSACTIONAL_OUTBOX_FAIL: " + exception);
     return 1;
 }
 finally
