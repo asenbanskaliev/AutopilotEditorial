@@ -29,8 +29,9 @@ CREATE TABLE IF NOT EXISTS narrative_state_requests (
   request_id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL,
   state_id TEXT NOT NULL,
-  operation TEXT NOT NULL CHECK(operation IN ('CREATE','ACTIVATE','TRANSFER')),
+  operation TEXT NOT NULL CHECK(operation IN ('CREATE','ACTIVATE','TRANSFER','SUPERSEDE','RETRACT')),
   request_fingerprint TEXT NOT NULL,
+  payload_hash TEXT NOT NULL,
   result_revision INTEGER NOT NULL,
   message_id TEXT NULL,
   created_at_utc TEXT NOT NULL
