@@ -16,12 +16,13 @@ try
     await WorkerExecutionJourney.RunAsync(Path.Combine(workspaceRoot, "worker"));
     WorkflowCatalogJourney.Run(Directory.GetCurrentDirectory());
     await HumanGateJourney.RunAsync(Path.Combine(workspaceRoot, "human-gates"));
-    Console.WriteLine("HUMAN_GATE_INBOX_PASS schema=PASS claim=PASS decision=PASS idempotency=PASS expiry=PASS cancel=PASS resume_once=PASS restart=PASS audit=PASS mutation=NONE");
+    await ExecutionControlJourney.RunAsync(Path.Combine(workspaceRoot, "execution-control"));
+    Console.WriteLine("EXECUTION_CONTROL_PASS schema=PASS pause=PASS resume=PASS cancel=PASS idempotency=PASS invalid_transition=PASS restart=PASS outbox=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("HUMAN_GATE_INBOX_FAIL: " + exception);
+    Console.Error.WriteLine("EXECUTION_CONTROL_FAIL: " + exception);
     return 1;
 }
 finally
