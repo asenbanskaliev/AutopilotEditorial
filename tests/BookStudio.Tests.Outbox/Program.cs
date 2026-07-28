@@ -29,12 +29,13 @@ try
     await ParagraphCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "paragraph-coherence"));
     await SceneCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "scene-coherence"));
     await TransitionAuditJourney.RunAsync(Path.Combine(workspaceRoot, "transition-audit"));
-    Console.WriteLine("TRANSITION_AUDIT_PASS schema=PASS authority=PASS dimensions=PASS findings=PASS decisions=PASS blocking_gate=PASS close=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await KnowledgeStateJourney.RunAsync(Path.Combine(workspaceRoot, "knowledge-state"));
+    Console.WriteLine("KNOWLEDGE_STATE_PASS schema=PASS authority=PASS fact_belief_secret=PASS contradictions=PASS disclosure=PASS lifecycle=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("TRANSITION_AUDIT_FAIL: " + exception);
+    Console.Error.WriteLine("KNOWLEDGE_STATE_FAIL: " + exception);
     return 1;
 }
 finally
