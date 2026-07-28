@@ -23,12 +23,13 @@ try
     await DiscoveryJourney.RunAsync(Path.Combine(workspaceRoot, "discovery-journey"));
     await EditorialProposalJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-proposal"));
     await SpecificationJourney.RunAsync(Path.Combine(workspaceRoot, "specification-lifecycle"));
-    Console.WriteLine("SPECIFICATION_LIFECYCLE_PASS schema=PASS proposal_link=PASS prepare=PASS commit=PASS immutability=PASS approval=PASS versions=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
+    await BookPlanJourney.RunAsync(Path.Combine(workspaceRoot, "book-planning"));
+    Console.WriteLine("BOOK_PLANNING_PASS schema=PASS specification_link=PASS structure=PASS dag=PASS prepare=PASS commit=PASS approval=PASS versions=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("SPECIFICATION_LIFECYCLE_FAIL: " + exception);
+    Console.Error.WriteLine("BOOK_PLANNING_FAIL: " + exception);
     return 1;
 }
 finally
