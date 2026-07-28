@@ -31,16 +31,17 @@ internal static class ConcurrencyLimitJourney
             };
             var acquire = new ConcurrencyAcquireCommand(Guid.NewGuid(), "worker-1", 10, TimeSpan.FromMinutes(5), scopes, "acquire-1");
             var first = await store.AcquireAsync(acquire, now.AddMinutes(1));
-            Require(first.Outcome == ConcurrencyAcquireOutcome.Granted && first.Grant is not null && first.Grant.Generation == 1, "Atomic multi-scope acquire failed.");
+            var firstGrant = first.Grant ?? throw new InvalidOperationException("Atomic multi-scope acquire failed.");
+            Require(first.Outcome == ConcurrencyAcquireOutcome.Granted && firstGrant.Generation == 1, "Atomic multi-scope acquire failed.");
             var replay = await store.AcquireAsync(acquire, now.AddMinutes(1));
-            Require(replay.Replayed && replay.Grant?.GrantId == first.Grant.GrantId, "Acquire replay was not idempotent.");
+            Require(replay.Replayed && replay.Grant?.GrantId == firstGrant.GrantId, "Acquire replay was not idempotent.");
             await RequireThrowsAsync<ConcurrencyLimitConflictException>(() => store.AcquireAsync(acquire with { OwnerId = "worker-x" }, now.AddMinutes(1)).AsTask());
 
             var blockedCommand = new ConcurrencyAcquireCommand(Guid.NewGuid(), "worker-2", 5, TimeSpan.FromMinutes(5), scopes, "acquire-2");
             var blocked = await store.AcquireAsync(blockedCommand, now.AddMinutes(1));
             Require(blocked.Outcome == ConcurrencyAcquireOutcome.CapacityUnavailable && blocked.Grant is null, "Provider capacity was overcommitted.");
 
-            var renewed = await store.RenewAsync(new ConcurrencyRenewCommand(Guid.NewGuid(), first.Grant.GrantId, first.Grant.Generation, "worker-1", TimeSpan.FromMinutes(10), "renew-1"), now.AddMinutes(2));
+            var renewed = await store.RenewAsync(new ConcurrencyRenewCommand(Guid.NewGuid(), firstGrant.GrantId, firstGrant.Generation, "worker-1", TimeSpan.FromMinutes(10), "renew-1"), now.AddMinutes(2));
             Require(renewed.Generation == 2 && renewed.LeaseUntilUtc == now.AddMinutes(12), "Lease renewal failed.");
             await RequireThrowsAsync<ConcurrencyLeaseException>(() => store.RenewAsync(new ConcurrencyRenewCommand(Guid.NewGuid(), renewed.GrantId, 1, "worker-1", TimeSpan.FromMinutes(1), "stale"), now.AddMinutes(3)).AsTask());
 
@@ -50,10 +51,11 @@ internal static class ConcurrencyLimitJourney
             Require((await store.ReleaseAsync(releaseCommand, now.AddMinutes(4))).Replayed, "Release replay was not idempotent.");
 
             var second = await store.AcquireAsync(new ConcurrencyAcquireCommand(Guid.NewGuid(), "worker-2", 5, TimeSpan.FromMinutes(1), scopes, "acquire-3"), now.AddMinutes(4));
-            Require(second.Outcome == ConcurrencyAcquireOutcome.Granted && second.Grant is not null, "Capacity was not restored after release.");
+            var secondGrant = second.Grant ?? throw new InvalidOperationException("Capacity was not restored after release.");
+            Require(second.Outcome == ConcurrencyAcquireOutcome.Granted, "Capacity was not restored after release.");
             Require(await store.ReclaimExpiredAsync(now.AddMinutes(6)) == 1, "Expired lease was not reclaimed.");
-            Require((await store.GetGrantAsync(second.Grant.GrantId))?.Status == ConcurrencyGrantStatus.Expired, "Expired state was not durable.");
-            await RequireThrowsAsync<ConcurrencyLeaseException>(() => store.ReleaseAsync(new ConcurrencyReleaseCommand(Guid.NewGuid(), second.Grant.GrantId, second.Grant.Generation, "worker-2", "late-release"), now.AddMinutes(6)).AsTask());
+            Require((await store.GetGrantAsync(secondGrant.GrantId))?.Status == ConcurrencyGrantStatus.Expired, "Expired state was not durable.");
+            await RequireThrowsAsync<ConcurrencyLeaseException>(() => store.ReleaseAsync(new ConcurrencyReleaseCommand(Guid.NewGuid(), secondGrant.GrantId, secondGrant.Generation, "worker-2", "late-release"), now.AddMinutes(6)).AsTask());
         }
 
         await using var restarted = new SqliteConcurrencyLimitStore(factory);
