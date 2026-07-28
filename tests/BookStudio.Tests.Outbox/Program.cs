@@ -19,12 +19,13 @@ try
     await ExecutionControlJourney.RunAsync(Path.Combine(workspaceRoot, "execution-control"));
     await DeadLetterRecoveryJourney.RunAsync(Path.Combine(workspaceRoot, "dead-letter-recovery"));
     await ConcurrencyLimitJourney.RunAsync(Path.Combine(workspaceRoot, "concurrency-limits"));
-    Console.WriteLine("CONCURRENCY_LIMITS_PASS schema=PASS atomic=PASS hierarchy=PASS capacity=PASS idempotency=PASS renew=PASS release=PASS stale_worker=PASS reclaim=PASS restart=PASS mutation=NONE");
+    await ProjectJourney.RunAsync(Path.Combine(workspaceRoot, "project-journey"));
+    Console.WriteLine("PROJECT_JOURNEY_PASS schema=PASS create=PASS idempotency=PASS identity_conflict=PASS workspace_isolation=PASS outbox_once=PASS read_after_write=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CONCURRENCY_LIMITS_FAIL: " + exception);
+    Console.Error.WriteLine("PROJECT_JOURNEY_FAIL: " + exception);
     return 1;
 }
 finally
