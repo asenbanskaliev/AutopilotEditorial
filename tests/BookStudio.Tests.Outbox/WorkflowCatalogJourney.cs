@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BookStudio.Application.Autopilot;
 
 namespace BookStudio.Tests.Outbox;
@@ -51,7 +52,7 @@ internal static class WorkflowCatalogJourney
             json.Replace("\"SchemaVersion\": \"1.0.0\"", "\"SchemaVersion\": \"2.0.0\"", StringComparison.Ordinal),
             tools,
             roles));
-        RequireThrows<ArgumentException>(() => WorkflowCatalogJsonLoader.Load(
+        RequireThrows<JsonException>(() => WorkflowCatalogJsonLoader.Load(
             json.Replace("\"Workflows\":", "\"Unknown\": true, \"Workflows\":", StringComparison.Ordinal),
             tools,
             roles));
