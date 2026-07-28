@@ -21,12 +21,13 @@ try
     await ConcurrencyLimitJourney.RunAsync(Path.Combine(workspaceRoot, "concurrency-limits"));
     await ProjectJourney.RunAsync(Path.Combine(workspaceRoot, "project-journey"));
     await DiscoveryJourney.RunAsync(Path.Combine(workspaceRoot, "discovery-journey"));
-    Console.WriteLine("DISCOVERY_JOURNEY_PASS schema=PASS create=PASS questions=PASS answer_versions=PASS decisions=PASS open_items=PASS completion_gate=PASS idempotency=PASS immutable=PASS workspace_isolation=PASS outbox_once=PASS restart=PASS mutation=NONE");
+    await EditorialProposalJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-proposal"));
+    Console.WriteLine("EDITORIAL_PROPOSAL_PASS schema=PASS discovery_link=PASS revision_history=PASS submission=PASS approval=PASS rejection=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("DISCOVERY_JOURNEY_FAIL: " + exception);
+    Console.Error.WriteLine("EDITORIAL_PROPOSAL_FAIL: " + exception);
     return 1;
 }
 finally
