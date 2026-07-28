@@ -12,12 +12,13 @@ try
 {
     await OutboxJourney.RunAsync(Path.Combine(workspaceRoot, "legacy"));
     await TransactionalOutboxJourney.RunAsync(Path.Combine(workspaceRoot, "transactional"));
-    Console.WriteLine("TRANSACTIONAL_OUTBOX_PASS atomic_commit=PASS atomic_rollback=PASS idempotency=PASS crash_recovery=PASS at_least_once=PASS audit=PASS mutation=NONE");
+    await SchedulerJourney.RunAsync(Path.Combine(workspaceRoot, "scheduler"));
+    Console.WriteLine("SCHEDULER_JOBS_PASS priority=PASS lease=PASS renew=PASS reclaim=PASS retry=PASS idempotency=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("TRANSACTIONAL_OUTBOX_FAIL: " + exception);
+    Console.Error.WriteLine("SCHEDULER_JOBS_FAIL: " + exception);
     return 1;
 }
 finally
