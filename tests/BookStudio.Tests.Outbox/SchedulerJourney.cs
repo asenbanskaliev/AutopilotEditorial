@@ -55,12 +55,18 @@ internal static class SchedulerJourney
                 await restarted.CompleteAsync(item.JobId, "worker-recovery", now.AddMinutes(3));
             }
 
-            Require((await restarted.ClaimAsync("worker-future", 10, TimeSpan.FromMinutes(5), now.AddMinutes(30))).Count == 0,
-                "Future job was claimed early.");
+            Require((await restarted.ClaimAsync("worker-before-retry", 10, TimeSpan.FromMinutes(5), now.AddMinutes(9))).Count == 0,
+                "Retry or future job was claimed before availability.");
+
             var retry = await restarted.ClaimAsync("worker-retry", 10, TimeSpan.FromMinutes(5), now.AddMinutes(10));
             Require(retry.Any(item => item.JobId == low.JobId && item.Attempts == 2), "Failed job was not retried.");
             foreach (var item in retry)
+            {
                 await restarted.CompleteAsync(item.JobId, "worker-retry", now.AddMinutes(11));
+            }
+
+            Require((await restarted.ClaimAsync("worker-before-future", 10, TimeSpan.FromMinutes(5), now.AddMinutes(30))).Count == 0,
+                "Future job was claimed early.");
 
             var future = await restarted.ClaimAsync("worker-future", 10, TimeSpan.FromMinutes(5), now.AddHours(1));
             Require(future.Single().JobId == later.JobId, "Scheduled availability was not respected.");
