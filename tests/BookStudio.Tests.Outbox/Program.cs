@@ -14,12 +14,13 @@ try
     await TransactionalOutboxJourney.RunAsync(Path.Combine(workspaceRoot, "transactional"));
     await SchedulerJourney.RunAsync(Path.Combine(workspaceRoot, "scheduler"));
     await WorkerExecutionJourney.RunAsync(Path.Combine(workspaceRoot, "worker"));
-    Console.WriteLine("WORKER_EXECUTION_PASS registry=PASS heartbeat=PASS timeout=PASS retry=PASS lease_loss=PASS orphan_tasks=NONE audit=PASS mutation=NONE");
+    WorkflowCatalogJourney.Run(Directory.GetCurrentDirectory());
+    Console.WriteLine("WORKFLOW_CATALOG_PASS schema=PASS references=PASS acyclic=PASS exact_version=PASS fingerprint=PASS immutable=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("WORKER_EXECUTION_FAIL: " + exception);
+    Console.Error.WriteLine("WORKFLOW_CATALOG_FAIL: " + exception);
     return 1;
 }
 finally
