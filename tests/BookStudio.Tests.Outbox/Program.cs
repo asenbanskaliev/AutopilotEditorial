@@ -25,12 +25,13 @@ try
     await SpecificationJourney.RunAsync(Path.Combine(workspaceRoot, "specification-lifecycle"));
     await BookPlanJourney.RunAsync(Path.Combine(workspaceRoot, "book-planning"));
     await ScenePlanJourney.RunAsync(Path.Combine(workspaceRoot, "scene-planning"));
-    Console.WriteLine("SCENE_PLANNING_PASS schema=PASS book_plan_link=PASS coverage=PASS order=PASS dag=PASS prepare=PASS commit=PASS approval=PASS versions=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
+    await SceneGenerationJourney.RunAsync(Path.Combine(workspaceRoot, "scene-generation"));
+    Console.WriteLine("SCENE_GENERATION_PASS schema=PASS scene_plan_link=PASS attempts=PASS retry=PASS hash=PASS acceptance=PASS submit=PASS approval=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("SCENE_PLANNING_FAIL: " + exception);
+    Console.Error.WriteLine("SCENE_GENERATION_FAIL: " + exception);
     return 1;
 }
 finally
