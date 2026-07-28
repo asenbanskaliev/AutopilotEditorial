@@ -42,8 +42,9 @@ internal static class HumanGateJourney
         }
 
         await using var restarted = new SqliteHumanGateStore(factory);
-        var durable = await restarted.GetAsync(draft.RequestId);
-        Require(durable?.Status == HumanGateStatus.Approved, "Decision was not durable across restart.");
+        var durable = await restarted.GetAsync(draft.RequestId)
+            ?? throw new InvalidOperationException("Decision was not durable across restart.");
+        Require(durable.Status == HumanGateStatus.Approved, "Decision was not durable across restart.");
         await using var outbox = new SqliteOutboxStore(factory);
         var messages = await outbox.ClaimAsync("gate-worker", 20, TimeSpan.FromMinutes(5), now.AddHours(2));
         Require(messages.Count(item => item.MessageId == durable.ResumeMessageId) == 1, "Resume command was not emitted exactly once.");
