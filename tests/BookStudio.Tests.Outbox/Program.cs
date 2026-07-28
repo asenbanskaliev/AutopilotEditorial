@@ -18,12 +18,13 @@ try
     await HumanGateJourney.RunAsync(Path.Combine(workspaceRoot, "human-gates"));
     await ExecutionControlJourney.RunAsync(Path.Combine(workspaceRoot, "execution-control"));
     await DeadLetterRecoveryJourney.RunAsync(Path.Combine(workspaceRoot, "dead-letter-recovery"));
-    Console.WriteLine("DEAD_LETTER_RECOVERY_PASS schema=PASS capture=PASS quarantine=PASS repair=PASS requeue_once=PASS discard=PASS conflict=PASS restart=PASS outbox=PASS audit=PASS mutation=NONE");
+    await ConcurrencyLimitJourney.RunAsync(Path.Combine(workspaceRoot, "concurrency-limits"));
+    Console.WriteLine("CONCURRENCY_LIMITS_PASS schema=PASS atomic=PASS hierarchy=PASS capacity=PASS idempotency=PASS renew=PASS release=PASS stale_worker=PASS reclaim=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("DEAD_LETTER_RECOVERY_FAIL: " + exception);
+    Console.Error.WriteLine("CONCURRENCY_LIMITS_FAIL: " + exception);
     return 1;
 }
 finally
