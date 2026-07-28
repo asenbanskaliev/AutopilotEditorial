@@ -15,12 +15,13 @@ try
     await SchedulerJourney.RunAsync(Path.Combine(workspaceRoot, "scheduler"));
     await WorkerExecutionJourney.RunAsync(Path.Combine(workspaceRoot, "worker"));
     WorkflowCatalogJourney.Run(Directory.GetCurrentDirectory());
-    Console.WriteLine("WORKFLOW_CATALOG_PASS schema=PASS references=PASS acyclic=PASS exact_version=PASS fingerprint=PASS immutable=PASS audit=PASS mutation=NONE");
+    await HumanGateJourney.RunAsync(Path.Combine(workspaceRoot, "human-gates"));
+    Console.WriteLine("HUMAN_GATE_INBOX_PASS schema=PASS claim=PASS decision=PASS idempotency=PASS expiry=PASS cancel=PASS resume_once=PASS restart=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("WORKFLOW_CATALOG_FAIL: " + exception);
+    Console.Error.WriteLine("HUMAN_GATE_INBOX_FAIL: " + exception);
     return 1;
 }
 finally
