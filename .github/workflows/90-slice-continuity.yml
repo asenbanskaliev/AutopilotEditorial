@@ -1,0 +1,84 @@
+name: Slice Continuity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/execution/SLICE_STATUS.csv
+      - docs/master-plan/full-program-backlog.csv
+      - scripts/next_slice.py
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: slice-continuity
+  cancel-in-progress: false
+
+jobs:
+  scaffold-next-slice:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - id: next
+        name: Resolve next dependency-ready slice
+        shell: bash
+        run: python scripts/next_slice.py --github-output "$GITHUB_OUTPUT"
+
+      - name: Create issue and branch scaffold
+        if: steps.next.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SLICE_ID: ${{ steps.next.outputs.slice_id }}
+          PHASE: ${{ steps.next.outputs.phase }}
+          TITLE: ${{ steps.next.outputs.title }}
+          DESCRIPTION: ${{ steps.next.outputs.description }}
+          PREDECESSOR: ${{ steps.next.outputs.predecessor }}
+          BRANCH: ${{ steps.next.outputs.branch }}
+          ISSUE_TITLE: ${{ steps.next.outputs.issue_title }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          existing_issue="$(gh issue list --state all --search "${SLICE_ID} in:title" --json number,title --jq ".[] | select(.title | startswith(\"${SLICE_ID}\")) | .number" | head -n1)"
+          if [ -z "$existing_issue" ]; then
+            body=$(cat <<EOF
+          ## Objetivo
+
+          ${DESCRIPTION}
+
+          ## Continuidad automática
+
+          - Fase: ${PHASE}
+          - Dependencia verificada: ${PREDECESSOR}
+          - Rama preparada: \`${BRANCH}\`
+          - Estado inicial: SDD/RED pendiente
+
+          Este scaffold no autoriza merge ni omite gates. El VS solo puede cerrarse con DUAL_GREEN, Auditoría M, Meta-Audit, RetroSpec y CI completo en verde.
+          EOF
+          )
+            gh issue create --title "$ISSUE_TITLE" --body "$body" --label slice --label "$PHASE"
+          fi
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git push origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+      - name: Emit continuity evidence
+        shell: bash
+        run: |
+          mkdir -p artifacts/continuity
+          python scripts/next_slice.py > artifacts/continuity/next-slice.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slice-continuity-plan
+          path: artifacts/continuity/next-slice.json
+          if-no-files-found: error

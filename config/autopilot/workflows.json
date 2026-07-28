@@ -1,0 +1,57 @@
+{
+  "SchemaVersion": "1.0.0",
+  "Workflows": [
+    {
+      "WorkflowId": "book-authoring",
+      "Version": "1.0.0",
+      "Steps": [
+        {
+          "StepId": "discover",
+          "JobType": "workflow.discovery",
+          "SchemaVersion": "1.0.0",
+          "ToolProfileId": "editorial-discovery",
+          "ModelRole": "planner",
+          "TimeoutSeconds": 600,
+          "MaximumAttempts": 3,
+          "DependsOn": []
+        },
+        {
+          "StepId": "specify",
+          "JobType": "workflow.specification",
+          "SchemaVersion": "1.0.0",
+          "ToolProfileId": "editorial-authoring",
+          "ModelRole": "architect",
+          "TimeoutSeconds": 900,
+          "MaximumAttempts": 3,
+          "DependsOn": ["discover"]
+        },
+        {
+          "StepId": "draft",
+          "JobType": "workflow.draft",
+          "SchemaVersion": "1.0.0",
+          "ToolProfileId": "editorial-authoring",
+          "ModelRole": "writer",
+          "TimeoutSeconds": 1800,
+          "MaximumAttempts": 5,
+          "DependsOn": ["specify"]
+        }
+      ]
+    },
+    {
+      "WorkflowId": "book-quality",
+      "Version": "1.0.0",
+      "Steps": [
+        {
+          "StepId": "review",
+          "JobType": "workflow.quality-review",
+          "SchemaVersion": "1.0.0",
+          "ToolProfileId": "editorial-quality",
+          "ModelRole": "reviewer",
+          "TimeoutSeconds": 1200,
+          "MaximumAttempts": 3,
+          "DependsOn": []
+        }
+      ]
+    }
+  ]
+}
