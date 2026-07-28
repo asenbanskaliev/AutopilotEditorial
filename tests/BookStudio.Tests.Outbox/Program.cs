@@ -24,12 +24,13 @@ try
     await EditorialProposalJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-proposal"));
     await SpecificationJourney.RunAsync(Path.Combine(workspaceRoot, "specification-lifecycle"));
     await BookPlanJourney.RunAsync(Path.Combine(workspaceRoot, "book-planning"));
-    Console.WriteLine("BOOK_PLANNING_PASS schema=PASS specification_link=PASS structure=PASS dag=PASS prepare=PASS commit=PASS approval=PASS versions=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
+    await ScenePlanJourney.RunAsync(Path.Combine(workspaceRoot, "scene-planning"));
+    Console.WriteLine("SCENE_PLANNING_PASS schema=PASS book_plan_link=PASS coverage=PASS order=PASS dag=PASS prepare=PASS commit=PASS approval=PASS versions=PASS idempotency=PASS outbox_once=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("BOOK_PLANNING_FAIL: " + exception);
+    Console.Error.WriteLine("SCENE_PLANNING_FAIL: " + exception);
     return 1;
 }
 finally
