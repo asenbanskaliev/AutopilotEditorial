@@ -27,12 +27,13 @@ try
     await ScenePlanJourney.RunAsync(Path.Combine(workspaceRoot, "scene-planning"));
     await SceneGenerationJourney.RunAsync(Path.Combine(workspaceRoot, "scene-generation"));
     await ParagraphCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "paragraph-coherence"));
-    Console.WriteLine("PARAGRAPH_COHERENCE_PASS schema=PASS scene_link=PASS segmentation=PASS ranges=PASS findings=PASS decisions=PASS blocking_gate=PASS close=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await SceneCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "scene-coherence"));
+    Console.WriteLine("SCENE_COHERENCE_PASS schema=PASS scene_plan_link=PASS beats=PASS causal_links=PASS entry_exit=PASS findings=PASS decisions=PASS blocking_gate=PASS close=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("PARAGRAPH_COHERENCE_FAIL: " + exception);
+    Console.Error.WriteLine("SCENE_COHERENCE_FAIL: " + exception);
     return 1;
 }
 finally
