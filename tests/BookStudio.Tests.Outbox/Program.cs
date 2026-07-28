@@ -17,12 +17,13 @@ try
     WorkflowCatalogJourney.Run(Directory.GetCurrentDirectory());
     await HumanGateJourney.RunAsync(Path.Combine(workspaceRoot, "human-gates"));
     await ExecutionControlJourney.RunAsync(Path.Combine(workspaceRoot, "execution-control"));
-    Console.WriteLine("EXECUTION_CONTROL_PASS schema=PASS pause=PASS resume=PASS cancel=PASS idempotency=PASS invalid_transition=PASS restart=PASS outbox=PASS audit=PASS mutation=NONE");
+    await DeadLetterRecoveryJourney.RunAsync(Path.Combine(workspaceRoot, "dead-letter-recovery"));
+    Console.WriteLine("DEAD_LETTER_RECOVERY_PASS schema=PASS capture=PASS quarantine=PASS repair=PASS requeue_once=PASS discard=PASS conflict=PASS restart=PASS outbox=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("EXECUTION_CONTROL_FAIL: " + exception);
+    Console.Error.WriteLine("DEAD_LETTER_RECOVERY_FAIL: " + exception);
     return 1;
 }
 finally
