@@ -38,21 +38,21 @@ public sealed class SqliteConcurrencyLimitStore : IConcurrencyLimitStore, IAsync
     public ValueTask<ConcurrencyAcquireResult> AcquireAsync(ConcurrencyAcquireCommand command, DateTimeOffset at, CancellationToken ct = default)
     {
         ValidateAcquire(command);
-        return _queue.ExecuteInTransactionAsync((c, tx, token) =>
+        return _queue.ExecuteInTransactionAsync<ConcurrencyAcquireResult>((c, tx, token) =>
         {
             token.ThrowIfCancellationRequested(); Expire(c, tx, at);
             var prior = ReadRequest(c, tx, command.RequestId);
             if (prior is not null)
             {
-                RequireSame(prior, "ACQUIRE", command.OwnerId, command.RequestFingerprint, expectedGrantId: null, compareGrant: false);
+                RequireSame(prior, "ACQUIRE", command.OwnerId, command.RequestFingerprint, null, false);
                 var grant = prior.GrantId is null ? null : ReadGrant(c, tx, prior.GrantId.Value);
-                return new(grant is null ? ConcurrencyAcquireOutcome.CapacityUnavailable : ConcurrencyAcquireOutcome.Granted, grant, true, Availability(c, tx, command.Scopes, at));
+                return new ConcurrencyAcquireResult(grant is null ? ConcurrencyAcquireOutcome.CapacityUnavailable : ConcurrencyAcquireOutcome.Granted, grant, true, Availability(c, tx, command.Scopes, at));
             }
             var availability = Availability(c, tx, command.Scopes, at);
             if (availability.Any(x => x.Capacity - x.Used < x.Requested))
             {
                 InsertRequest(c, tx, command.RequestId, "ACQUIRE", null, command.OwnerId, command.RequestFingerprint, "CAPACITY_UNAVAILABLE", at);
-                return new(ConcurrencyAcquireOutcome.CapacityUnavailable, null, false, availability);
+                return new ConcurrencyAcquireResult(ConcurrencyAcquireOutcome.CapacityUnavailable, null, false, availability);
             }
             var grantId = DeterministicGrantId(command.RequestId);
             using (var cmd = c.CreateCommand())
@@ -66,7 +66,7 @@ public sealed class SqliteConcurrencyLimitStore : IConcurrencyLimitStore, IAsync
                 cmd.Parameters.AddWithValue("$g", grantId.ToString("D")); cmd.Parameters.AddWithValue("$t", ScopeText(scope.ScopeType)); cmd.Parameters.AddWithValue("$k", scope.ScopeKey); cmd.Parameters.AddWithValue("$u", scope.Units); cmd.ExecuteNonQuery();
             }
             InsertRequest(c, tx, command.RequestId, "ACQUIRE", grantId, command.OwnerId, command.RequestFingerprint, "GRANTED", at);
-            return new(ConcurrencyAcquireOutcome.Granted, RequireGrant(c, tx, grantId), false, availability);
+            return new ConcurrencyAcquireResult(ConcurrencyAcquireOutcome.Granted, RequireGrant(c, tx, grantId), false, availability);
         }, ct);
     }
 
@@ -89,11 +89,11 @@ public sealed class SqliteConcurrencyLimitStore : IConcurrencyLimitStore, IAsync
     public ValueTask<ConcurrencyReleaseResult> ReleaseAsync(ConcurrencyReleaseCommand command, DateTimeOffset at, CancellationToken ct = default)
     {
         ValidateControl(command.RequestId, command.GrantId, command.Generation, command.OwnerId, TimeSpan.FromSeconds(1), command.RequestFingerprint);
-        return _queue.ExecuteInTransactionAsync((c, tx, token) =>
+        return _queue.ExecuteInTransactionAsync<ConcurrencyReleaseResult>((c, tx, token) =>
         {
             token.ThrowIfCancellationRequested(); Expire(c, tx, at);
             var prior = ReadRequest(c, tx, command.RequestId);
-            if (prior is not null) { RequireSame(prior, "RELEASE", command.OwnerId, command.RequestFingerprint, command.GrantId, true); return new(RequireGrant(c, tx, command.GrantId), true); }
+            if (prior is not null) { RequireSame(prior, "RELEASE", command.OwnerId, command.RequestFingerprint, command.GrantId, true); return new ConcurrencyReleaseResult(RequireGrant(c, tx, command.GrantId), true); }
             var current = RequireGrant(c, tx, command.GrantId);
             if (current.Status != ConcurrencyGrantStatus.Released)
             {
@@ -102,7 +102,7 @@ public sealed class SqliteConcurrencyLimitStore : IConcurrencyLimitStore, IAsync
                 cmd.Parameters.AddWithValue("$a", Text(at)); cmd.Parameters.AddWithValue("$g", command.GrantId.ToString("D")); cmd.ExecuteNonQuery();
             }
             InsertRequest(c, tx, command.RequestId, "RELEASE", command.GrantId, command.OwnerId, command.RequestFingerprint, "RELEASED", at);
-            return new(RequireGrant(c, tx, command.GrantId), false);
+            return new ConcurrencyReleaseResult(RequireGrant(c, tx, command.GrantId), false);
         }, ct);
     }
 
