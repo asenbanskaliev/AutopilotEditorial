@@ -26,12 +26,13 @@ try
     await BookPlanJourney.RunAsync(Path.Combine(workspaceRoot, "book-planning"));
     await ScenePlanJourney.RunAsync(Path.Combine(workspaceRoot, "scene-planning"));
     await SceneGenerationJourney.RunAsync(Path.Combine(workspaceRoot, "scene-generation"));
-    Console.WriteLine("SCENE_GENERATION_PASS schema=PASS scene_plan_link=PASS attempts=PASS retry=PASS hash=PASS acceptance=PASS submit=PASS approval=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await ParagraphCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "paragraph-coherence"));
+    Console.WriteLine("PARAGRAPH_COHERENCE_PASS schema=PASS scene_link=PASS segmentation=PASS ranges=PASS findings=PASS decisions=PASS blocking_gate=PASS close=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("SCENE_GENERATION_FAIL: " + exception);
+    Console.Error.WriteLine("PARAGRAPH_COHERENCE_FAIL: " + exception);
     return 1;
 }
 finally
