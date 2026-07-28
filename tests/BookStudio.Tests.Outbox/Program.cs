@@ -31,12 +31,13 @@ try
     await TransitionAuditJourney.RunAsync(Path.Combine(workspaceRoot, "transition-audit"));
     await KnowledgeStateJourney.RunAsync(Path.Combine(workspaceRoot, "knowledge-state"));
     await CharacterObjectStateJourney.RunAsync(Path.Combine(workspaceRoot, "character-object-state"));
-    Console.WriteLine("CHARACTER_OBJECT_STATE_PASS schema=PASS authority=PASS character=PASS object=PASS transfer=PASS conservation=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await TimelinePlotJourney.RunAsync(Path.Combine(workspaceRoot, "timeline-plot"));
+    Console.WriteLine("TIMELINE_PLOT_PASS schema=PASS authority=PASS chronology=PASS causality=PASS cycle=PASS threads=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CHARACTER_OBJECT_STATE_FAIL: " + exception);
+    Console.Error.WriteLine("TIMELINE_PLOT_FAIL: " + exception);
     return 1;
 }
 finally
