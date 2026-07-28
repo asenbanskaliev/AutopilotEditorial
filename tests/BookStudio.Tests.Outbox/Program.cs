@@ -12,7 +12,7 @@ try
 {
     await OutboxJourney.RunAsync(Path.Combine(workspaceRoot, "legacy"));
     await TransactionalOutboxJourney.RunAsync(Path.Combine(workspaceRoot, "transactional"));
-    Console.WriteLine("TRANSACTIONAL_OUTBOX_PASS atomic_commit=PASS atomic_rollback=PASS idempotency=PASS crash_recovery=PASS at_least_once=PASS mutation=NONE");
+    Console.WriteLine("TRANSACTIONAL_OUTBOX_PASS atomic_commit=PASS atomic_rollback=PASS idempotency=PASS crash_recovery=PASS at_least_once=PASS audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
