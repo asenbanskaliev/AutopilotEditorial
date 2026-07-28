@@ -41,7 +41,7 @@ internal static class DiscoveryJourney
             Require(answered.Answers.Single(a => a.QuestionKey == "promise").Version == 1, "First answer version missing.");
             var replayAnswer = await store.AnswerAsync(answer1, now.AddMinutes(3));
             Require(replayAnswer.Answers.Count(a => a.QuestionKey == "promise") == 1, "Answer replay duplicated history.");
-            await RequireThrowsAsync<DiscoveryConflictException>(() => store.AnswerAsync(answer1 with { AnswerJson = "\"Changed\"" }, now.AddMinutes(3)).AsTask());
+            await RequireThrowsAsync<DiscoveryConflictException>(() => store.AnswerAsync(answer1 with { AnswerJson = "\"Changed\"", RequestFingerprint = "answer-promise-conflict" }, now.AddMinutes(3)).AsTask());
             var answer2 = await store.AnswerAsync(new DiscoveryAnswerCommand(Guid.NewGuid(), workspace, sessionId, "promise", "\"Una guía verificable\"", "editor", "answer-promise-v2"), now.AddMinutes(4));
             Require(answer2.Answers.Count(a => a.QuestionKey == "promise") == 2, "Answer history was not versioned.");
             await store.AnswerAsync(new DiscoveryAnswerCommand(Guid.NewGuid(), workspace, sessionId, "chapters", "12", "editor", "answer-chapters-v1"), now.AddMinutes(5));
