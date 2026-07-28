@@ -33,6 +33,7 @@
     {"id":"dotnet.opencode-sse-reconciliation-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.OpenCodeSseReconciliation/BookStudio.Tests.OpenCodeSseReconciliation.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.agent-tool-profiles-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.AgentToolProfiles/BookStudio.Tests.AgentToolProfiles.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.model-benchmarks-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj","--no-build","-c","Release"]},
+    {"id":"dotnet.context-compiler-integration","capability":"integration","localEquivalentAllowed":true,"command":["dotnet","run","--project","tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj","--no-build","-c","Release"]},
     {"id":"dotnet.build-test","capability":"dotnet","localEquivalentAllowed":true,"command":["dotnet","test","BookStudio.slnx","-c","Release"]},
     {"id":"release.full-program","capability":"governance","localEquivalentAllowed":false,"command":["python","scripts/verify_completion.py","--full-program"]}
   ]

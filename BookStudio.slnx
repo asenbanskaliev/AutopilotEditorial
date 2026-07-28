@@ -34,5 +34,6 @@
     <Project Path="tests/BookStudio.Tests.OpenCodeSseReconciliation/BookStudio.Tests.OpenCodeSseReconciliation.csproj" />
     <Project Path="tests/BookStudio.Tests.AgentToolProfiles/BookStudio.Tests.AgentToolProfiles.csproj" />
     <Project Path="tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj" />
+    <Project Path="tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj" />
   </Folder>
 </Solution>

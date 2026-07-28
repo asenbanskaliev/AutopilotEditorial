@@ -79,6 +79,8 @@ jobs:
         run: dotnet run --project tests/BookStudio.Tests.AgentToolProfiles/BookStudio.Tests.AgentToolProfiles.csproj --no-build -c Release
       - name: Run model benchmarks integration journey
         run: dotnet run --project tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj --no-build -c Release
+      - name: Run context compiler integration journey
+        run: dotnet run --project tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj --no-build -c Release
       - name: Generate normalized build evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.solution-baseline --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-solution-baseline.json -- dotnet build BookStudio.slnx --no-restore -c Release
@@ -142,6 +144,9 @@ jobs:
       - name: Generate normalized model benchmarks evidence
         if: always()
         run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.model-benchmarks-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-model-benchmarks-integration.json -- dotnet run --project tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj --no-build -c Release
+      - name: Generate normalized context compiler evidence
+        if: always()
+        run: python scripts/run_local_validation.py --provider local-evidence-default --contract dotnet.context-compiler-integration --source-sha "${{ github.sha }}" --output artifacts/ci/dotnet-context-compiler-integration.json -- dotnet run --project tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj --no-build -c Release
       - name: Upload .NET evidence
         if: always()
         uses: actions/upload-artifact@v4
