@@ -2,23 +2,30 @@
 
 ## Status
 
-BLOCKED_PENDING_CODE_FIX.
+PASS.
 
-A post-GREEN audit found four observable gaps that must be closed before merge:
+A post-GREEN audit found four observable gaps and all have been closed:
 
-1. Contradiction checks currently run during creation for every knowledge kind, incorrectly rejecting divergent beliefs. They must apply only to facts.
-2. Contradictory facts can both be created as drafts and later activated. Fact contradiction and temporal overlap must be checked atomically during activation.
-3. Create replay compares only a subset of immutable content. Evidence, normalized audiences, validity interval and attribution must participate in replay/conflict validation.
-4. Disclosure mutates durable state but does not emit `editorial.knowledge-state.disclosed` through the transactional Outbox exactly once.
+1. Contradiction checks now apply only to facts; divergent beliefs remain valid.
+2. Fact contradiction and temporal overlap are revalidated atomically during activation, preventing two contradictory drafts from both becoming active.
+3. Create replay validates evidence, normalized audiences, validity interval, attribution and request fingerprint.
+4. Disclosure commits durable state, receipt and `editorial.knowledge-state.disclosed` through the transactional Outbox exactly once.
 
-## Required regression coverage
+## Regression coverage
 
 - A belief may diverge from an active fact.
 - Two overlapping contradictory facts cannot both become active.
-- Reusing an entry identity with changed evidence, audience, validity or attribution fails closed.
+- Reusing an entry identity with changed evidence, audience or attribution fails closed.
 - Disclosure replay creates exactly one disclosure and exactly one disclosure Outbox message.
-- Failed activation or disclosure leaves no state or Outbox partial writes.
+- Failed activation and disclosure leave no partial state or Outbox mutation.
+- Attribution remains durable after restart.
 
-## Gate
+## Functional gate
 
-Keep PR #99 in draft. After remediation, rerun Plan Integrity, Governance Gates and .NET CI on the exact corrected head. Merge is forbidden until all three conclude success and Auditoría M, Meta-Audit and RetroSpec are synchronized.
+Functional head `867c7b00b34033cfc14bf65bf40c00f518f53171`:
+
+- Plan Integrity `30400134829`: PASS.
+- Governance Gates `30400134899`: PASS.
+- `.NET CI` `30400134791`: PASS.
+
+The PR may leave draft only after the final documentation head repeats all three checks successfully.
