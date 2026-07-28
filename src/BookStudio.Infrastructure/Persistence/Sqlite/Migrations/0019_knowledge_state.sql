@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS knowledge_entries (
   disclosures_json TEXT NOT NULL,
   valid_from_utc TEXT NOT NULL,
   valid_to_utc TEXT NULL,
+  actor TEXT NOT NULL,
   revision INTEGER NOT NULL CHECK(revision > 0),
   status TEXT NOT NULL CHECK(status IN ('DRAFT','ACTIVE','SUPERSEDED','RETRACTED')),
   activation_message_id TEXT NULL,
@@ -35,4 +36,4 @@ CREATE TABLE IF NOT EXISTS knowledge_requests (
 );
 
 CREATE INDEX IF NOT EXISTS ix_knowledge_project ON knowledge_entries(workspace_id, project_id);
-CREATE INDEX IF NOT EXISTS ix_knowledge_statement ON knowledge_entries(workspace_id, subject, object_text, status);
+CREATE INDEX IF NOT EXISTS ix_knowledge_statement ON knowledge_entries(workspace_id, project_id, kind, subject, object_text, status);
