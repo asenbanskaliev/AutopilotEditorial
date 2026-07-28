@@ -30,12 +30,13 @@ try
     await SceneCoherenceJourney.RunAsync(Path.Combine(workspaceRoot, "scene-coherence"));
     await TransitionAuditJourney.RunAsync(Path.Combine(workspaceRoot, "transition-audit"));
     await KnowledgeStateJourney.RunAsync(Path.Combine(workspaceRoot, "knowledge-state"));
-    Console.WriteLine("KNOWLEDGE_STATE_PASS schema=PASS authority=PASS fact_belief_secret=PASS contradictions=PASS disclosure=PASS lifecycle=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await CharacterObjectStateJourney.RunAsync(Path.Combine(workspaceRoot, "character-object-state"));
+    Console.WriteLine("CHARACTER_OBJECT_STATE_PASS schema=PASS authority=PASS character=PASS object=PASS transfer=PASS conservation=PASS idempotency=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("KNOWLEDGE_STATE_FAIL: " + exception);
+    Console.Error.WriteLine("CHARACTER_OBJECT_STATE_FAIL: " + exception);
     return 1;
 }
 finally
