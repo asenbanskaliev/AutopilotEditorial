@@ -20,12 +20,13 @@ try
     await DeadLetterRecoveryJourney.RunAsync(Path.Combine(workspaceRoot, "dead-letter-recovery"));
     await ConcurrencyLimitJourney.RunAsync(Path.Combine(workspaceRoot, "concurrency-limits"));
     await ProjectJourney.RunAsync(Path.Combine(workspaceRoot, "project-journey"));
-    Console.WriteLine("PROJECT_JOURNEY_PASS schema=PASS create=PASS idempotency=PASS identity_conflict=PASS workspace_isolation=PASS outbox_once=PASS read_after_write=PASS restart=PASS mutation=NONE");
+    await DiscoveryJourney.RunAsync(Path.Combine(workspaceRoot, "discovery-journey"));
+    Console.WriteLine("DISCOVERY_JOURNEY_PASS schema=PASS create=PASS questions=PASS answer_versions=PASS decisions=PASS open_items=PASS completion_gate=PASS idempotency=PASS immutable=PASS workspace_isolation=PASS outbox_once=PASS restart=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("PROJECT_JOURNEY_FAIL: " + exception);
+    Console.Error.WriteLine("DISCOVERY_JOURNEY_FAIL: " + exception);
     return 1;
 }
 finally
