@@ -43,7 +43,7 @@ internal static class ParagraphCoherenceJourney
             var finding=new ParagraphFindingCommand(Guid.NewGuid(),workspace,auditId,2,findingId,"REF-001","1.0",ParagraphFindingCategory.Reference,ParagraphFindingSeverity.Blocking,1,p.StartOffset,p.Length,"Pronoun antecedent needs confirmation.","Name the antecedent explicitly.","auditor","finding-1");
             var found=await store.RecordFindingAsync(finding,now.AddMinutes(5));
             Require(found.Findings.Count==1&&found.Findings[0].Decision==ParagraphFindingDecision.Open,"Finding append failed.");
-            await Throws<ParagraphCoherenceValidationException>(()=>store.RecordFindingAsync(finding with { RequestId=Guid.NewGuid(),ExpectedRevision=3,StartOffset=p.StartOffset+p.Length },now.AddMinutes(5)).AsTask());
+            await Throws<ParagraphCoherenceValidationException>(()=>store.RecordFindingAsync(finding with { RequestId=Guid.NewGuid(),FindingId=Guid.NewGuid(),ExpectedRevision=3,StartOffset=p.StartOffset+p.Length },now.AddMinutes(5)).AsTask());
             await Throws<ParagraphCoherenceConflictException>(()=>store.ReviewAsync(new(Guid.NewGuid(),workspace,auditId,2,"auditor","stale"),now.AddMinutes(6)).AsTask());
 
             var reviewed=await store.ReviewAsync(new(Guid.NewGuid(),workspace,auditId,3,"auditor","review"),now.AddMinutes(6));
