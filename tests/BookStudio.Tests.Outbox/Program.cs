@@ -13,12 +13,13 @@ try
     await OutboxJourney.RunAsync(Path.Combine(workspaceRoot, "legacy"));
     await TransactionalOutboxJourney.RunAsync(Path.Combine(workspaceRoot, "transactional"));
     await SchedulerJourney.RunAsync(Path.Combine(workspaceRoot, "scheduler"));
-    Console.WriteLine("SCHEDULER_JOBS_PASS priority=PASS lease=PASS renew=PASS reclaim=PASS retry=PASS idempotency=PASS audit=PASS mutation=NONE");
+    await WorkerExecutionJourney.RunAsync(Path.Combine(workspaceRoot, "worker"));
+    Console.WriteLine("WORKER_EXECUTION_PASS registry=PASS heartbeat=PASS timeout=PASS retry=PASS lease_loss=PASS orphan_tasks=NONE audit=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("SCHEDULER_JOBS_FAIL: " + exception);
+    Console.Error.WriteLine("WORKER_EXECUTION_FAIL: " + exception);
     return 1;
 }
 finally
