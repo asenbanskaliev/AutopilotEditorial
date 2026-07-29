@@ -36,12 +36,13 @@ try
     await ChapterGateJourney.RunAsync(Path.Combine(workspaceRoot, "chapter-gate"));
     await MemoryCommitJourney.RunAsync(Path.Combine(workspaceRoot, "memory-commit"));
     await CrossChapterAuditJourney.RunAsync(Path.Combine(workspaceRoot, "cross-chapter-audit"));
-    Console.WriteLine("CROSS_CHAPTER_AUDIT_PASS schema=PASS authority=PASS continuity=PASS snapshot=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await EditorialPassOrchestrationJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-pass-orchestration"));
+    Console.WriteLine("EDITORIAL_PASS_ORCHESTRATION_PASS schema=PASS authority=PASS dag=PASS dependencies=PASS gates=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CROSS_CHAPTER_AUDIT_FAIL: " + exception);
+    Console.Error.WriteLine("EDITORIAL_PASS_ORCHESTRATION_FAIL: " + exception);
     return 1;
 }
 finally
