@@ -40,12 +40,13 @@ try
     await DevelopmentalEditingJourney.RunAsync(Path.Combine(workspaceRoot, "developmental-editing"));
     await StructuralContentEditingJourney.RunAsync(Path.Combine(workspaceRoot, "structural-content-editing"));
     await VoiceLineEditingJourney.RunAsync(Path.Combine(workspaceRoot, "voice-line-editing"));
-    Console.WriteLine("VOICE_LINE_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await DialogueEditingJourney.RunAsync(Path.Combine(workspaceRoot, "dialogue-editing"));
+    Console.WriteLine("DIALOGUE_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("VOICE_LINE_EDITING_FAIL: " + exception);
+    Console.Error.WriteLine("DIALOGUE_EDITING_FAIL: " + exception);
     return 1;
 }
 finally
