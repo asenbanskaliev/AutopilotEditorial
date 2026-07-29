@@ -39,12 +39,13 @@ try
     await EditorialPassOrchestrationJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-pass-orchestration"));
     await DevelopmentalEditingJourney.RunAsync(Path.Combine(workspaceRoot, "developmental-editing"));
     await StructuralContentEditingJourney.RunAsync(Path.Combine(workspaceRoot, "structural-content-editing"));
-    Console.WriteLine("STRUCTURAL_CONTENT_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await VoiceLineEditingJourney.RunAsync(Path.Combine(workspaceRoot, "voice-line-editing"));
+    Console.WriteLine("VOICE_LINE_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("STRUCTURAL_CONTENT_EDITING_FAIL: " + exception);
+    Console.Error.WriteLine("VOICE_LINE_EDITING_FAIL: " + exception);
     return 1;
 }
 finally
