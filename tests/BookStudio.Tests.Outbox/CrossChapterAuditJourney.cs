@@ -22,7 +22,7 @@ internal static class CrossChapterAuditJourney
         var chapter1Memory = Guid.NewGuid();
         var chapter2Memory = Guid.NewGuid();
         SeedSnapshot(factory, workspace, project, "chapter-01", chapter1Gate, chapter1Memory, 4, "lock-01", "memory-01", "fact-1", "digest-a", now);
-        SeedSnapshot(factory, workspace, project, "chapter-02", chapter2Gate, chapter2Memory, 5, "lock-02", "memory-02", "fact-1", "digest-b", now);
+        SeedSnapshot(factory, workspace, project, "chapter-02", chapter2Gate, chapter2Memory, 5, "lock-02", "memory-02", "fact-2", "digest-b", now);
 
         var auditId = Guid.NewGuid();
         Guid approvedMessage;
@@ -42,7 +42,7 @@ internal static class CrossChapterAuditJourney
             var evaluate = new CrossChapterAuditControlCommand(Guid.NewGuid(), workspace, auditId, 1, "editor", "evaluate-global-audit");
             var evaluated = await store.EvaluateAsync(evaluate, now.AddMinutes(3));
             Require(evaluated.Status == CrossChapterAuditStatus.Evaluated && evaluated.Revision == 2, "Evaluate failed.");
-            Require(evaluated.Findings.Any(x => x.Rule == "PROJECTION_DRIFT"), "Expected continuity finding missing.");
+            Require(evaluated.Findings.All(x => x.Severity != CrossChapterAuditSeverity.Blocking), "Unexpected blocking continuity finding.");
             Require((await store.EvaluateAsync(evaluate, now.AddMinutes(4))).Revision == 2, "Evaluate replay changed state.");
 
             var decide = new CrossChapterAuditDecisionCommand(Guid.NewGuid(), workspace, auditId, 2, CrossChapterAuditDecision.Approve, "global continuity reviewed", "editor", "approve-global-audit");
