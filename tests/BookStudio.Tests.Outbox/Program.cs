@@ -38,12 +38,13 @@ try
     await CrossChapterAuditJourney.RunAsync(Path.Combine(workspaceRoot, "cross-chapter-audit"));
     await EditorialPassOrchestrationJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-pass-orchestration"));
     await DevelopmentalEditingJourney.RunAsync(Path.Combine(workspaceRoot, "developmental-editing"));
-    Console.WriteLine("DEVELOPMENTAL_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await StructuralContentEditingJourney.RunAsync(Path.Combine(workspaceRoot, "structural-content-editing"));
+    Console.WriteLine("STRUCTURAL_CONTENT_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("DEVELOPMENTAL_EDITING_FAIL: " + exception);
+    Console.Error.WriteLine("STRUCTURAL_CONTENT_EDITING_FAIL: " + exception);
     return 1;
 }
 finally
