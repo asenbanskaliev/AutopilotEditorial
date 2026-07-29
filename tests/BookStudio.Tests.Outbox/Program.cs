@@ -35,12 +35,13 @@ try
     await RepairPatchJourney.RunAsync(Path.Combine(workspaceRoot, "repair-patches"));
     await ChapterGateJourney.RunAsync(Path.Combine(workspaceRoot, "chapter-gate"));
     await MemoryCommitJourney.RunAsync(Path.Combine(workspaceRoot, "memory-commit"));
-    Console.WriteLine("MEMORY_COMMIT_PASS schema=PASS authority=PASS canonical=PASS atomic=PASS drift=PASS history=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await CrossChapterAuditJourney.RunAsync(Path.Combine(workspaceRoot, "cross-chapter-audit"));
+    Console.WriteLine("CROSS_CHAPTER_AUDIT_PASS schema=PASS authority=PASS continuity=PASS snapshot=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("MEMORY_COMMIT_FAIL: " + exception);
+    Console.Error.WriteLine("CROSS_CHAPTER_AUDIT_FAIL: " + exception);
     return 1;
 }
 finally
