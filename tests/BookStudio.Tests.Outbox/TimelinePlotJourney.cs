@@ -31,7 +31,7 @@ internal static class TimelinePlotJourney
             await store.CreateEventAsync(secondDraft,now.AddMinutes(3));
             var secondActivate=new TimelineEventControl(Guid.NewGuid(),workspace,secondId,1,"editor","activate-2");activationMessage=MessageId(secondActivate.RequestId);
             var activeSecond=await store.ActivateEventAsync(secondActivate,now.AddMinutes(4));Require(activeSecond.Status==TimelineEventStatus.Active,"Second event did not activate.");
-            await Throws<TimelinePlotValidationException>(()=>store.CreateEventAsync(secondDraft with{EventId=Guid.NewGuid(),EventKey="self",DependsOnEventIds=[secondId],RequestFingerprint="self"},now).AsTask());
+            await Throws<TimelinePlotConflictException>(()=>store.CreateEventAsync(secondDraft with{EventId=Guid.NewGuid(),EventKey="self",DependsOnEventIds=[secondId],RequestFingerprint="self"},now).AsTask());
             var threadId=Guid.NewGuid();var threadDraft=new PlotThreadDraft(threadId,project,workspace,"escape-route","Escape route",[firstId,secondId],"planner","thread-create");
             Require(!(await store.CreateThreadAsync(threadDraft,now.AddMinutes(5))).Replayed,"Thread create failed.");
             var start=new PlotThreadAdvance(Guid.NewGuid(),workspace,threadId,1,PlotThreadStatus.Active,firstId,"Departure milestone reached.","editor","thread-start");
