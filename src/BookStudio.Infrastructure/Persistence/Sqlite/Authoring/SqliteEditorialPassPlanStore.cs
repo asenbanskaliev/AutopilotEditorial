@@ -225,7 +225,7 @@ public sealed class SqliteEditorialPassPlanStore : IEditorialPassPlanStore, IAsy
         cmd.Parameters.AddWithValue("$w", workspace); cmd.Parameters.AddWithValue("$id", planId.ToString("D"));
         using var r = cmd.ExecuteReader();
         if (!r.Read()) return null;
-        var project = Guid.Parse(r.GetString(0)); var audit = Guid.Parse(r.GetString(1)); var authorityRevision = r.GetInt64(2); var digest = r.GetString(3); var version = r.GetInt32(4); var actor = r.GetString(5); var revision = r.GetInt64(6); var status = ParsePlan(r.GetString(7)); var message = r.IsDBNull(8) ? null : Guid.Parse(r.GetString(8)); var created = DateTimeOffset.Parse(r.GetString(9), CultureInfo.InvariantCulture); var updated = DateTimeOffset.Parse(r.GetString(10), CultureInfo.InvariantCulture);
+        var project = Guid.Parse(r.GetString(0)); var audit = Guid.Parse(r.GetString(1)); var authorityRevision = r.GetInt64(2); var digest = r.GetString(3); var version = r.GetInt32(4); var actor = r.GetString(5); var revision = r.GetInt64(6); var status = ParsePlan(r.GetString(7)); Guid? message = r.IsDBNull(8) ? null : Guid.Parse(r.GetString(8)); var created = DateTimeOffset.Parse(r.GetString(9), CultureInfo.InvariantCulture); var updated = DateTimeOffset.Parse(r.GetString(10), CultureInfo.InvariantCulture);
         r.Close();
         var nodes = new List<EditorialPassNode>();
         using var n = c.CreateCommand(); n.Transaction = tx;
