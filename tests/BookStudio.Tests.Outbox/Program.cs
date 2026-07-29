@@ -32,12 +32,13 @@ try
     await KnowledgeStateJourney.RunAsync(Path.Combine(workspaceRoot, "knowledge-state"));
     await CharacterObjectStateJourney.RunAsync(Path.Combine(workspaceRoot, "character-object-state"));
     await TimelinePlotJourney.RunAsync(Path.Combine(workspaceRoot, "timeline-plot"));
-    Console.WriteLine("TIMELINE_PLOT_PASS schema=PASS authority=PASS chronology=PASS causality=PASS cycle=PASS threads=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await RepairPatchJourney.RunAsync(Path.Combine(workspaceRoot, "repair-patches"));
+    Console.WriteLine("REPAIR_PATCH_PASS schema=PASS authority=PASS scope=PASS drift=PASS history=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("TIMELINE_PLOT_FAIL: " + exception);
+    Console.Error.WriteLine("REPAIR_PATCH_FAIL: " + exception);
     return 1;
 }
 finally
