@@ -37,12 +37,13 @@ try
     await MemoryCommitJourney.RunAsync(Path.Combine(workspaceRoot, "memory-commit"));
     await CrossChapterAuditJourney.RunAsync(Path.Combine(workspaceRoot, "cross-chapter-audit"));
     await EditorialPassOrchestrationJourney.RunAsync(Path.Combine(workspaceRoot, "editorial-pass-orchestration"));
-    Console.WriteLine("EDITORIAL_PASS_ORCHESTRATION_PASS schema=PASS authority=PASS dag=PASS dependencies=PASS gates=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await DevelopmentalEditingJourney.RunAsync(Path.Combine(workspaceRoot, "developmental-editing"));
+    Console.WriteLine("DEVELOPMENTAL_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("EDITORIAL_PASS_ORCHESTRATION_FAIL: " + exception);
+    Console.Error.WriteLine("DEVELOPMENTAL_EDITING_FAIL: " + exception);
     return 1;
 }
 finally
