@@ -69,10 +69,10 @@ public sealed class SqliteTimelinePlotStore : ITimelinePlotStore, IAsyncDisposab
         return _queue.ExecuteInTransactionAsync((c,tx,token)=>
         {
             token.ThrowIfCancellationRequested();var existing=ReadThread(c,tx,d.WorkspaceId,d.ThreadId);
-            if(existing is not null){RequireReceipt(ReadReceipt(c,tx,d.ThreadId),"CREATE_THREAD",d.WorkspaceId,d.ThreadId,d.RequestFingerprint,hash);if(!Matches(existing,d))throw new TimelinePlotConflictException("Thread identity already exists with different immutable content.");return new(existing,true);}
+            if(existing is not null){RequireReceipt(ReadReceipt(c,tx,d.ThreadId),"CREATE_THREAD",d.WorkspaceId,d.ThreadId,d.RequestFingerprint,hash);if(!Matches(existing,d))throw new TimelinePlotConflictException("Thread identity already exists with different immutable content.");return new PlotThreadCreateResult(existing,true);}
             ValidateRequiredEvents(c,tx,d.WorkspaceId,d.ProjectId,d.RequiredEventIds,false);
             Execute(c,tx,"INSERT INTO plot_threads(workspace_id,thread_id,project_id,thread_key,title,required_event_ids_json,milestones_json,actor,revision,status,last_message_id,created_at_utc,updated_at_utc) VALUES($w,$id,$p,$key,$t,$events,'[]',$actor,1,'PLANNED',NULL,$at,$at);",("$w",d.WorkspaceId),("$id",D(d.ThreadId)),("$p",D(d.ProjectId)),("$key",d.ThreadKey),("$t",d.Title),("$events",JsonSerializer.Serialize(d.RequiredEventIds)),("$actor",d.Actor),("$at",Text(at)));
-            Receipt(c,tx,d.ThreadId,d.WorkspaceId,d.ThreadId,"CREATE_THREAD",d.RequestFingerprint,hash,1,null,at);return new(RequireThread(c,tx,d.WorkspaceId,d.ThreadId),false);
+            Receipt(c,tx,d.ThreadId,d.WorkspaceId,d.ThreadId,"CREATE_THREAD",d.RequestFingerprint,hash,1,null,at);return new PlotThreadCreateResult(RequireThread(c,tx,d.WorkspaceId,d.ThreadId),false);
         },ct);
     }
 
