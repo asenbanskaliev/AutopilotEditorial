@@ -34,12 +34,13 @@ try
     await TimelinePlotJourney.RunAsync(Path.Combine(workspaceRoot, "timeline-plot"));
     await RepairPatchJourney.RunAsync(Path.Combine(workspaceRoot, "repair-patches"));
     await ChapterGateJourney.RunAsync(Path.Combine(workspaceRoot, "chapter-gate"));
-    Console.WriteLine("CHAPTER_GATE_PASS schema=PASS cumulative=PASS findings=PASS decision=PASS lock=PASS reopen=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await MemoryCommitJourney.RunAsync(Path.Combine(workspaceRoot, "memory-commit"));
+    Console.WriteLine("MEMORY_COMMIT_PASS schema=PASS authority=PASS canonical=PASS atomic=PASS drift=PASS history=PASS replay=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CHAPTER_GATE_FAIL: " + exception);
+    Console.Error.WriteLine("MEMORY_COMMIT_FAIL: " + exception);
     return 1;
 }
 finally
