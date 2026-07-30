@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS ai_provenance_records (
-    record_id TEXT PRIMARY KEY,
+    record_id TEXT NOT NULL,
     project_id TEXT NOT NULL,
     workspace_id TEXT NOT NULL,
     rights_license_case_id TEXT NOT NULL,
@@ -12,7 +12,6 @@ CREATE TABLE IF NOT EXISTS ai_provenance_records (
     asset_version INTEGER NOT NULL,
     actor TEXT NOT NULL,
     snapshot_json TEXT NOT NULL,
-    request_fingerprint TEXT NOT NULL,
     revision INTEGER NOT NULL,
     status TEXT NOT NULL,
     classification TEXT NULL,
@@ -28,12 +27,14 @@ CREATE TABLE IF NOT EXISTS ai_provenance_records (
     message_id TEXT NULL,
     created_at_utc TEXT NOT NULL,
     updated_at_utc TEXT NOT NULL,
+    PRIMARY KEY(workspace_id, record_id),
     UNIQUE(workspace_id, project_id, asset_id, asset_version)
 );
 
 CREATE TABLE IF NOT EXISTS ai_provenance_disclosures (
-    disclosure_id TEXT PRIMARY KEY,
+    workspace_id TEXT NOT NULL,
     record_id TEXT NOT NULL,
+    disclosure_id TEXT NOT NULL,
     channel TEXT NOT NULL,
     locale TEXT NOT NULL,
     format TEXT NOT NULL,
@@ -41,11 +42,13 @@ CREATE TABLE IF NOT EXISTS ai_provenance_disclosures (
     text TEXT NOT NULL,
     policy_compliant INTEGER NOT NULL,
     evidence TEXT NOT NULL,
-    FOREIGN KEY(record_id) REFERENCES ai_provenance_records(record_id) ON DELETE CASCADE
+    PRIMARY KEY(workspace_id, record_id, disclosure_id),
+    FOREIGN KEY(workspace_id, record_id) REFERENCES ai_provenance_records(workspace_id, record_id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS ai_provenance_history (
     history_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    workspace_id TEXT NOT NULL,
     record_id TEXT NOT NULL,
     revision INTEGER NOT NULL,
     transition TEXT NOT NULL,
@@ -53,20 +56,23 @@ CREATE TABLE IF NOT EXISTS ai_provenance_history (
     reason TEXT NULL,
     payload_json TEXT NOT NULL,
     occurred_at_utc TEXT NOT NULL,
-    UNIQUE(record_id, revision)
+    UNIQUE(workspace_id, record_id, revision)
 );
 
 CREATE TABLE IF NOT EXISTS ai_provenance_receipts (
-    request_id TEXT PRIMARY KEY,
     workspace_id TEXT NOT NULL,
+    request_id TEXT NOT NULL,
     record_id TEXT NOT NULL,
     operation TEXT NOT NULL,
     request_fingerprint TEXT NOT NULL,
+    payload_hash TEXT NOT NULL,
     result_revision INTEGER NOT NULL,
-    created_at_utc TEXT NOT NULL
+    message_id TEXT NULL,
+    created_at_utc TEXT NOT NULL,
+    PRIMARY KEY(workspace_id, request_id)
 );
 
 CREATE INDEX IF NOT EXISTS ix_ai_provenance_authority ON ai_provenance_records(workspace_id, rights_license_case_id, expected_rights_revision);
 CREATE INDEX IF NOT EXISTS ix_ai_provenance_asset ON ai_provenance_records(workspace_id, asset_id, asset_version);
-CREATE INDEX IF NOT EXISTS ix_ai_provenance_disclosures_record ON ai_provenance_disclosures(record_id);
-CREATE INDEX IF NOT EXISTS ix_ai_provenance_history_record ON ai_provenance_history(record_id, revision);
+CREATE INDEX IF NOT EXISTS ix_ai_provenance_disclosures_record ON ai_provenance_disclosures(workspace_id, record_id);
+CREATE INDEX IF NOT EXISTS ix_ai_provenance_history_record ON ai_provenance_history(workspace_id, record_id, revision);
