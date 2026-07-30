@@ -47,12 +47,13 @@ try
     await OriginalityReadAloudReviewJourney.RunAsync(Path.Combine(workspaceRoot, "originality-read-aloud-review"));
     await ResearchPlanningJourney.RunAsync(Path.Combine(workspaceRoot, "research-planning"));
     await ClaimVerificationJourney.RunAsync(Path.Combine(workspaceRoot, "claim-verification"));
-    Console.WriteLine("CLAIM_VERIFICATION_PASS schema=PASS authority=PASS evidence=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await CitationBibliographyJourney.RunAsync(Path.Combine(workspaceRoot, "citation-bibliography"));
+    Console.WriteLine("CITATION_BIBLIOGRAPHY_PASS schema=PASS authority=PASS citations=PASS bibliography=PASS deduplication=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CLAIM_VERIFICATION_FAIL: " + exception);
+    Console.Error.WriteLine("CITATION_BIBLIOGRAPHY_FAIL: " + exception);
     return 1;
 }
 finally
