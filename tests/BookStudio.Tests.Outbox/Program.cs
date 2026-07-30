@@ -44,12 +44,13 @@ try
     await ThemesPacingEditingJourney.RunAsync(Path.Combine(workspaceRoot, "themes-pacing-editing"));
     await CopyeditProofreadingJourney.RunAsync(Path.Combine(workspaceRoot, "copyedit-proofreading"));
     await BetaReaderReviewJourney.RunAsync(Path.Combine(workspaceRoot, "beta-reader-review"));
-    Console.WriteLine("BETA_READER_REVIEW_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await OriginalityReadAloudReviewJourney.RunAsync(Path.Combine(workspaceRoot, "originality-read-aloud-review"));
+    Console.WriteLine("ORIGINALITY_READ_ALOUD_REVIEW_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("BETA_READER_REVIEW_FAIL: " + exception);
+    Console.Error.WriteLine("ORIGINALITY_READ_ALOUD_REVIEW_FAIL: " + exception);
     return 1;
 }
 finally
