@@ -2,10 +2,7 @@ using BookStudio.Tests.Integration;
 using BookStudio.Tests.Outbox;
 using Microsoft.Data.Sqlite;
 
-var workspaceRoot = Path.Combine(
-    Path.GetTempPath(),
-    "BookStudio.Tests.Outbox",
-    Guid.NewGuid().ToString("N"));
+var workspaceRoot = Path.Combine(Path.GetTempPath(), "BookStudio.Tests.Outbox", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(workspaceRoot);
 
 try
@@ -50,12 +47,13 @@ try
     await CitationBibliographyJourney.RunAsync(Path.Combine(workspaceRoot, "citation-bibliography"));
     await RightsLicenseJourney.RunAsync(Path.Combine(workspaceRoot, "rights-license"));
     await AiProvenanceJourney.RunAsync(Path.Combine(workspaceRoot, "ai-provenance"));
-    Console.WriteLine("AI_PROVENANCE_PASS schema=PASS authority=PASS classification=PASS disclosures=PASS evidence=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await LegalRiskJourney.RunAsync(Path.Combine(workspaceRoot, "legal-risk"));
+    Console.WriteLine("LEGAL_RISK_PASS schema=PASS authority=PASS taxonomy=PASS human_review=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("AI_PROVENANCE_FAIL: " + exception);
+    Console.Error.WriteLine("LEGAL_RISK_FAIL: " + exception);
     return 1;
 }
 finally
@@ -66,19 +64,7 @@ finally
 
 static void TryDelete(string path)
 {
-    try
-    {
-        if (Directory.Exists(path))
-        {
-            Directory.Delete(path, recursive: true);
-        }
-    }
-    catch (IOException)
-    {
-        // Integration cleanup is best effort.
-    }
-    catch (UnauthorizedAccessException)
-    {
-        // Integration cleanup is best effort.
-    }
+    try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+    catch (IOException) { }
+    catch (UnauthorizedAccessException) { }
 }
