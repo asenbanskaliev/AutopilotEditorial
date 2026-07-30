@@ -46,12 +46,13 @@ try
     await BetaReaderReviewJourney.RunAsync(Path.Combine(workspaceRoot, "beta-reader-review"));
     await OriginalityReadAloudReviewJourney.RunAsync(Path.Combine(workspaceRoot, "originality-read-aloud-review"));
     await ResearchPlanningJourney.RunAsync(Path.Combine(workspaceRoot, "research-planning"));
-    Console.WriteLine("RESEARCH_PLANNING_PASS schema=PASS authority=PASS questions=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await ClaimVerificationJourney.RunAsync(Path.Combine(workspaceRoot, "claim-verification"));
+    Console.WriteLine("CLAIM_VERIFICATION_PASS schema=PASS authority=PASS evidence=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("RESEARCH_PLANNING_FAIL: " + exception);
+    Console.Error.WriteLine("CLAIM_VERIFICATION_FAIL: " + exception);
     return 1;
 }
 finally
