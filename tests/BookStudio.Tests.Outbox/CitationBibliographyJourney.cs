@@ -82,7 +82,7 @@ internal static class CitationBibliographyJourney
     {
         using var c = factory.OpenConnection();
         using var cmd = c.CreateCommand();
-        cmd.CommandText = "INSERT INTO claim_verifications(workspace_id,verification_id,project_id,research_plan_id,expected_research_plan_revision,expected_research_plan_digest,claim_id,claim_type,location,version,actor,snapshot_json,revision,status,decision,decision_reason,message_id,created_at_utc,updated_at_utc) VALUES($w,$id,$p,$plan,3,'research-plan-digest',$claim,'HISTORICAL','chapter-3/scene-2/p-4',1,'research-editor','{\"claim\":\"event occurred in 1847\"}',$r,'VERIFIED','VERIFIED','Primary evidence supports the claim.',NULL,$at,$at);";
+        cmd.CommandText = "INSERT INTO claim_verifications(workspace_id,verification_id,project_id,research_plan_id,expected_research_plan_revision,expected_research_plan_digest,claim_id,claim_type,location,version,rule_set,actor,snapshot_json,revision,status,decision,decision_reason,message_id,created_at_utc,updated_at_utc) VALUES($w,$id,$p,$plan,3,'research-plan-digest',$claim,'HISTORICAL','chapter-3/scene-2/p-4',1,'standard-v1','research-editor','{\"claim\":\"event occurred in 1847\"}',$r,'VERIFIED','VERIFIED','Primary evidence supports the claim.',NULL,$at,$at);";
         cmd.Parameters.AddWithValue("$w", workspace);
         cmd.Parameters.AddWithValue("$id", verification.ToString("D"));
         cmd.Parameters.AddWithValue("$p", project.ToString("D"));
