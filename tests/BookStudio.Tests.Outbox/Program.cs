@@ -42,12 +42,13 @@ try
     await VoiceLineEditingJourney.RunAsync(Path.Combine(workspaceRoot, "voice-line-editing"));
     await DialogueEditingJourney.RunAsync(Path.Combine(workspaceRoot, "dialogue-editing"));
     await ThemesPacingEditingJourney.RunAsync(Path.Combine(workspaceRoot, "themes-pacing-editing"));
-    Console.WriteLine("THEMES_PACING_EDITING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await CopyeditProofreadingJourney.RunAsync(Path.Combine(workspaceRoot, "copyedit-proofreading"));
+    Console.WriteLine("COPYEDIT_PROOFREADING_PASS schema=PASS authority=PASS findings=PASS decisions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("THEMES_PACING_EDITING_FAIL: " + exception);
+    Console.Error.WriteLine("COPYEDIT_PROOFREADING_FAIL: " + exception);
     return 1;
 }
 finally
