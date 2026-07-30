@@ -48,12 +48,13 @@ try
     await ResearchPlanningJourney.RunAsync(Path.Combine(workspaceRoot, "research-planning"));
     await ClaimVerificationJourney.RunAsync(Path.Combine(workspaceRoot, "claim-verification"));
     await CitationBibliographyJourney.RunAsync(Path.Combine(workspaceRoot, "citation-bibliography"));
-    Console.WriteLine("CITATION_BIBLIOGRAPHY_PASS schema=PASS authority=PASS citations=PASS bibliography=PASS deduplication=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
+    await RightsLicenseJourney.RunAsync(Path.Combine(workspaceRoot, "rights-license"));
+    Console.WriteLine("RIGHTS_LICENSE_PASS schema=PASS authority=PASS scope=PASS territories=PASS languages=PASS channels=PASS validity=PASS restrictions=PASS blocking_gate=PASS replay=PASS history=PASS outbox_once=PASS restart=PASS isolation=PASS mutation=NONE");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("CITATION_BIBLIOGRAPHY_FAIL: " + exception);
+    Console.Error.WriteLine("RIGHTS_LICENSE_FAIL: " + exception);
     return 1;
 }
 finally
