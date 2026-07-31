@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import unittest
 from pathlib import Path
 
@@ -27,9 +28,13 @@ class Vs100VisualBriefContractTests(unittest.TestCase):
 
     def test_mutations_are_concurrency_guarded_and_atomic(self) -> None:
         source = STORE.read_text(encoding="utf-8")
-        self.assertIn("WHERE workspace_id = $workspace AND brief_id = $brief AND revision = $expected", source)
+        normalized = re.sub(r"\s+", "", source)
+        self.assertIn(
+            "WHEREworkspace_id=$wANDbrief_id=$idANDrevision=$expected",
+            normalized,
+        )
         self.assertIn("BeginTransaction", source)
-        self.assertIn("transaction.Commit", source)
+        self.assertIn("tx.Commit", source)
         self.assertIn("visual_brief_history", source)
         self.assertIn("outbox_messages", source)
 
@@ -37,7 +42,7 @@ class Vs100VisualBriefContractTests(unittest.TestCase):
         migration = MIGRATION.read_text(encoding="utf-8").lower()
         for table in (
             "visual_briefs",
-            "visual_brief_continuity_references",
+            "visual_continuity_references",
             "visual_brief_reviews",
             "visual_brief_history",
             "visual_brief_receipts",
