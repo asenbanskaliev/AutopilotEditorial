@@ -55,8 +55,8 @@ class Vs110ManuscriptAssemblyContractTests(unittest.TestCase):
         self.assertNotIn("static readonly Dictionary", source)
         self.assertIn("Load(", source)
         self.assertIn("LoadReceipt(", source)
-        self.assertIn("manuscript_assembly_history", source)
-        self.assertIn("manuscript_assembly_receipts", source)
+        self.assertIn("manuscript_history", source)
+        self.assertIn("manuscript_receipts", source)
         self.assertIn("JsonSerializer.Deserialize<ManuscriptAssemblyState>", source)
 
     def test_mutations_are_atomic_concurrency_guarded_and_outboxed(self) -> None:
@@ -65,27 +65,27 @@ class Vs110ManuscriptAssemblyContractTests(unittest.TestCase):
         self.assertIn("ANDrevision=$expected", normalized)
         self.assertIn("BeginTransaction", source)
         self.assertIn("tx.Commit", source)
-        self.assertIn("manuscript_assembly_outbox", source)
-        self.assertIn("manuscript_assembly_history", source)
-        self.assertIn("manuscript_assembly_receipts", source)
+        self.assertIn("manuscript_outbox", source)
+        self.assertIn("manuscript_history", source)
+        self.assertIn("manuscript_receipts", source)
 
     def test_migration_contains_complete_durable_model(self) -> None:
         migration = MIGRATION.read_text(encoding="utf-8").lower()
         for table in (
             "manuscript_assemblies",
-            "manuscript_assembly_sources",
-            "manuscript_assembly_sections",
-            "manuscript_assembly_nodes",
-            "manuscript_assembly_findings",
-            "manuscript_assembly_decisions",
-            "manuscript_assembly_receipts",
-            "manuscript_assembly_history",
-            "manuscript_assembly_outbox",
+            "manuscript_source_bindings",
+            "manuscript_sections",
+            "manuscript_nodes",
+            "manuscript_findings",
+            "manuscript_decisions",
+            "manuscript_receipts",
+            "manuscript_history",
+            "manuscript_outbox",
         ):
             self.assertIn(f"create table if not exists {table}", migration)
         self.assertIn("revision", migration)
         self.assertIn("request_fingerprint", migration)
-        self.assertIn("manifest_digest", migration)
+        self.assertIn("manifest_json", migration)
 
 
 if __name__ == "__main__":
