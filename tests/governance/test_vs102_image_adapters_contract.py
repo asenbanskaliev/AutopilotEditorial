@@ -61,7 +61,7 @@ class Vs102ImageAdaptersContractTests(unittest.TestCase):
             "ValidateAdapter",
             "MaximumAttempts",
             "RetryableFailures",
-            "ValidateOutput",
+            "ValidateAttemptResult",
             "RegisterAsync",
             "CompleteAsync",
             "CancelAsync",
