@@ -31,7 +31,7 @@ class Vs104CoverWorkflowContractTests(unittest.TestCase):
         source = ORCHESTRATOR.read_text(encoding="utf-8")
         for token in (
             "RequireCurrentAsync", "ValidateVariant", "EnsureRequiredCoverage",
-            "ThumbnailLegibility", "Barcode", "Spine", "Path",
+            "ThumbnailLegibility", "Barcode", "Spine", "LineageEvidenceDigest",
             "CoverWorkflowConflictException", "CoverWorkflowTransitionException",
         ):
             self.assertIn(token, source)
