@@ -63,7 +63,7 @@ class Vs105VisualAccessibilityContractTests(unittest.TestCase):
         self.assertIn("ANDrevision=$expected", normalized)
         self.assertIn("BeginTransaction", source)
         self.assertIn("tx.Commit", source)
-        self.assertIn("outbox_messages", source)
+        self.assertIn("visual_accessibility_outbox", source)
         self.assertIn("visual_accessibility_history", source)
         self.assertIn("visual_accessibility_receipts", source)
 
@@ -76,6 +76,7 @@ class Vs105VisualAccessibilityContractTests(unittest.TestCase):
             "visual_accessibility_decisions",
             "visual_accessibility_receipts",
             "visual_accessibility_history",
+            "visual_accessibility_outbox",
         ):
             self.assertIn(f"create table if not exists {table}", migration)
         self.assertIn("revision", migration)
