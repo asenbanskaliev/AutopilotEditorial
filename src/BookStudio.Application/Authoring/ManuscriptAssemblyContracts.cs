@@ -114,7 +114,6 @@ public sealed record ManuscriptAssemblyState(
     IReadOnlyList<ManuscriptTargetChannel> TargetChannels,
     ManuscriptAssemblyAuthority Authority,
     IReadOnlyList<ManuscriptSectionDraft> Sections,
-    IReadOnlyList<ManuscriptSourceBinding> ExcludedOptionalSources,
     IReadOnlyList<ManuscriptAssemblyFinding> Findings,
     ManuscriptCanonicalManifest? Manifest,
     ManuscriptAssemblyStatus Status,
