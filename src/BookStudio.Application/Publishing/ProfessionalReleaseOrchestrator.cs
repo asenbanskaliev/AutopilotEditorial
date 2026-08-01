@@ -55,7 +55,7 @@ public sealed class ProfessionalReleaseOrchestrator
         var manifestDigest = Hash($"{state.ReleaseId:D}|{state.Channel}|{state.SemanticVersion}|{state.Locale}|{inventoryDigest}");
         var manifest = new ProfessionalReleaseManifest(state.ReleaseId, state.Channel, state.SemanticVersion,
             state.Locale, verified, manifestDigest, at);
-        var evidenceDigest = Hash($"{state.Authority.ProofEvidenceDigest}|{state.Authority.PackageDigest}|{manifestDigest}|{inventoryDigest}");
+        var evidenceDigest = Hash($"{state.Authority.ProofEvidenceDigest}|{state.Authority.PackageDigest}|{manifest.ManifestDigest}|{inventoryDigest}");
 
         return await _store.FreezeAsync(command, verified, manifest, inventoryDigest, evidenceDigest, at, ct);
     }
