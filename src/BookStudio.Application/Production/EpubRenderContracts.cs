@@ -2,7 +2,7 @@ namespace BookStudio.Application.Production;
 
 public interface IEpubRenderStore
 {
-    ValueTask<EpubRenderSubmissionResult> SubmitAsync(EpubRenderRequest request, DateTimeOffset at, CancellationToken ct = default);
+    ValueTask<EpubRenderSubmissionResult> SubmitAsync(EpubRenderRequest request, EpubPackage package, DateTimeOffset at, CancellationToken ct = default);
     ValueTask<EpubRenderState> ValidateAsync(EpubValidationCommand command, DateTimeOffset at, CancellationToken ct = default);
     ValueTask<EpubRenderState> DecideAsync(EpubDecisionCommand command, DateTimeOffset at, CancellationToken ct = default);
     ValueTask<EpubRenderState?> GetAsync(string workspaceId, Guid renderId, CancellationToken ct = default);
