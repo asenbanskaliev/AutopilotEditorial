@@ -73,8 +73,9 @@ internal static class BookCreationJourneyIntegrationSmoke
         Require(journey.Progress.All(x => x.Status == JourneyPhaseStatus.Approved), "Not all phases were approved.");
         Require(journey.NextAction.Kind == JourneyActionKind.None, "Completed journey exposed a further executable action.");
 
-        var restored = store.GetAsync(journey.WorkspaceId, journey.JourneyId).AsTask().GetAwaiter().GetResult();
-        Require(restored is not null && restored.Revision == journey.Revision, "Journey checkpoint could not be restored.");
+        var restored = store.GetAsync(journey.WorkspaceId, journey.JourneyId).AsTask().GetAwaiter().GetResult()
+            ?? throw new InvalidOperationException("VS-121 integration smoke failed: Journey checkpoint could not be restored.");
+        Require(restored.Revision == journey.Revision, "Journey checkpoint revision did not match.");
         Require(restored.Brief.OutputFormats.SetEquals(new[] { "EPUB", "PDF", "DOCX", "KDP" }), "Final output intent was not preserved.");
 
         var staleRejected = false;
