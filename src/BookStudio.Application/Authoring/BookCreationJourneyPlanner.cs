@@ -96,8 +96,8 @@ public static class BookCreationJourneyPlanner
         if (recommended.Length > 1)
             throw new BookCreationJourneyValidationException("A decision may have at most one recommended option.");
 
-        var evidence = Digest(string.Join('|', id, kind, phase, title, explanation,
-            string.Join(';', options.Select(x => $"{x.OptionId}:{x.Label}:{x.Consequence}:{x.Recommended}"))));
+        var optionEvidence = string.Join(';', options.Select(x => $"{x.OptionId}:{x.Label}:{x.Consequence}:{x.Recommended}"));
+        var evidence = Digest($"{id}|{kind}|{phase}|{title}|{explanation}|{optionEvidence}");
 
         return new JourneyDecision(id, kind, phase, title, explanation, options,
             recommended.SingleOrDefault(), JourneyDecisionStatus.Open, null, evidence, at, null);
