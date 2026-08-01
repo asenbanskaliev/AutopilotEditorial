@@ -3,7 +3,7 @@ namespace BookStudio.Application.Production;
 public interface ITechnicalPreflightStore
 {
     ValueTask<TechnicalPreflightSubmissionResult> SubmitAsync(TechnicalPreflightRequest request, DateTimeOffset at, CancellationToken ct = default);
-    ValueTask<TechnicalPreflightState> EvaluateAsync(TechnicalPreflightEvaluationCommand command, DateTimeOffset at, CancellationToken ct = default);
+    ValueTask<TechnicalPreflightState> EvaluateAsync(TechnicalPreflightEvaluationCommand command, IReadOnlyList<TechnicalPreflightCheckResult> executions, string evidenceDigest, DateTimeOffset at, CancellationToken ct = default);
     ValueTask<TechnicalPreflightState> DecideAsync(TechnicalPreflightDecisionCommand command, DateTimeOffset at, CancellationToken ct = default);
     ValueTask<TechnicalPreflightState?> GetAsync(string workspaceId, Guid runId, CancellationToken ct = default);
 }
