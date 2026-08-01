@@ -86,7 +86,7 @@ public sealed class DocxRenderOrchestrator
             throw new DocxValidationException("Cross-workspace or cross-project authority is forbidden.");
         if (request.Sections.Count == 0 || request.Sections.Select(x => x.Order).Distinct().Count() != request.Sections.Count)
             throw new DocxValidationException("DOCX sections require total unique ordering.");
-        if (request.Resources.Any(x => !x.RightsApproved || x.PartName.Contains("..", StringComparison.Ordinal) || x.PartName.StartsWith('/', StringComparison.Ordinal)))
+        if (request.Resources.Any(x => !x.RightsApproved || x.PartName.Contains("..", StringComparison.Ordinal) || x.PartName.StartsWith("/", StringComparison.Ordinal)))
             throw new DocxValidationException("DOCX resources must be safe and rights-approved.");
         if (request.Resources.Any(x => x.PartName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(x.AccessibilityAlternative)))
             throw new DocxValidationException("Embedded figures require accessibility alternatives.");
