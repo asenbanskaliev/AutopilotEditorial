@@ -36,7 +36,9 @@ public sealed class TechnicalPreflightOrchestrator
         var authority = await _authority.RequireCurrentAsync(current.Authority, ct);
         if (!authority.IsCurrent || current.Authority.Status != TechnicalPreflightAuthorityStatus.Approved)
             throw new TechnicalPreflightValidationException("VS-114 authority drifted before evaluation.");
-        return await _store.EvaluateAsync(command, at, ct);
+        var executions = await ExecuteCheckersAsync(current, ct);
+        var evidenceDigest = BuildEvidenceDigest(executions);
+        return await _store.EvaluateAsync(command, executions, evidenceDigest, at, ct);
     }
 
     public async ValueTask<TechnicalPreflightState> DecideAsync(TechnicalPreflightDecisionCommand command, DateTimeOffset at, CancellationToken ct = default)
@@ -63,6 +65,7 @@ public sealed class TechnicalPreflightOrchestrator
             var result = await checker.ExecuteAsync(context, ct);
             if (!StringComparer.Ordinal.Equals(result.CheckerId, checker.CheckerId) ||
                 !StringComparer.Ordinal.Equals(result.CheckerVersion, checker.Version) ||
+                !StringComparer.Ordinal.Equals(result.RuleProfile, state.RuleProfile) ||
                 string.IsNullOrWhiteSpace(result.InputDigest) || string.IsNullOrWhiteSpace(result.OutputDigest))
                 throw new TechnicalPreflightValidationException("Checker returned invalid or mismatched evidence.");
             results.Add(result with { Findings = result.Findings.OrderBy(x => x.Code, StringComparer.Ordinal).ThenBy(x => x.FindingId).ToArray() });
@@ -74,7 +77,7 @@ public sealed class TechnicalPreflightOrchestrator
     {
         var canonical = string.Join("\n", executions.OrderBy(x => x.CheckerId, StringComparer.Ordinal)
             .ThenBy(x => x.CheckerVersion, StringComparer.Ordinal)
-            .Select(x => $"{x.CheckerId}|{x.CheckerVersion}|{x.RuleProfile}|{x.InputDigest}|{x.OutputDigest}"));
+            .Select(x => $"{x.CheckerId}|{x.CheckerVersion}|{x.RuleProfile}|{x.InputDigest}|{x.OutputDigest}|{string.Join(',', x.Findings.OrderBy(f => f.Code, StringComparer.Ordinal).ThenBy(f => f.FindingId).Select(f => $"{f.FindingId:D}:{f.Code}:{f.Severity}:{f.Location}:{f.RuleId}:{f.EvidenceDigest}:{f.RemediationStatus}"))}"));
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical))).ToLowerInvariant();
     }
 
@@ -85,7 +88,8 @@ public sealed class TechnicalPreflightOrchestrator
     {
         if (state.Status != TechnicalPreflightStatus.Evaluated || string.IsNullOrWhiteSpace(state.EvidenceDigest))
             throw new TechnicalPreflightTransitionException("Only an evaluated preflight with evidence can be approved.");
-        var valid = waivers.Where(x => x.ExpiresAtUtc > at && !string.IsNullOrWhiteSpace(x.EvidenceDigest))
+        var valid = waivers.Where(x => x.ExpiresAtUtc > at && !string.IsNullOrWhiteSpace(x.Evidence) &&
+                                      !string.IsNullOrWhiteSpace(x.EvidenceDigest) && !string.IsNullOrWhiteSpace(x.ApprovedBy))
             .Select(x => x.FindingId).ToHashSet();
         if (state.Findings.Any(x => x.Severity == TechnicalPreflightSeverity.Blocking && x.RemediationStatus == TechnicalPreflightRemediationStatus.Open && !valid.Contains(x.FindingId)))
             throw new TechnicalPreflightTransitionException("Open blocking findings prevent approval.");
