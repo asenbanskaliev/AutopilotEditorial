@@ -64,8 +64,11 @@ public sealed class DocxRenderOrchestrator
             .Select((x, i) => new DocxRelationship($"rId{i + 1}", "word/document.xml", x.PartName, "resource", false)).ToArray();
         var manifest = string.Join("|", parts.OrderBy(x => x.Order).Select(x => $"{x.Order}:{x.PartName}:{x.ContentDigest}"));
         var metadata = $"{request.ProjectId:D}|{request.Locale}|{request.TemplateProfile}|{request.CompatibilityTarget}|{request.Authority.ArtifactDigest}";
-        return new DocxArtifact(Digest(manifest + "||" + metadata), Digest(manifest), parts, relationships,
-            request.Resources.Select(x => x.ResourceId).OrderBy(x => x).ToArray(), Digest(metadata));
+        var ManifestDigest = Digest(manifest);
+        var MetadataDigest = Digest(metadata);
+        var ArtifactDigest = Digest(ManifestDigest + "||" + MetadataDigest);
+        return new DocxArtifact(ArtifactDigest, ManifestDigest, parts, relationships,
+            request.Resources.Select(x => x.ResourceId).OrderBy(x => x).ToArray(), MetadataDigest);
     }
 
     private async ValueTask<DocxRenderState> RequireAsync(string workspaceId, Guid renderId, CancellationToken ct) =>
