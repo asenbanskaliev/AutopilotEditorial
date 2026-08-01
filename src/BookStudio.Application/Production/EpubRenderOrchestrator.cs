@@ -20,7 +20,8 @@ public sealed class EpubRenderOrchestrator
         ValidateRequest(request);
         var snapshot = await _authority.RequireCurrentApprovedAsync(request.Manuscript, ct);
         EnsureAuthority(request, snapshot);
-        return (await _store.SubmitAsync(request, at, ct)).Render;
+        var package = BuildPackage(request, snapshot);
+        return (await _store.SubmitAsync(request, package, at, ct)).Render;
     }
 
     public async ValueTask<EpubRenderState> ValidateAsync(EpubValidationCommand command, DateTimeOffset at, CancellationToken ct = default)
