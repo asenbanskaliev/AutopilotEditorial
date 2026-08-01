@@ -33,7 +33,7 @@ class Vs112PrintPdfContractTests(unittest.TestCase):
         for token in (
             "RequireCurrentAuthorityAsync", "BuildArtifact", "EnsureApprovable",
             "ValidateGeometry", "ValidateFonts", "ValidateImages", "OrderBy", "ThenBy",
-            "OutputIntentDigest", "ArtifactDigest", "PrintPdfConflictException",
+            "OutputIntentDigest", "artifactDigest", "PrintPdfConflictException",
         ):
             self.assertIn(token, source)
 
