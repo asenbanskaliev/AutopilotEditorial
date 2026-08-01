@@ -66,7 +66,8 @@ class Vs115TechnicalPreflightContractTests(unittest.TestCase):
             self.assertIn(f"create table if not exists {table}", migration)
         self.assertIn("revision", migration)
         self.assertIn("request_fingerprint", migration)
-        self.assertIn("evidence_json", migration)
+        self.assertIn("evidence_digest", migration)
+        self.assertIn("snapshot_json", migration)
 
 
 if __name__ == "__main__":
