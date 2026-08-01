@@ -15,12 +15,13 @@ public sealed class SqliteEpubRenderStore : IEpubRenderStore, IAsyncDisposable
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
 
     public async ValueTask<EpubRenderSubmissionResult> SubmitAsync(
-        EpubRenderRequest request, DateTimeOffset at, CancellationToken ct = default)
+        EpubRenderRequest request, EpubPackage package, DateTimeOffset at, CancellationToken ct = default)
     {
         await _gate.WaitAsync(ct);
         try
         {
-            var payload = Digest(JsonSerializer.Serialize(request));
+            ValidatePackage(package);
+            var payload = Digest(JsonSerializer.Serialize(new { Request = request, Package = package }));
             var replay = LoadReceipt(request.WorkspaceId, request.RequestId);
             if (replay is not null)
             {
@@ -31,22 +32,23 @@ public sealed class SqliteEpubRenderStore : IEpubRenderStore, IAsyncDisposable
                 throw new EpubRenderConflictException("EPUB render already exists.");
 
             var state = new EpubRenderState(request.RenderId, request.ProjectId, request.WorkspaceId,
-                request.Manuscript, request.Profile, request.Metadata, null, [], EpubRenderStatus.Draft,
+                request.Manuscript, request.Profile, request.Metadata, package, [], EpubRenderStatus.Rendered,
                 1, MessageId(request.RenderId, 1), at, at);
 
             using var connection = _factory.OpenConnection();
             using var tx = connection.BeginTransaction();
             Exec(connection, tx,
-                "INSERT INTO epub_renders(workspace_id,render_id,project_id,manuscript_json,profile,metadata_json,package_json,findings_json,status,revision,message_id,created_at_utc,updated_at_utc) VALUES($w,$id,$p,$m,$profile,$metadata,NULL,'[]',$s,1,$message,$at,$at)",
+                "INSERT INTO epub_renders(workspace_id,render_id,project_id,manuscript_json,profile,metadata_json,package_json,findings_json,status,revision,message_id,created_at_utc,updated_at_utc) VALUES($w,$id,$p,$m,$profile,$metadata,$package,'[]',$s,1,$message,$at,$at)",
                 ("$w", request.WorkspaceId), ("$id", request.RenderId.ToString("D")),
                 ("$p", request.ProjectId.ToString("D")), ("$m", JsonSerializer.Serialize(request.Manuscript)),
                 ("$profile", EnumText(request.Profile)), ("$metadata", JsonSerializer.Serialize(request.Metadata)),
-                ("$s", EnumText(state.Status)), ("$message", state.MessageId!.Value.ToString("D")),
-                ("$at", at.ToString("O")));
-            History(connection, tx, state, "SUBMIT", request.Actor, "EPUB render submitted", at);
+                ("$package", JsonSerializer.Serialize(package)), ("$s", EnumText(state.Status)),
+                ("$message", state.MessageId!.Value.ToString("D")), ("$at", at.ToString("O")));
+            PersistEntries(connection, tx, state);
+            History(connection, tx, state, "SUBMIT", request.Actor, "EPUB package rendered and submitted", at);
             Receipt(connection, tx, request.WorkspaceId, request.RequestId, request.RenderId,
                 request.RequestFingerprint, payload, state, at);
-            Outbox(connection, tx, state, "epub.render.submitted", at);
+            Outbox(connection, tx, state, "epub.render.rendered", at);
             tx.Commit();
             return new EpubRenderSubmissionResult(state, false);
         }
@@ -162,6 +164,27 @@ public sealed class SqliteEpubRenderStore : IEpubRenderStore, IAsyncDisposable
         if (replay.RenderId != renderId || !StringComparer.Ordinal.Equals(replay.Fingerprint, fingerprint)
             || !StringComparer.Ordinal.Equals(replay.Payload, payload))
             throw new EpubRenderConflictException("Operation reused with a different payload.");
+    }
+
+    private static void ValidatePackage(EpubPackage package)
+    {
+        if (string.IsNullOrWhiteSpace(package.PackageDigest) || package.Entries.Count == 0)
+            throw new EpubRenderValidationException("Materialized EPUB package is required.");
+        var ordered = package.Entries.OrderBy(x => x.Order).ToArray();
+        if (ordered[0].Path != "mimetype" || ordered[0].Compression != EpubCompression.Stored ||
+            ordered.Select(x => x.Order).Distinct().Count() != ordered.Length ||
+            ordered.Select(x => x.Path).Distinct(StringComparer.Ordinal).Count() != ordered.Length)
+            throw new EpubRenderValidationException("EPUB package ordering or identity is invalid.");
+    }
+
+    private static void PersistEntries(SqliteConnection connection, SqliteTransaction tx, EpubRenderState state)
+    {
+        foreach (var entry in state.Package!.Entries.OrderBy(x => x.Order))
+            Exec(connection, tx,
+                "INSERT INTO epub_render_entries(workspace_id,render_id,entry_path,media_type,content_digest,length,compression,entry_order) VALUES($w,$r,$p,$m,$d,$l,$c,$o)",
+                ("$w", state.WorkspaceId), ("$r", state.RenderId.ToString("D")), ("$p", entry.Path),
+                ("$m", entry.MediaType), ("$d", entry.ContentDigest), ("$l", entry.Length),
+                ("$c", EnumText(entry.Compression)), ("$o", entry.Order));
     }
 
     private static void PersistFindings(SqliteConnection connection, SqliteTransaction tx, EpubRenderState state, DateTimeOffset at)
