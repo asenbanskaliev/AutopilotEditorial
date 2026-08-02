@@ -3,10 +3,11 @@
   "status": "active",
   "vs": "VS-126",
   "issue": 190,
-  "pull_request": null,
+  "pull_request": 191,
   "branch": "agent/VS-126-signed-installer-first-run",
-  "owner": "mcp-implement-vs",
-  "acquired_at": "2026-08-02T12:18:30+02:00",
+  "implementation_head_sha": "7146d5f42adf8f9e2477d6aeff86f13bb59fc53c",
+  "owner": "mcp-validate-repair",
+  "acquired_at": "2026-08-02T12:20:45+02:00",
   "expires_at": "2026-08-02T13:15:00+02:00",
   "checkpoint": {
     "selected_gap": "Signed installer, guided first-run setup and deployment-grade credential configuration without manual technical commands.",
@@ -14,6 +15,10 @@
     "merge_authorized": false,
     "plan_integrity": "pending",
     "governance_gates": "pending",
-    "dotnet_ci": "pending"
+    "dotnet_ci": "pending",
+    "windows_installer_execution": "pending",
+    "matrix": "updated-to-implemented-unproven",
+    "metrics": "updated",
+    "next_action": "Validate and repair only PR #191 on this branch. Do not create another VS, branch or PR and do not merge."
   }
 }
