@@ -93,6 +93,7 @@ public sealed class PublicationArtifactPipeline
 public sealed class LocalDeterministicPublicationProvider : IPublicationArtifactProvider
 {
     private static readonly HashSet<string> Formats = new(StringComparer.OrdinalIgnoreCase) { "EPUB", "PDF", "DOCX", "KDP" };
+    private static readonly DateTimeOffset DeterministicZipTimestamp = new(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
     public string ProviderId => "local-deterministic-v1";
     public IReadOnlySet<string> SupportedFormats => Formats;
 
@@ -168,7 +169,7 @@ public sealed class LocalDeterministicPublicationProvider : IPublicationArtifact
     private static byte[] Zip(IEnumerable<(string Name, byte[] Bytes, CompressionLevel Compression)> entries)
     {
         using var ms = new MemoryStream();
-        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true)) foreach (var item in entries) { var entry = zip.CreateEntry(item.Name, item.Compression); entry.LastWriteTime = DateTimeOffset.UnixEpoch; using var s = entry.Open(); s.Write(item.Bytes); }
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, true)) foreach (var item in entries) { var entry = zip.CreateEntry(item.Name, item.Compression); entry.LastWriteTime = DeterministicZipTimestamp; using var s = entry.Open(); s.Write(item.Bytes); }
         return ms.ToArray();
     }
 
