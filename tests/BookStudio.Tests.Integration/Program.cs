@@ -23,6 +23,9 @@ try
 
     await ImageProviderRightsPipelineSmoke.RunAsync(workspaceRoot);
     Console.WriteLine("VS-124 image provider rights PASS: exact image bytes, provenance, licensing, accessibility, bounded repair and restart reuse verified.");
+
+    await CommercialImageVerificationAuthoritySmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-125 commercial image verification PASS: moderation, external rights clearance, exact evidence, cost ceilings, restart reuse and fail-closed rejection verified.");
     return 0;
 }
 catch (Exception exception)
