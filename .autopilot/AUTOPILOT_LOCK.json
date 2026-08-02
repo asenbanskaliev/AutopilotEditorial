@@ -5,18 +5,18 @@
   "issue": 180,
   "pull_request": 181,
   "branch": "agent/VS-121-autonomous-book-journey",
-  "head_sha": "52366b9b2097a886acda76e91be352dc5e397f47",
-  "owner": "mcp-audit-control",
-  "purpose": "Block concurrent VS work while PR 181 has failing .NET CI architecture fitness.",
-  "acquired_at": "2026-08-02T02:00:42+02:00",
-  "expires_at": "2026-08-02T02:20:00+02:00",
+  "head_sha": "7d4dbe7e3a58935bab5e68986d363a2204ec0490",
+  "owner": "mcp-validate-repair",
+  "purpose": "Block concurrent VS work while the repaired VS-121 head is revalidated on all required workflows.",
+  "acquired_at": "2026-08-02T02:29:32+02:00",
+  "expires_at": "2026-08-02T03:20:00+02:00",
   "renewal_policy": "Renew only while PR 181 remains active; release after merge or explicit abandonment.",
-  "priority": "ci-regression",
+  "priority": "ci-revalidation",
   "checkpoint": {
-    "plan_integrity": "success",
-    "governance_gates": "success",
-    "dotnet_ci": "failure",
-    "failure": "Architecture fitness: BookStudio.Tests.BookAuthoring contains forbidden compiled reference BookStudio.Application",
-    "next_action": "Repair the existing VS-121 test architecture on the same branch; do not start another VS."
+    "plan_integrity": "pending",
+    "governance_gates": "pending",
+    "dotnet_ci": "pending",
+    "repair": "Moved BookCreationJourneyIntegrationSmoke from BookStudio.Tests.BookAuthoring to the architecture-authorized BookStudio.Tests.Integration project without changing test behavior.",
+    "next_action": "Wait for and verify all three workflows on the same repaired head; do not start another VS."
   }
 }
