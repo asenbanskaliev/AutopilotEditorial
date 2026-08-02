@@ -127,11 +127,11 @@ internal static class HumanCentricBookCreationAuditSmoke
             readyForPublication = first.ReadyForPublication,
             restartRecovered = replay.ReadyForPublication,
             duplicateCostAfterRestart = replay.Checkpoint.AccumulatedCost - firstCost,
-            repairCeiling = request.Policy.MaximumAutomaticRepairs,
+            repairCeiling = request.Policy.MaximumRepairAttempts,
             maximumCost = request.Policy.MaximumCost,
             currency = request.Policy.CostCurrency,
             accumulatedCost = firstCost,
-            publicationArtifacts = first.Checkpoint.Artifacts.Select(x => new { x.Format, x.Sha256, x.SizeBytes, x.Verified }),
+            publicationArtifacts = first.Checkpoint.Artifacts.Select(x => new { x.Format, x.Sha256, x.ByteSize, x.Verified }),
             image = new
             {
                 first.Image.Sha256,
@@ -195,7 +195,7 @@ internal static class HumanCentricBookCreationAuditSmoke
                 "en"),
             new JourneyAutonomyPolicy(
                 JourneyAutonomyMode.Autonomous,
-                request.Policy.MaximumAutomaticRepairs,
+                request.Policy.MaximumRepairAttempts,
                 request.Policy.MaximumCost,
                 false,
                 false,
