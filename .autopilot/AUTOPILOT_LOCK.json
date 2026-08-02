@@ -5,13 +5,13 @@
   "issue": 188,
   "pull_request": 189,
   "branch": "agent/VS-125-commercial-image-clearance",
-  "implementation_sha": "e3477eb1c1c0f891a303ad5f3115aac368f43d3a",
-  "last_green_sha": "71b15c326332493a4314632425b392ebf86916c9",
+  "implementation_sha": "39588e4347bdda8c5e8fc105544112d0de2a2ed8",
+  "last_green_sha": "601281b9c76399a4a6de912a258f7f0869be579e",
   "owner": "mcp-validate-repair",
   "purpose": "Reserve the single active VS while commercial image moderation and external rights-clearance integration is validated on one exact head SHA.",
   "acquired_at": "2026-08-02T11:16:36+02:00",
-  "renewed_at": "2026-08-02T11:19:00+02:00",
-  "expires_at": "2026-08-02T13:19:00+02:00",
+  "renewed_at": "2026-08-02T11:35:00+02:00",
+  "expires_at": "2026-08-02T13:35:00+02:00",
   "renewal_policy": "Release only after exact-head green validation and merge or explicit abandonment; do not create another VS, branch or PR.",
   "priority": "commercial-image-moderation-rights-clearance",
   "checkpoint": {
@@ -20,16 +20,18 @@
     "dotnet_ci": "pending",
     "review_threads_open": 0,
     "merge_authorized": false,
+    "independent_review": "Persisted restart evidence was hardened to revalidate approval, digest, provider identity, request identity, license, rights holder, territory, currency, component costs, aggregate cost and policy ceiling before reuse.",
+    "e2e_update": "The integration smoke now invokes the verification authority directly after restart and rejects tampered persisted evidence, preventing the downstream artifact cache from masking an untested verification path.",
     "implemented_changes": [
       "Add provider-independent safety moderation and external rights-clearance contracts.",
       "Bind both decisions to the exact generated artifact SHA-256.",
       "Persist verification evidence atomically inside the workspace.",
-      "Reuse verification after restart only for exact asset, digest, provider and request identity.",
+      "Reuse verification after restart only after complete persisted-evidence revalidation.",
       "Aggregate provider, moderation and clearance costs under one ceiling.",
-      "Reject unsafe, uncleared, contradictory, wrong-territory, wrong-currency and over-budget evidence.",
+      "Reject unsafe, uncleared, contradictory, wrong-territory, wrong-currency, tampered and over-budget evidence.",
       "Wire executable integration proof into the existing CI integration program.",
       "Add SDD, Dual TDD, Auditoría M, Meta-Audit, RetroSpec and completion metrics."
     ],
-    "next_action": "Run Plan Integrity, Governance Gates and .NET CI on the exact final head SHA; repair only VS-125 on PR #189 and keep it in draft."
+    "next_action": "Run Plan Integrity, Governance Gates and .NET CI on the exact final head SHA; repair only VS-125 on PR #189 and keep it in draft until all checks pass."
   }
 }
