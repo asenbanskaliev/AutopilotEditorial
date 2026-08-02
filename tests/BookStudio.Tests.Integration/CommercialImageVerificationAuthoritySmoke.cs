@@ -1,5 +1,5 @@
 using BookStudio.Application.Authoring;
-using System.Text;
+using System.Text.Json;
 
 namespace BookStudio.Tests.Integration;
 
@@ -37,16 +37,35 @@ internal static class CommercialImageVerificationAuthoritySmoke
 
         var verificationPath = Path.Combine(root, "commercial-image-verification", assetId.ToString("N") + ".json");
         Require(File.Exists(verificationPath), "commercial verification evidence was not persisted");
+        var originalEvidenceJson = await File.ReadAllTextAsync(verificationPath);
 
         var restartedProvider = new CommercialImageVerificationAuthority(
             new DeterministicLicensedSvgProvider(),
             new ThrowingModerator(),
             new ThrowingRightsClearance(),
             root);
+        var directlyReused = await restartedProvider.GenerateAsync(request);
+        Require(directlyReused.LicenseReference == first.Rights.LicenseReference, "verified authority restart did not reuse exact clearance evidence");
+
         var restartedPipeline = new ImageProviderRightsPipeline(restartedProvider, root);
         var restarted = await restartedPipeline.ExecuteAsync(request);
         Require(restarted.ReusedExistingArtifact, "restart did not reuse the exact verified artifact");
         Require(restarted.Sha256 == first.Sha256, "restart changed verified image bytes");
+
+        var persisted = JsonSerializer.Deserialize<CommercialImageVerificationEvidence>(originalEvidenceJson)
+            ?? throw new InvalidOperationException("commercial verification evidence could not be deserialized");
+        await File.WriteAllTextAsync(
+            verificationPath,
+            JsonSerializer.Serialize(persisted with { Currency = "EUR" }, new JsonSerializerOptions { WriteIndented = true }));
+        await ExpectProviderFailureAsync(
+            new CommercialImageVerificationAuthority(
+                new DeterministicLicensedSvgProvider(),
+                new ThrowingModerator(),
+                new ThrowingRightsClearance(),
+                root),
+            request,
+            "tampered persisted verification evidence was reused");
+        await File.WriteAllTextAsync(verificationPath, originalEvidenceJson);
 
         await ExpectFailureAsync(
             new ImageProviderRightsPipeline(
@@ -87,6 +106,20 @@ internal static class CommercialImageVerificationAuthoritySmoke
         try
         {
             await pipeline.ExecuteAsync(request);
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException(message);
+    }
+
+    private static async Task ExpectProviderFailureAsync(IImageGenerationProvider provider, ImageGenerationRequest request, string message)
+    {
+        try
+        {
+            await provider.GenerateAsync(request);
         }
         catch (InvalidOperationException)
         {
