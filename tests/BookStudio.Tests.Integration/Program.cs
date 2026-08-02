@@ -20,6 +20,9 @@ try
 
     await ProviderBackedDeepBookProofAuthoritySmoke.RunAsync(workspaceRoot);
     Console.WriteLine("VS-123 provider-backed deep proof PASS: natural-language journey, real provider artifacts, checkpoint registration and restart idempotency verified.");
+
+    await ImageProviderRightsPipelineSmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-124 image provider rights PASS: exact image bytes, provenance, licensing, accessibility, bounded repair and restart reuse verified.");
     return 0;
 }
 catch (Exception exception)
