@@ -5,30 +5,29 @@
   "issue": 186,
   "pull_request": 187,
   "branch": "agent/VS-124-image-provider-rights",
-  "implementation_sha": "daa27827c3240696ab4f3cc81cc6d3ade3730393",
-  "last_green_sha": "7a2739c6676aaf3f8b1021342404a4cec77fe206",
-  "owner": "mcp-audit-control",
-  "purpose": "Reserve the single active VS while the image authority is integrated into the durable no-command publication journey.",
+  "implementation_sha": "6d5317265aa4a3c9895cdc65d364a35a1770c3e7",
+  "last_green_sha": "4d63ea87c3a26a9744e245081e3eff6aab4d0655",
+  "owner": "mcp-validate-repair",
+  "purpose": "Reserve the single active VS while the image authority integration is validated on one exact head SHA.",
   "acquired_at": "2026-08-02T06:16:42+02:00",
-  "renewed_at": "2026-08-02T08:04:00+02:00",
-  "expires_at": "2026-08-02T09:15:00+02:00",
-  "renewal_policy": "Release only after integration repair, exact-head green validation and merge or explicit abandonment; do not create another VS, branch or PR.",
+  "renewed_at": "2026-08-02T08:31:23+02:00",
+  "expires_at": "2026-08-02T10:00:00+02:00",
+  "renewal_policy": "Release only after exact-head green validation and merge or explicit abandonment; do not create another VS, branch or PR.",
   "priority": "e2e-image-authority-integration",
   "checkpoint": {
-    "plan_integrity_on_last_green_sha": "success",
-    "governance_gates_on_last_green_sha": "success",
-    "dotnet_ci_on_last_green_sha": "success",
+    "plan_integrity": "pending",
+    "governance_gates": "pending",
+    "dotnet_ci": "pending",
     "review_threads_open": 0,
     "mergeable": true,
     "merge_authorized": false,
-    "blocking_gap": "ImageProviderRightsPipeline remains isolated from BookCreationJourney, DeepBookProof and the persisted publication journey.",
-    "required_repair": [
-      "Connect image generation and rights evidence to the durable no-command journey authority.",
-      "Persist image artifact, digest, provider/model/request, prompt digest, rights, territory, alt text, cost and approval in the book checkpoint.",
-      "Add E2E proof from idea through image-backed EPUB/PDF/DOCX/KDP publication, restart recovery and fail-closed rejection.",
-      "Correct matrix and evidence to effective integration only.",
-      "Run Plan Integrity, Governance Gates and .NET CI on the resulting exact head SHA."
+    "integration_repair": "implemented",
+    "implemented_changes": [
+      "Persist image artifact, digest, provider/model/request, prompt digest, rights, territory, alt text and cost in DeepBookProofCheckpoint.",
+      "Connect ImageProviderRightsPipeline to ProviderBackedDeepBookProofAuthority.",
+      "Require and verify image evidence before publication readiness when policy enables it.",
+      "Add E2E proof from natural-language idea through image-backed EPUB/PDF/DOCX/KDP publication, restart recovery and fail-closed rejection."
     ],
-    "next_action": "Repair VS-124 in PR #187 only; do not merge and do not start VS-125."
+    "next_action": "Run Plan Integrity, Governance Gates and .NET CI on the exact final lock SHA; repair VS-124 only if any check fails."
   }
 }
