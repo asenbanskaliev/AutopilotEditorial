@@ -17,6 +17,9 @@ try
 
     await PublicationArtifactPipelineIntegrationSmoke.RunAsync(workspaceRoot);
     Console.WriteLine("VS-123 provider-backed artifacts PASS: real EPUB, PDF, DOCX and KDP bytes, provenance, budget and replay verified.");
+
+    await ProviderBackedDeepBookProofAuthoritySmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-123 provider-backed deep proof PASS: natural-language journey, real provider artifacts, checkpoint registration and restart idempotency verified.");
     return 0;
 }
 catch (Exception exception)
