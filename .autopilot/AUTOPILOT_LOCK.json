@@ -5,21 +5,23 @@
   "issue": 182,
   "pull_request": 183,
   "branch": "agent/VS-122-deep-no-command-e2e",
-  "implementation_sha": "743c479d797e7561e8e9356327897103d015101c",
+  "implementation_sha": "e7797a696aba6115114c5add79b2a0bf3c411a22",
   "owner": "mcp-validate-repair",
-  "purpose": "Validate the single prioritized deep no-command end-to-end proof without concurrent VS work.",
+  "purpose": "Validate and repair the single prioritized deep no-command end-to-end proof without concurrent VS work.",
   "acquired_at": "2026-08-02T03:14:30+02:00",
-  "expires_at": "2026-08-02T04:20:00+02:00",
+  "expires_at": "2026-08-02T05:20:00+02:00",
   "renewal_policy": "Renew while VS-122 remains the only active VS; release after merge or explicit abandonment.",
   "priority": "deep-e2e-proof-validation",
   "checkpoint": {
-    "plan_integrity": "pending",
-    "governance_gates": "pending",
-    "dotnet_ci": "pending",
-    "implementation": "complete",
+    "plan_integrity": "pending-on-repaired-head",
+    "governance_gates": "pending-on-repaired-head",
+    "dotnet_ci": "repair-committed-awaiting-rerun",
+    "implementation": "repaired",
+    "failure": "System.Text.Json could not deserialize IReadOnlySet<DeepBookProofPhase> from the durable checkpoint.",
+    "repair": "Persist CompletedPhases as HashSet<DeepBookProofPhase> and normalize checkpoint updates to concrete sets.",
     "matrix": "updated",
-    "metrics": "updated",
+    "metrics": "awaiting-same-head-validation",
     "draft_pr": "open",
-    "next_action": "Validate PR 183 on its final branch head, repair on the same VS if needed, and do not merge or start another VS."
+    "next_action": "Validate PR 183 on the new final head; do not merge or start another VS until all three workflows pass on that exact SHA."
   }
 }
