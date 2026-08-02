@@ -5,18 +5,20 @@
   "issue": 182,
   "pull_request": null,
   "branch": "agent/VS-122-deep-no-command-e2e",
-  "head_sha": "pending",
-  "owner": "mcp-implement-vs",
-  "purpose": "Implement the single prioritized deep no-command end-to-end proof without concurrent VS work.",
+  "head_sha": "18e4cdbf41fb7b67d763625850974ae1978e304a",
+  "owner": "mcp-validate-repair",
+  "purpose": "Validate the single prioritized deep no-command end-to-end proof without concurrent VS work.",
   "acquired_at": "2026-08-02T03:14:30+02:00",
-  "expires_at": "2026-08-02T04:05:00+02:00",
-  "renewal_policy": "Renew while VS-122 remains the only active VS and release after validation handoff or abandonment.",
-  "priority": "deep-e2e-proof",
+  "expires_at": "2026-08-02T04:20:00+02:00",
+  "renewal_policy": "Renew while VS-122 remains the only active VS; release after merge or explicit abandonment.",
+  "priority": "deep-e2e-proof-validation",
   "checkpoint": {
     "plan_integrity": "pending",
     "governance_gates": "pending",
     "dotnet_ci": "pending",
-    "implementation": "in_progress",
-    "next_action": "Implement durable execution proof, integration smoke, evidence and completion matrix; open one draft PR and do not merge."
+    "implementation": "complete",
+    "matrix": "updated",
+    "metrics": "updated",
+    "next_action": "Open one draft PR, run all required workflows on the final head, repair on the same VS if needed, and do not start another VS."
   }
 }
