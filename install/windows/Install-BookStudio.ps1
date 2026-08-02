@@ -4,7 +4,8 @@ param(
   [Parameter(Mandatory=$true)][string]$ExpectedSha256,
   [string]$InstallRoot = "$env:LOCALAPPDATA\BookStudio",
   [int]$MaxRepairAttempts = 2,
-  [switch]$NonInteractive
+  [switch]$NonInteractive,
+  [switch]$NoLaunchForValidation
 )
 
 $ErrorActionPreference = 'Stop'
@@ -31,12 +32,19 @@ function Protect-Secret([string]$PlainText) {
   return ConvertFrom-SecureString $secure
 }
 
-$package = (Resolve-Path -LiteralPath $PackagePath).Path
-$actualHash = (Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash.ToLowerInvariant()
-if ($actualHash -ne $ExpectedSha256.ToLowerInvariant()) { throw "Package SHA-256 mismatch." }
+if ($NoLaunchForValidation -and $env:BOOKSTUDIO_VALIDATION_MODE -ne '1') {
+  throw 'NoLaunchForValidation is restricted to the controlled validation environment.'
+}
 
-$signature = Get-AuthenticodeSignature -LiteralPath $package
-if ($signature.Status -ne 'Valid') { throw "Package signature is not valid: $($signature.Status)" }
+$installerSignature = Get-AuthenticodeSignature -LiteralPath $PSCommandPath
+if ($installerSignature.Status -ne 'Valid') {
+  throw "Installer signature is not valid: $($installerSignature.Status)"
+}
+
+$package = (Resolve-Path -LiteralPath $PackagePath).Path
+if ([IO.Path]::GetExtension($package) -ne '.zip') { throw 'Package must be a ZIP archive.' }
+$actualHash = (Get-FileHash -LiteralPath $package -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($actualHash -ne $ExpectedSha256.ToLowerInvariant()) { throw 'Package SHA-256 mismatch.' }
 
 $statePath = Join-Path $InstallRoot 'state\first-run.json'
 $evidencePath = Join-Path $InstallRoot 'evidence\installation.json'
@@ -50,7 +58,7 @@ $state = if (Test-Path $statePath) { Get-Content $statePath -Raw | ConvertFrom-J
 }
 
 if ($state.completed -eq $true) {
-  Write-Output "BookStudio is already configured."
+  Write-Output 'BookStudio is already configured.'
   exit 0
 }
 
@@ -66,7 +74,9 @@ try {
     if ([string]::IsNullOrWhiteSpace($provider)) { throw 'Provider is required.' }
     $monthlyLimit = if ($NonInteractive) { $env:BOOKSTUDIO_MONTHLY_LIMIT_EUR } else { Read-Host 'Límite mensual máximo en EUR' }
     [decimal]$parsedLimit = 0
-    if (-not [decimal]::TryParse($monthlyLimit, [ref]$parsedLimit) -or $parsedLimit -lt 0) { throw 'A valid non-negative monthly limit is required.' }
+    if (-not [decimal]::TryParse($monthlyLimit, [Globalization.NumberStyles]::Number, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsedLimit) -or $parsedLimit -lt 0) {
+      throw 'A valid non-negative monthly limit is required.'
+    }
     $secret = if ($NonInteractive) { $env:BOOKSTUDIO_PROVIDER_SECRET } else { Read-Host 'Credencial del proveedor' -AsSecureString | ConvertFrom-SecureString }
     if ($NonInteractive) {
       if ([string]::IsNullOrWhiteSpace($secret)) { throw 'Credential is required.' }
@@ -80,15 +90,16 @@ try {
 
   if ($state.phase -eq 'configured') {
     $launcher = Join-Path $InstallRoot 'BookStudio.exe'
-    if (-not (Test-Path $launcher)) { throw 'Installed launcher was not found.' }
+    Assert-WithinRoot $launcher $InstallRoot
+    if (-not (Test-Path $launcher -PathType Leaf)) { throw 'Installed launcher was not found.' }
     $state.phase = 'ready'; $state.completed = $true; $state.updatedAt = (Get-Date).ToString('o'); Write-AtomicJson $statePath $state
     Write-AtomicJson $evidencePath ([ordered]@{
-      schemaVersion=1; packageSha256=$actualHash; signer=$signature.SignerCertificate.Subject;
-      signatureStatus=$signature.Status.ToString(); installRoot=[IO.Path]::GetFullPath($InstallRoot);
+      schemaVersion=1; packageSha256=$actualHash; signer=$installerSignature.SignerCertificate.Subject;
+      signatureStatus=$installerSignature.Status.ToString(); installRoot=[IO.Path]::GetFullPath($InstallRoot);
       provider=$state.provider; monthlyLimitEur=$state.monthlyLimitEur; credentialStorage='Windows-DPAPI-current-user';
       completedAt=(Get-Date).ToString('o'); repairAttempts=$state.repairAttempts
     })
-    Start-Process -FilePath $launcher
+    if (-not $NoLaunchForValidation) { Start-Process -FilePath $launcher }
   }
 }
 catch {
