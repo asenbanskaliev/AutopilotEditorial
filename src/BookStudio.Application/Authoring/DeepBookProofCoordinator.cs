@@ -121,8 +121,8 @@ public sealed class DeepBookProofCoordinator
             var bytes = File.ReadAllBytes(path);
             var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
             if (bytes.LongLength == 0 || bytes.LongLength != image.ByteSize || !StringComparer.Ordinal.Equals(digest, image.Sha256)) return false;
-            if (string.IsNullOrWhiteSpace(image.Provenance.ProviderId) || string.IsNullOrWhiteSpace(image.Provenance.Model) ||
-                string.IsNullOrWhiteSpace(image.Provenance.ProviderRequestId) || string.IsNullOrWhiteSpace(image.Provenance.PromptDigest) ||
+            if (string.IsNullOrWhiteSpace(image.Provenance.Provider) || string.IsNullOrWhiteSpace(image.Provenance.Model) ||
+                string.IsNullOrWhiteSpace(image.Provenance.SourceUri) || string.IsNullOrWhiteSpace(image.Provenance.PromptDigest) ||
                 string.IsNullOrWhiteSpace(image.Rights.LicenseKind) || string.IsNullOrWhiteSpace(image.Rights.LicenseReference) ||
                 string.IsNullOrWhiteSpace(image.Rights.RightsHolder) || string.IsNullOrWhiteSpace(image.Rights.Territory) ||
                 string.IsNullOrWhiteSpace(image.Accessibility.AltText)) return false;
@@ -205,7 +205,7 @@ public sealed class DeepBookProofCoordinator
         var artifacts = string.Join(';', checkpoint.Artifacts.OrderBy(x => x.Format, StringComparer.Ordinal)
             .Select(x => $"{x.Format}|{x.RelativePath}|{x.MediaType}|{x.ByteSize}|{x.Sha256}|{x.Provenance}|{x.Verified}"));
         var images = string.Join(';', (checkpoint.ImageArtifacts ?? Array.Empty<ImageArtifactEvidence>()).OrderBy(x => x.AssetId)
-            .Select(x => $"{x.AssetId}|{x.RelativePath}|{x.MediaType}|{x.ByteSize}|{x.Sha256}|{x.Provenance.ProviderId}|{x.Provenance.Model}|{x.Provenance.ProviderRequestId}|{x.Provenance.PromptDigest}|{x.Rights.LicenseKind}|{x.Rights.LicenseReference}|{x.Rights.RightsHolder}|{x.Rights.Territory}|{x.Accessibility.AltText}|{x.ChargedCost}|{x.Currency}"));
+            .Select(x => $"{x.AssetId}|{x.RelativePath}|{x.MediaType}|{x.ByteSize}|{x.Sha256}|{x.Provenance.Provider}|{x.Provenance.Model}|{x.Provenance.SourceUri}|{x.Provenance.PromptDigest}|{x.Rights.LicenseKind}|{x.Rights.LicenseReference}|{x.Rights.RightsHolder}|{x.Rights.Territory}|{x.Accessibility.AltText}|{x.ChargedCost}|{x.Currency}"));
         var phases = string.Join(',', checkpoint.CompletedPhases.OrderBy(x => x));
         var value = $"{checkpoint.ProofId}|{checkpoint.JourneyId}|{checkpoint.WorkspaceId}|{checkpoint.Status}|{checkpoint.Phase}|{checkpoint.Revision}|{checkpoint.AccumulatedCost}|{checkpoint.RepairAttempts}|{artifacts}|{images}|{phases}|{checkpoint.BlockingReason}";
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
