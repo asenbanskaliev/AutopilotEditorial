@@ -6,21 +6,25 @@
   "pull_request": 185,
   "branch": "agent/VS-123-provider-backed-artifacts",
   "implementation_sha": "10ab9dcedd236c1ca8c0a0757f96058125d6e4bd",
+  "repaired_source_sha": "334f181a6621c3f153f66b5b88865417fc5fa54a",
   "owner": "mcp-validate-repair",
   "purpose": "Validate and repair the single provider-backed publication artifact pipeline without concurrent VS work.",
   "acquired_at": "2026-08-02T04:15:00+02:00",
   "transferred_at": "2026-08-02T04:18:00+02:00",
-  "expires_at": "2026-08-02T05:35:00+02:00",
+  "renewed_at": "2026-08-02T04:33:00+02:00",
+  "expires_at": "2026-08-02T06:00:00+02:00",
   "renewal_policy": "Renew while VS-123 remains the only active VS; release after merge or explicit abandonment.",
   "priority": "provider-backed-real-artifacts-validation",
   "checkpoint": {
-    "plan_integrity": "pending-on-final-head",
-    "governance_gates": "pending-on-final-head",
-    "dotnet_ci": "pending-on-final-head",
-    "implementation": "complete",
+    "plan_integrity": "pending-on-repaired-final-head",
+    "governance_gates": "pending-on-repaired-final-head",
+    "dotnet_ci": "failed-on-d33a1f8d2309c25415c83a458931ecbb0bcb9654-zip-timestamp-repaired",
+    "implementation": "complete-with-minimal-ci-repair",
     "matrix": "updated",
     "metrics": "updated-pending-validation",
     "draft_pr": "open",
-    "next_action": "Validate PR 185 on the final head; repair only this VS and do not merge or start another VS until all required workflows pass on the exact same SHA."
+    "root_cause": "ZIP entries used UnixEpoch, which predates the ZIP timestamp minimum of 1980-01-01.",
+    "repair": "Use a deterministic ZIP-compatible timestamp of 1980-01-01T00:00:00Z for every generated container entry.",
+    "next_action": "Validate PR 185 on the new final head; do not merge or start another VS until Plan Integrity, Governance Gates and .NET CI pass on that exact SHA."
   }
 }
