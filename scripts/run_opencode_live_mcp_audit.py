@@ -102,6 +102,27 @@ def ensure_no_secret(secret: str, values: list[str]) -> None:
                 raise RuntimeError("secret leakage detected")
 
 
+def workspace_contains(identifier: str) -> bool:
+    needle = identifier.encode("utf-8")
+    for path in BOOK_WORKSPACE.rglob("*"):
+        if not path.is_file():
+            continue
+        if identifier in path.as_posix():
+            return True
+        try:
+            if needle in path.read_bytes():
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def require_persisted(identifier: str, stage: str) -> None:
+    if not workspace_contains(identifier):
+        raise RuntimeError(f"{stage} completed without persisted MCP artifact {identifier}")
+    progress(f"PERSISTENCE PASS: {identifier}")
+
+
 def select_model(models_output: str) -> str:
     configured = os.environ.get("OPENCODE_TEST_MODEL", "").strip()
     available = set(re.findall(r"opencode/[A-Za-z0-9._-]+", models_output))
@@ -150,7 +171,7 @@ def live_stage(
         raise RuntimeError(f"STAGE {number}/{total} FAILED: missing marker {marker}")
     missing = [term for term in required_terms if not re.search(re.escape(term), text, re.I)]
     if missing:
-        raise RuntimeError(f"STAGE {number}/{total} FAILED: missing evidence {', '.join(missing)}")
+        raise RuntimeError(f"STAGE {number}/{total} FAILED: missing tool evidence {', '.join(missing)}")
     progress(f"STAGE {number}/{total} PASS: {name} ({result.duration_ms} ms)")
     return result
 
@@ -241,23 +262,27 @@ def main() -> int:
     stages: list[CommandResult] = []
     stages.append(live_stage(1, total, "briefing", exe, model, env, f"""
 Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, write a concise professional Spanish briefing for this idea: 'A near-future literary mystery set in Navarra, where an archivist discovers that erased municipal records predict disappearances.' Register it with book.draft.register using artifactId {BRIEFING_ID}, expectedVersion 1 and mediaType text/markdown. Do not use shell, files or web. Finish exactly with BRIEFING_COMPLETE.
-""".strip(), "BRIEFING_COMPLETE", 120, ("book.draft.register", BRIEFING_ID)))
+""".strip(), "BRIEFING_COMPLETE", 120, ("book.draft.register",)))
+    require_persisted(BRIEFING_ID, "briefing")
 
     stages.append(live_stage(2, total, "outline", exe, model, env, f"""
 Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, create a Spanish outline with premise, protagonist, conflict, eight chapter beats, tone and continuity rules. Register it with book.draft.register using artifactId {OUTLINE_ID}, expectedVersion 1 and mediaType text/markdown. Do not use shell, files or web. Finish exactly with OUTLINE_COMPLETE.
-""".strip(), "OUTLINE_COMPLETE", 120, ("book.draft.register", OUTLINE_ID)))
+""".strip(), "OUTLINE_COMPLETE", 120, ("book.draft.register",)))
+    require_persisted(OUTLINE_ID, "outline")
 
     stages.append(live_stage(3, total, "chapter", exe, model, env, f"""
 Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, write chapter 1 in polished Spanish, 400 to 650 words, headed '# Capítulo 1', with a concrete Navarra setting, character goal, tension and closing hook. Register it with book.draft.register using artifactId {CHAPTER_ID}, expectedVersion 1 and mediaType text/markdown. Do not use shell, files or web. Finish exactly with CHAPTER_COMPLETE.
-""".strip(), "CHAPTER_COMPLETE", 180, ("book.draft.register", CHAPTER_ID)))
+""".strip(), "CHAPTER_COMPLETE", 180, ("book.draft.register",)))
+    require_persisted(CHAPTER_ID, "chapter")
 
     stages.append(live_stage(4, total, "chapter validation", exe, model, env, f"""
 Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, call book.draft.validate for artifactId {CHAPTER_ID}, version 1 and maximumLineLength 160. Do not register anything. Finish exactly with VALIDATION_COMPLETE.
-""".strip(), "VALIDATION_COMPLETE", 90, ("book.draft.validate", CHAPTER_ID)))
+""".strip(), "VALIDATION_COMPLETE", 90, ("book.draft.validate",)))
 
     stages.append(live_stage(5, total, "release and preflight", exe, model, env, f"""
 Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, call book.release.prepare with releaseId {RELEASE_ID}, expectedVersion 1, title 'Los registros borrados', language es-ES, and one source role manuscript, artifactId {CHAPTER_ID}, version 1. Then call book.preflight.run for releaseArtifactId {RELEASE_ARTIFACT_ID}, version 1, profile release-basic. Finish exactly with RELEASE_COMPLETE.
-""".strip(), "RELEASE_COMPLETE", 150, ("book.release.prepare", "book.preflight.run", RELEASE_ARTIFACT_ID)))
+""".strip(), "RELEASE_COMPLETE", 150, ("book.release.prepare", "book.preflight.run")))
+    require_persisted(RELEASE_ARTIFACT_ID, "release")
 
     second_mcp = run([str(exe), "mcp", "list"], env, 90)
     second_mcp_text = second_mcp.stdout + second_mcp.stderr
@@ -269,8 +294,6 @@ Use only the AutopilotEditorial MCP. For projectId {PROJECT_ID}, call book.relea
 Resume existing project {PROJECT_ID} using only AutopilotEditorial MCP tools. Call book.draft.validate for {CHAPTER_ID}, version 1, maximumLineLength 160, then book.preflight.run for {RELEASE_ARTIFACT_ID}, version 1, profile release-basic. Do not register or prepare anything again. Finish exactly with RESUME_COMPLETE.
 """.strip(), "RESUME_COMPLETE", 120, ("book.draft.validate", "book.preflight.run")))
 
-    if not any(BOOK_WORKSPACE.rglob("*")):
-        raise RuntimeError("journey created no persistent MCP workspace evidence")
     auth_file = RUNTIME / "data" / "opencode" / "auth.json"
     if auth_file.exists():
         raise RuntimeError("OpenCode persisted auth.json despite ephemeral credential transport")
@@ -296,6 +319,10 @@ Resume existing project {PROJECT_ID} using only AutopilotEditorial MCP tools. Ca
         "projectId": PROJECT_ID,
         "stageCount": total,
         "allStagesPassed": True,
+        "briefingPersisted": workspace_contains(BRIEFING_ID),
+        "outlinePersisted": workspace_contains(OUTLINE_ID),
+        "chapterPersisted": workspace_contains(CHAPTER_ID),
+        "releasePersisted": workspace_contains(RELEASE_ARTIFACT_ID),
         "restartRediscovery": True,
         "duplicateRegistrationAttempted": False,
         "duplicateReleasePreparationAttempted": False,
