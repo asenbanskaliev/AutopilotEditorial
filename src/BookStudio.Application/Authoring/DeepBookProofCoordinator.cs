@@ -153,7 +153,7 @@ public sealed class DeepBookProofCoordinator
             AccumulatedCost = cost,
             RepairAttempts = repairs,
             Artifacts = artifacts,
-            CompletedPhases = completed,
+            CompletedPhases = completed.ToHashSet(),
             BlockingReason = blockingReason,
             UpdatedAtUtc = at
         };
