@@ -3,9 +3,9 @@
   "status": "active",
   "vs": "VS-122",
   "issue": 182,
-  "pull_request": null,
+  "pull_request": 183,
   "branch": "agent/VS-122-deep-no-command-e2e",
-  "head_sha": "18e4cdbf41fb7b67d763625850974ae1978e304a",
+  "implementation_sha": "743c479d797e7561e8e9356327897103d015101c",
   "owner": "mcp-validate-repair",
   "purpose": "Validate the single prioritized deep no-command end-to-end proof without concurrent VS work.",
   "acquired_at": "2026-08-02T03:14:30+02:00",
@@ -19,6 +19,7 @@
     "implementation": "complete",
     "matrix": "updated",
     "metrics": "updated",
-    "next_action": "Open one draft PR, run all required workflows on the final head, repair on the same VS if needed, and do not start another VS."
+    "draft_pr": "open",
+    "next_action": "Validate PR 183 on its final branch head, repair on the same VS if needed, and do not merge or start another VS."
   }
 }
