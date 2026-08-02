@@ -5,22 +5,22 @@
   "issue": 190,
   "pull_request": 191,
   "branch": "agent/VS-126-signed-installer-first-run",
-  "implementation_head_sha": "c00797a86b3ec451ad30292bfaa516609e139863",
+  "implementation_head_sha": "fb349c761ee01d0523caed92ce201f00285ffab7",
   "owner": "mcp-validate-repair",
   "acquired_at": "2026-08-02T12:20:45+02:00",
-  "renewed_at": "2026-08-02T13:30:50+02:00",
-  "expires_at": "2026-08-02T15:00:00+02:00",
+  "renewed_at": "2026-08-02T14:30:00+02:00",
+  "expires_at": "2026-08-02T16:00:00+02:00",
   "checkpoint": {
     "selected_gap": "Signed installer, guided first-run setup and deployment-grade credential configuration without manual technical commands.",
     "scope": "VS-126 only",
     "merge_authorized": false,
-    "plan_integrity": "success-on-c00797a86b3ec451ad30292bfaa516609e139863",
-    "governance_gates": "success-on-c00797a86b3ec451ad30292bfaa516609e139863",
-    "dotnet_ci": "cancelled-on-c00797a86b3ec451ad30292bfaa516609e139863-revalidation-required",
-    "windows_installer_execution": "integrated-e2e-revalidation-required",
+    "plan_integrity": "success-on-fb453e17c499628c012b7a966a8c11efb1e7cfb9-revalidation-required-after-repair",
+    "governance_gates": "success-on-fb453e17c499628c012b7a966a8c11efb1e7cfb9-revalidation-required-after-repair",
+    "dotnet_ci": "cancelled-on-fb453e17c499628c012b7a966a8c11efb1e7cfb9-after-e2e-exceeded-25-minute-workflow-timeout",
+    "windows_installer_execution": "repaired-with-isolated-noninteractive-child-processes-120-second-phase-bounds-and-progress-evidence",
     "matrix": "updated-to-implemented-unproven",
     "metrics": "independent-review-pending-exact-head-ci",
-    "repair": "No functional defect was established from the cancelled run. The lock renewal intentionally retriggers all required workflows on one new exact head without changing product scope.",
-    "next_action": "Validate Plan Integrity, Governance Gates and .NET CI on the exact new PR head. Keep PR #191 draft and do not create another VS, branch or PR."
+    "repair": "The build passed with zero warnings and errors. The installer E2E hung until the workflow timeout. The same VS now executes each installer invocation in a non-interactive child process, captures stdout/stderr, enforces a 120-second bound, removes unnecessary TrustedPublisher mutation and preserves the original security, cost, durability and idempotency assertions.",
+    "next_action": "Validate Plan Integrity, Governance Gates and .NET CI on the exact final PR head created by this checkpoint. Keep PR #191 draft and do not create another VS, branch or PR."
   }
 }
