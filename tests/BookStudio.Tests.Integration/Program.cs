@@ -26,6 +26,9 @@ try
 
     await CommercialImageVerificationAuthoritySmoke.RunAsync(workspaceRoot);
     Console.WriteLine("VS-125 commercial image verification PASS: moderation, external rights clearance, exact evidence, cost ceilings, restart reuse and fail-closed rejection verified.");
+
+    await HumanCentricBookCreationAuditSmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-127 human-centric audit PASS: idea-to-KDP no-command journey, exact evidence, bounded cost, restart recovery and fail-closed rights rejection verified.");
     return 0;
 }
 catch (Exception exception)
