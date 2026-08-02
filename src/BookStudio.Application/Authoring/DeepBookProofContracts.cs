@@ -10,7 +10,8 @@ public sealed record DeepBookProofPolicy(
     decimal MaximumCost,
     string CostCurrency,
     int MaximumRepairAttempts,
-    IReadOnlySet<string> RequiredFormats);
+    IReadOnlySet<string> RequiredFormats,
+    bool RequireImageEvidence = false);
 
 public sealed record DeepBookProofRequest(
     Guid ProofId,
@@ -42,7 +43,8 @@ public sealed record DeepBookProofCheckpoint(
     HashSet<DeepBookProofPhase> CompletedPhases,
     string EvidenceDigest,
     string? BlockingReason,
-    DateTimeOffset UpdatedAtUtc);
+    DateTimeOffset UpdatedAtUtc,
+    IReadOnlyList<ImageArtifactEvidence>? ImageArtifacts = null);
 
 public sealed record DeepBookProofStepResult(
     DeepBookProofCheckpoint Checkpoint,
