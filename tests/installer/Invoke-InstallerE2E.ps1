@@ -96,7 +96,11 @@ Write-Output `$cert.Thumbprint
 
   $trustCertificateScript = @"
 `$ErrorActionPreference = 'Stop'
-Import-Certificate -FilePath '$($certificateFile.Replace("'", "''"))' -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+`$certutil = Join-Path `$env:SystemRoot 'System32\certutil.exe'
+& `$certutil -user -f -addstore Root '$($certificateFile.Replace("'", "''"))' | Out-Host
+if (`$LASTEXITCODE -ne 0) { throw "certutil trust import failed with exit code `$LASTEXITCODE" }
+`$trusted = Get-Item -LiteralPath 'Cert:\CurrentUser\Root\$certificateThumbprint' -ErrorAction Stop
+if (`$trusted.Thumbprint -ne '$certificateThumbprint') { throw 'Trusted certificate thumbprint mismatch.' }
 Write-Output 'trusted'
 "@
   Invoke-BoundedPowerShell -Label 'certificate-trust-import' -Script $trustCertificateScript -TimeoutSeconds 60 | Out-Null
@@ -146,8 +150,9 @@ finally {
   if (-not [string]::IsNullOrWhiteSpace($certificateThumbprint)) {
     $cleanupScript = @"
 `$ErrorActionPreference = 'SilentlyContinue'
+`$certutil = Join-Path `$env:SystemRoot 'System32\certutil.exe'
+& `$certutil -user -delstore Root '$certificateThumbprint' | Out-Null
 Remove-Item -LiteralPath 'Cert:\CurrentUser\My\$certificateThumbprint' -Force
-Remove-Item -LiteralPath 'Cert:\CurrentUser\Root\$certificateThumbprint' -Force
 Write-Output 'cleaned'
 "@
     try { Invoke-BoundedPowerShell -Label 'certificate-cleanup' -Script $cleanupScript -TimeoutSeconds 30 | Out-Null } catch { Write-Warning $_ }
