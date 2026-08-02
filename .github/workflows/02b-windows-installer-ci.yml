@@ -1,0 +1,29 @@
+name: .NET CI
+
+on:
+  pull_request:
+    paths:
+      - "install/windows/**"
+      - "tests/installer/**"
+      - ".github/workflows/02b-windows-installer-ci.yml"
+      - ".autopilot/AUTOPILOT_LOCK.json"
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore solution
+        run: dotnet restore BookStudio.slnx
+      - name: Build solution
+        run: dotnet build BookStudio.slnx --no-restore -c Release
+      - name: Execute signed installer end-to-end
+        shell: pwsh
+        run: pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File tests/installer/Invoke-InstallerE2E.ps1
