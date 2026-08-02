@@ -39,7 +39,7 @@ public sealed record DeepBookProofCheckpoint(
     decimal AccumulatedCost,
     int RepairAttempts,
     IReadOnlyList<DeepBookArtifact> Artifacts,
-    IReadOnlySet<DeepBookProofPhase> CompletedPhases,
+    HashSet<DeepBookProofPhase> CompletedPhases,
     string EvidenceDigest,
     string? BlockingReason,
     DateTimeOffset UpdatedAtUtc);
