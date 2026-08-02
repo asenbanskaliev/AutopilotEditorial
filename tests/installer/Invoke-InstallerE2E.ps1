@@ -50,26 +50,47 @@ function Get-FreeTcpPort {
   finally { $listener.Stop() }
 }
 
+function Get-ProcessDiagnostics([System.Diagnostics.Process]$Process, [string]$Url, [string]$Command, [string]$Stdout, [string]$Stderr) {
+  $exitCode = if ($Process.HasExited) { $Process.ExitCode } else { 'running' }
+  $out = if (Test-Path $Stdout) { Get-Content $Stdout -Raw } else { '' }
+  $err = if (Test-Path $Stderr) { Get-Content $Stderr -Raw } else { '' }
+  return "PID=$($Process.Id); ExitCode=$exitCode; Url=$Url; Command=$Command; STDOUT=$out; STDERR=$err"
+}
+
 function Invoke-RealProductSmoke {
   $launcher = Join-Path $installRoot 'BookStudio.exe'
   if (-not (Test-Path $launcher -PathType Leaf)) { throw 'Real installed BookStudio launcher is missing.' }
 
   $port = Get-FreeTcpPort
   $url = "http://127.0.0.1:$port"
+  $workspaceRoot = Join-Path $installRoot 'workspace'
   $stdout = Join-Path $root 'real-product.stdout.log'
   $stderr = Join-Path $root 'real-product.stderr.log'
-  $script:launchedProduct = Start-Process -FilePath $launcher -ArgumentList @('--urls', $url) -WorkingDirectory $installRoot -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+  $command = "`"$launcher`""
 
+  $previousUrl = $env:ControlCenter__Url
+  $previousWorkspaceRoot = $env:ControlCenter__WorkspaceRoot
+  try {
+    $env:ControlCenter__Url = $url
+    $env:ControlCenter__WorkspaceRoot = $workspaceRoot
+    $script:launchedProduct = Start-Process -FilePath $launcher -WorkingDirectory $installRoot -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+  }
+  finally {
+    if ($null -eq $previousUrl) { Remove-Item Env:ControlCenter__Url -ErrorAction SilentlyContinue } else { $env:ControlCenter__Url = $previousUrl }
+    if ($null -eq $previousWorkspaceRoot) { Remove-Item Env:ControlCenter__WorkspaceRoot -ErrorAction SilentlyContinue } else { $env:ControlCenter__WorkspaceRoot = $previousWorkspaceRoot }
+  }
+
+  Write-Output "Started installed BookStudio. PID=$($script:launchedProduct.Id); Url=$url; Command=$command"
   $deadline = [DateTimeOffset]::UtcNow.AddSeconds(60)
   do {
     if ($script:launchedProduct.HasExited) {
-      $err = if (Test-Path $stderr) { Get-Content $stderr -Raw } else { '' }
-      throw "Installed BookStudio exited before becoming healthy. $err"
+      $diagnostics = Get-ProcessDiagnostics $script:launchedProduct $url $command $stdout $stderr
+      throw "Installed BookStudio exited before becoming healthy. $diagnostics"
     }
     try {
       $response = Invoke-RestMethod -Uri "$url/health/live" -TimeoutSec 3
       if ($response.status -eq 'live' -and $response.service -eq 'BookStudio.ControlCenter') {
-        Write-Output 'Real installed BookStudio health smoke PASS'
+        Write-Output "Real installed BookStudio health smoke PASS. PID=$($script:launchedProduct.Id); Url=$url"
         return
       }
     }
@@ -78,8 +99,8 @@ function Invoke-RealProductSmoke {
     }
   } while ([DateTimeOffset]::UtcNow -lt $deadline)
 
-  $err = if (Test-Path $stderr) { Get-Content $stderr -Raw } else { '' }
-  throw "Installed BookStudio did not become healthy within 60 seconds. $err"
+  $diagnostics = Get-ProcessDiagnostics $script:launchedProduct $url $command $stdout $stderr
+  throw "Installed BookStudio did not become healthy within 60 seconds. $diagnostics"
 }
 
 try {
@@ -162,6 +183,8 @@ finally {
   Remove-Item Env:BOOKSTUDIO_PROVIDER_SECRET -ErrorAction SilentlyContinue
   Remove-Item Env:BOOKSTUDIO_VALIDATION_MODE -ErrorAction SilentlyContinue
   Remove-Item Env:BOOKSTUDIO_VALIDATION_SIGNER_THUMBPRINT -ErrorAction SilentlyContinue
+  Remove-Item Env:ControlCenter__Url -ErrorAction SilentlyContinue
+  Remove-Item Env:ControlCenter__WorkspaceRoot -ErrorAction SilentlyContinue
   if (-not [string]::IsNullOrWhiteSpace($certificateThumbprint)) {
     Remove-Item -LiteralPath "Cert:\CurrentUser\My\$certificateThumbprint" -Force -ErrorAction SilentlyContinue
   }
