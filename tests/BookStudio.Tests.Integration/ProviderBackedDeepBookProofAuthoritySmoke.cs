@@ -59,7 +59,7 @@ internal static class ProviderBackedDeepBookProofAuthoritySmoke
             "the final checkpoint must register and verify all provider artifacts");
         Require(first.Checkpoint.ImageArtifacts is { Count: 1 },
             "the final checkpoint must persist image rights, provenance and accessibility evidence");
-        Require(first.Image!.Provenance.ProviderId == imageProvider.ProviderId &&
+        Require(first.Image!.Provenance.Provider == imageProvider.ProviderId &&
                 !string.IsNullOrWhiteSpace(first.Image.Rights.LicenseReference) &&
                 !string.IsNullOrWhiteSpace(first.Image.Accessibility.AltText),
             "image evidence must remain complete and fail-closed");
