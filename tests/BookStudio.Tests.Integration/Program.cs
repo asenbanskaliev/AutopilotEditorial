@@ -14,6 +14,9 @@ try
 
     await DeepBookProofIntegrationSmoke.RunAsync(workspaceRoot);
     Console.WriteLine("VS-122 deep no-command proof PASS: durable restart, bounded repair, exact artifacts and publication readiness verified.");
+
+    await PublicationArtifactPipelineIntegrationSmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-123 provider-backed artifacts PASS: real EPUB, PDF, DOCX and KDP bytes, provenance, budget and replay verified.");
     return 0;
 }
 catch (Exception exception)
