@@ -6,6 +6,8 @@ on:
       - ".github/workflows/03-opencode-live-mcp-audit.yml"
       - "scripts/run_opencode_live_mcp_audit.py"
       - "src/BookStudio.Mcp/**"
+      - "src/BookStudio.Mcp.Authoring/**"
+      - "src/BookStudio.Mcp.Production/**"
       - "src/BookStudio.Application/**"
       - "src/BookStudio.Domain/**"
       - "src/BookStudio.Infrastructure/**"
@@ -21,7 +23,7 @@ permissions:
 jobs:
   live-opencode-mcp:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
       OPENCODE_TEST_MODEL: opencode/deepseek-v4-flash-free
@@ -44,7 +46,7 @@ jobs:
             exit 1
           fi
           echo "::add-mask::$OPENCODE_ZEN_API_KEY"
-      - name: Run bounded live OpenCode MCP audit
+      - name: Run strong live OpenCode editorial MCP audit
         run: python scripts/run_opencode_live_mcp_audit.py
       - name: Upload sanitized live evidence
         if: always()
