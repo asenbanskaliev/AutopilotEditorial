@@ -5,11 +5,11 @@
   "issue": 190,
   "pull_request": 191,
   "branch": "agent/VS-126-signed-installer-first-run",
-  "implementation_head_sha": "7c253921eea05fdc8ead040e6b276ddbc53be182",
+  "implementation_head_sha": "ee14d825c4b68ecd718bf5956d0b935f31ff79e5",
   "owner": "mcp-review-merge",
   "acquired_at": "2026-08-02T12:20:45+02:00",
-  "renewed_at": "2026-08-02T19:31:20+02:00",
-  "expires_at": "2026-08-02T23:31:20+02:00",
+  "renewed_at": "2026-08-02T20:28:37+02:00",
+  "expires_at": "2026-08-03T00:28:37+02:00",
   "checkpoint": {
     "selected_gap": "Signed installer, guided first-run setup and deployment-grade credential configuration without manual technical commands.",
     "scope": "VS-126 only",
@@ -19,10 +19,10 @@
     "dotnet_ci": "pending-on-final-validation-sha",
     "review_threads_open": 0,
     "windows_installer_execution": "real-control-center-publish-install-and-health-smoke",
-    "failure": "The first real-artifact E2E attempt failed because dotnet publish changed AssemblyName while using restore assets produced for the default project identity.",
-    "repair": "Publish the real BookStudio.ControlCenter project with an integrated restore, retain the BookStudio launcher identity expected by the installer, install the digest-bound ZIP, validate signature and durable configuration evidence, start the installed launcher on a bounded loopback port, require /health/live from BookStudio.ControlCenter, and prove restart idempotency.",
-    "matrix": "Installation, packaging, security, cost ceiling, protected credential storage, operational accessibility and restart recovery are under fresh integrated validation. Literary, genre, language, image and KDP authorities are unchanged by VS-126 and must not be inferred from installer-only evidence.",
-    "metrics": "No contract-only acceptance. Approval requires all three workflows green on the final SHA and the real installed executable health smoke passing without plaintext credential exposure.",
-    "next_action": "Supervise Plan Integrity, Governance Gates and .NET CI on the final lock-renewal SHA. Keep the PR draft and merge unauthorized unless every fresh check and integrated metric passes."
+    "failure": "The real-artifact E2E failed because overriding AssemblyName to BookStudio made NuGet restore resolve two projects with the same effective identity and abort with Ambiguous project name 'BookStudio'.",
+    "repair": "Publish BookStudio.ControlCenter under its native assembly identity, rename only the generated Windows apphost to BookStudio.exe for the installer contract, retain the native DLL/deps/runtimeconfig files, install the digest-bound ZIP, launch the renamed real apphost, require /health/live, and prove restart idempotency.",
+    "matrix": "Installation, packaging, images/formats unaffected, accessibility, security, cost ceiling, protected credential storage and restart recovery are under fresh integrated validation. Literary quality, hook, continuity, voice, naturalness, pacing, repetition, characters, ending, abandonment risk, genre, language and KDP authorities are unchanged by VS-126 and are not inferred from installer evidence.",
+    "metrics": "No contract-only acceptance and no stale evidence. Approval requires Plan Integrity, Governance Gates and .NET CI green on one final SHA plus the real installed executable health smoke passing without plaintext credential exposure.",
+    "next_action": "Supervise all three workflows on the lock-renewal SHA. Keep the PR draft and merge unauthorized unless every fresh check and integrated metric passes."
   }
 }
