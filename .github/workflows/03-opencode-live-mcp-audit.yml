@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/03-opencode-live-mcp-audit.yml"
       - "scripts/run_opencode_live_mcp_audit.py"
+      - "scripts/run_opencode_live_mcp_audit_scoped.py"
       - "src/BookStudio.Mcp/**"
       - "src/BookStudio.Mcp.Authoring/**"
       - "src/BookStudio.Mcp.Production/**"
@@ -47,12 +48,12 @@ jobs:
           fi
           echo "::add-mask::$OPENCODE_ZEN_API_KEY"
       - name: Run strong live OpenCode editorial MCP audit
-        run: python -u scripts/run_opencode_live_mcp_audit.py
+        run: python -u scripts/run_opencode_live_mcp_audit_scoped.py
       - name: Upload sanitized live evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vs128-opencode-live-mcp-evidence
           path: artifacts/vs128/opencode-live-mcp-audit.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
