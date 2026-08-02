@@ -98,11 +98,17 @@ public sealed class CommercialImageVerificationAuthority : IImageGenerationProvi
                 existing.AssetId == request.AssetId &&
                 existing.ArtifactSha256 == digest &&
                 existing.ProviderId == _inner.ProviderId &&
-                existing.ProviderRequestId == output.ProviderRequestId &&
-                existing.Moderation.Approved &&
-                existing.RightsClearance.Cleared)
+                existing.ProviderRequestId == output.ProviderRequestId)
             {
-                return output with { Cost = output.Cost + existing.TotalVerificationCost };
+                ValidatePersistedEvidence(existing, output, digest, request.Policy);
+                var totalCost = output.Cost + existing.TotalVerificationCost;
+                return output with
+                {
+                    Cost = totalCost,
+                    LicenseReference = existing.RightsClearance.LicenseReference,
+                    RightsHolder = existing.RightsClearance.RightsHolder,
+                    Territory = existing.RightsClearance.Territory
+                };
             }
         }
 
@@ -117,8 +123,8 @@ public sealed class CommercialImageVerificationAuthority : IImageGenerationProvi
             throw new InvalidOperationException("External rights clearance rejected the generated asset: " + (clearance.RejectionReason ?? "unspecified"));
 
         var verificationCost = moderation.Cost + clearance.Cost;
-        var totalCost = output.Cost + verificationCost;
-        if (totalCost > request.Policy.MaxCost)
+        var totalGeneratedCost = output.Cost + verificationCost;
+        if (totalGeneratedCost > request.Policy.MaxCost)
             throw new InvalidOperationException("Provider plus verification cost violates policy.");
 
         var evidence = new CommercialImageVerificationEvidence(
@@ -135,11 +141,34 @@ public sealed class CommercialImageVerificationAuthority : IImageGenerationProvi
         await AtomicWriteAsync(evidencePath, JsonSerializer.SerializeToUtf8Bytes(evidence, new JsonSerializerOptions { WriteIndented = true }), ct);
         return output with
         {
-            Cost = totalCost,
+            Cost = totalGeneratedCost,
             LicenseReference = clearance.LicenseReference,
             RightsHolder = clearance.RightsHolder,
             Territory = clearance.Territory
         };
+    }
+
+    private static void ValidatePersistedEvidence(
+        CommercialImageVerificationEvidence evidence,
+        ImageProviderOutput output,
+        string digest,
+        ImageGenerationPolicy policy)
+    {
+        ValidateModeration(evidence.Moderation, digest, policy.Currency);
+        if (!evidence.Moderation.Approved)
+            throw new InvalidOperationException("Persisted moderation evidence is not approved.");
+
+        ValidateClearance(evidence.RightsClearance, output, digest, policy.Currency, policy.RequiredTerritory);
+        if (!evidence.RightsClearance.Cleared)
+            throw new InvalidOperationException("Persisted rights-clearance evidence is not approved.");
+
+        var expectedVerificationCost = evidence.Moderation.Cost + evidence.RightsClearance.Cost;
+        if (evidence.TotalVerificationCost != expectedVerificationCost ||
+            !string.Equals(evidence.Currency, policy.Currency, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Persisted verification cost evidence is inconsistent.");
+
+        if (output.Cost + evidence.TotalVerificationCost > policy.MaxCost)
+            throw new InvalidOperationException("Persisted provider plus verification cost violates policy.");
     }
 
     private static void ValidateModeration(ImageModerationDecision decision, string digest, string currency)
