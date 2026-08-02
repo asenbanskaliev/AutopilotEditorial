@@ -5,32 +5,28 @@
   "issue": 184,
   "pull_request": 185,
   "branch": "agent/VS-123-provider-backed-artifacts",
-  "implementation_sha": "fd439d85fa802f22b994c5444490f7c347190562",
-  "owner": "mcp-audit-control",
-  "purpose": "Preserve the single active VS while the provider-backed publication pipeline is integrated into the real no-command journey.",
+  "implementation_sha": "cef3aa34c3fc700b7519b0eff0a7643494963963",
+  "owner": "mcp-validate-repair",
+  "purpose": "Validate the single active VS after integrating provider-backed publication into the durable no-command proof authority.",
   "acquired_at": "2026-08-02T04:15:00+02:00",
-  "renewed_at": "2026-08-02T05:00:00+02:00",
-  "expires_at": "2026-08-02T06:15:00+02:00",
-  "renewal_policy": "Renew while VS-123 remains the only active VS; release only after merge or explicit abandonment.",
-  "priority": "end-to-end-no-command-provider-integration",
+  "renewed_at": "2026-08-02T05:31:00+02:00",
+  "expires_at": "2026-08-02T06:45:00+02:00",
+  "renewal_policy": "Renew while VS-123 remains the only active VS; release only after exact-head validation and merge or explicit abandonment.",
+  "priority": "same-head-provider-authority-validation",
   "checkpoint": {
-    "plan_integrity": "pass-on-fd439d85fa802f22b994c5444490f7c347190562",
-    "governance_gates": "pass-on-fd439d85fa802f22b994c5444490f7c347190562",
-    "dotnet_ci": "pass-on-fd439d85fa802f22b994c5444490f7c347190562",
+    "plan_integrity": "pending-on-final-head",
+    "governance_gates": "pending-on-final-head",
+    "dotnet_ci": "pending-on-final-head",
     "review_threads_pending": 0,
     "draft_pr": "open",
     "merge_authorized": false,
-    "functional_blockers": [
-      "PublicationArtifactPipeline is still exercised by an isolated smoke rather than the real BookCreationJourney or DeepBookProof authority.",
-      "The final checkpoint does not yet prove provider artifact, cost and provenance registration through the no-command journey.",
-      "Restart replay is not yet proven from natural-language idea through provider publication without duplicate effects.",
-      "ReusedExistingArtifacts must be calculated from pre-existing verified artifacts rather than post-write existence."
+    "repairs_applied": [
+      "Added ProviderBackedDeepBookProofAuthority to execute PublicationArtifactPipeline inside the durable DeepBookProof authority.",
+      "Registered provider artifacts, cost and provenance in the final checkpoint.",
+      "Added an executable natural-language-to-publication integration smoke with restart idempotency.",
+      "Corrected reuse evidence at the authority boundary from files that existed before provider execution."
     ],
-    "matrix_correction_required": [
-      "Complete orchestration must remain IMPLEMENTED_UNPROVEN until the provider is wired into the real journey.",
-      "Deep no-command E2E proof must remain IMPLEMENTED_UNPROVEN for real provider artifacts.",
-      "Technical commands required equals zero is not proven by the isolated publication smoke."
-    ],
-    "next_action": "Repair VS-123 on the same branch and PR; integrate the provider into the real no-command authority, add idea-to-publication restart-idempotency evidence, correct reuse detection and matrix claims, then rerun all three workflows on the new exact SHA. Do not start another VS."
+    "remaining_condition": "Plan Integrity, Governance Gates and .NET CI must all pass on the exact final head SHA before the PR can be marked ready for review.",
+    "next_action": "Supervise all three workflows on the exact final head, repair only VS-123 if any check fails, and keep the PR draft until all metrics and evidence are current."
   }
 }
