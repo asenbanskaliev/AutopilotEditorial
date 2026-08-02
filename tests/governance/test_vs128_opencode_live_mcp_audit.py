@@ -15,7 +15,9 @@ def test_live_workflow_uses_repository_secret_ephemerally():
     assert '"credentialPersisted": False' in runner
     assert "persisted auth.json" in runner
     assert "OPENCODE_ZEN_API_KEY is missing or implausibly short" in runner
-    assert 'audit.BRIEFING_ID = f"{audit.PROJECT_ID}.briefing"' in scoped
+    assert 'audit.BRIEFING_ID = f"{audit.PROJECT_ID}.draft.briefing"' in scoped
+    assert 'audit.OUTLINE_ID = f"{audit.PROJECT_ID}.draft.outline"' in scoped
+    assert 'audit.CHAPTER_ID = f"{audit.PROJECT_ID}.draft.chapter-01"' in scoped
 
 
 def test_live_audit_is_pinned_bounded_observable_and_free_model_only():
