@@ -85,9 +85,17 @@ function Invoke-RealProductSmoke {
 try {
   Write-Output 'Publishing the real BookStudio Control Center distributable.'
   New-Item -ItemType Directory -Force -Path $payload | Out-Null
-  dotnet publish $controlCenterProject --configuration Release --output $payload -p:AssemblyName=BookStudio -p:UseAppHost=true
+  dotnet publish $controlCenterProject --configuration Release --output $payload -p:UseAppHost=true
   if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
-  foreach ($requiredProductFile in @('BookStudio.exe', 'BookStudio.dll', 'BookStudio.deps.json', 'BookStudio.runtimeconfig.json')) {
+
+  $publishedLauncher = Join-Path $payload 'BookStudio.ControlCenter.exe'
+  $installerLauncher = Join-Path $payload 'BookStudio.exe'
+  if (-not (Test-Path $publishedLauncher -PathType Leaf)) {
+    throw 'Real publish output is missing BookStudio.ControlCenter.exe.'
+  }
+  Move-Item -LiteralPath $publishedLauncher -Destination $installerLauncher
+
+  foreach ($requiredProductFile in @('BookStudio.exe', 'BookStudio.ControlCenter.dll', 'BookStudio.ControlCenter.deps.json', 'BookStudio.ControlCenter.runtimeconfig.json')) {
     if (-not (Test-Path (Join-Path $payload $requiredProductFile) -PathType Leaf)) {
       throw "Real publish output is missing $requiredProductFile."
     }
