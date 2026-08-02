@@ -85,7 +85,7 @@ function Invoke-RealProductSmoke {
 try {
   Write-Output 'Publishing the real BookStudio Control Center distributable.'
   New-Item -ItemType Directory -Force -Path $payload | Out-Null
-  dotnet publish $controlCenterProject --configuration Release --no-restore --output $payload -p:AssemblyName=BookStudio -p:UseAppHost=true
+  dotnet publish $controlCenterProject --configuration Release --output $payload -p:AssemblyName=BookStudio -p:UseAppHost=true
   if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
   foreach ($requiredProductFile in @('BookStudio.exe', 'BookStudio.dll', 'BookStudio.deps.json', 'BookStudio.runtimeconfig.json')) {
     if (-not (Test-Path (Join-Path $payload $requiredProductFile) -PathType Leaf)) {
