@@ -2,7 +2,7 @@
 
 Status levels: `NOT_IMPLEMENTED`, `PARTIAL`, `IMPLEMENTED_UNPROVEN`, `PROVEN`, `PRODUCTION_READY`.
 
-| Capability | Status after VS-125 | Evidence | Remaining gap |
+| Capability | Status after VS-126 | Evidence | Remaining gap |
 |---|---|---|---|
 | Conversational creation | PROVEN | VS-121 typed natural-language brief and no-command journey | Real UI usability study |
 | Complete orchestration | PROVEN | VS-121 journey plus VS-122 durable proof and VS-123/124/125 provider authorities | Connect remaining specialist phases to deployment providers |
@@ -13,22 +13,22 @@ Status levels: `NOT_IMPLEMENTED`, `PARTIAL`, `IMPLEMENTED_UNPROVEN`, `PROVEN`, `
 | Layout and formats | PROVEN | VS-123 merged after exact-head CI with real EPUB, PDF, DOCX and KDP containers | Device/printer matrix expansion |
 | Amazon KDP readiness | PROVEN | VS-123 governed KDP package merged after exact-head CI | External upload adapter |
 | Accessibility | IMPLEMENTED_UNPROVEN | VS-124 requires alt-text evidence for generated images | Full EPUB accessibility conformance suite |
-| Cost controls | PROVEN | Provider, moderation and clearance costs are included in the same image ceiling | Provider invoice reconciliation |
-| Security | PROVEN | Workspace confinement, atomic writes, digest verification and fail-closed moderation/clearance gates | Independent penetration test |
-| Restart recovery | PROVEN | Verified commercial decisions are reused only for exact asset/digest/provider/request matches | Multi-process distributed lease |
-| Installation | PARTIAL | Repository build and CI workflows | Signed installer and first-run setup |
+| Cost controls | PROVEN | Provider, moderation and clearance costs share one image ceiling; VS-126 requires a persisted monthly installation ceiling | Provider invoice reconciliation |
+| Security | IMPLEMENTED_UNPROVEN | VS-126 digest/signature validation, path confinement and DPAPI-protected credentials | Windows runner proof and independent penetration test |
+| Restart recovery | IMPLEMENTED_UNPROVEN | VS-126 atomically checkpoints first-run phases and resumes without repeating completed phases | Windows interruption matrix and multi-process lease |
+| Installation | IMPLEMENTED_UNPROVEN | VS-126 signed, digest-bound resumable installer with guided setup and exact evidence | Authenticode release workflow and supported-Windows execution matrix |
 | Documentation | PROVEN | SDD, evidence, audits and retrospectives | End-user guided handbook |
 | Deep no-command E2E proof | PROVEN | Existing durable journey with image authority extended through VS-125 | Live deployment-provider breadth |
 
-## Objective metrics affected by VS-125
+## Objective metrics affected by VS-126
 
-- Unsafe generated images accepted: `0`.
-- Images without external rights-clearance approval accepted: `0`.
-- Moderation or clearance decisions whose digest differs from the artifact accepted: `0`.
-- Clearance contradicting provider license reference or rights holder accepted: `0`.
-- Clearance without sufficient territory accepted: `0`.
-- Provider plus verification cost beyond the configured ceiling accepted: `0`.
-- Verification evidence written outside the workspace: `0`.
-- External moderation/clearance calls repeated after exact verified restart reuse: `0`.
-- Automatic retries beyond the existing repair ceiling: `0`.
-- Technical commands required during normal verified image production: `0`.
+- Packages installed with SHA-256 mismatch: `0`.
+- Packages installed with invalid or absent Authenticode signature: `0`.
+- Installer state, evidence or credentials written outside the installation root: `0`.
+- Provider credentials intentionally persisted in plaintext: `0`.
+- Installations marked ready without a provider and non-negative monthly EUR limit: `0`.
+- Completed first-run phases repeated after restart: `0`.
+- Automatic repair attempts beyond the configured ceiling: `0`.
+- Completed installations that rerun setup: `0`.
+- Successful installations requiring technical commands during normal guided use: `0`.
+- Exact installation evidence records missing package digest, signer, signature status, root, provider, budget, credential mechanism or repair count: `0`.
