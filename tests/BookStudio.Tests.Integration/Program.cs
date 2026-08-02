@@ -11,11 +11,14 @@ try
 {
     await SqliteJourney.RunAsync(workspaceRoot);
     Console.WriteLine("SQLite integration PASS: lifecycle, dynamic migrations, WAL, serialized writes, rollback, integrity and backup verified.");
+
+    await DeepBookProofIntegrationSmoke.RunAsync(workspaceRoot);
+    Console.WriteLine("VS-122 deep no-command proof PASS: durable restart, bounded repair, exact artifacts and publication readiness verified.");
     return 0;
 }
 catch (Exception exception)
 {
-    Console.Error.WriteLine("SQLite integration FAIL: " + exception);
+    Console.Error.WriteLine("Integration FAIL: " + exception);
     return 1;
 }
 finally
