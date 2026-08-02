@@ -5,20 +5,22 @@
   "issue": 190,
   "pull_request": 191,
   "branch": "agent/VS-126-signed-installer-first-run",
-  "implementation_head_sha": "7146d5f42adf8f9e2477d6aeff86f13bb59fc53c",
+  "implementation_head_sha": "4739529c600f993d7fbd603d57e774cee2a69c33",
   "owner": "mcp-validate-repair",
   "acquired_at": "2026-08-02T12:20:45+02:00",
-  "expires_at": "2026-08-02T13:15:00+02:00",
+  "renewed_at": "2026-08-02T12:46:00+02:00",
+  "expires_at": "2026-08-02T14:15:00+02:00",
   "checkpoint": {
     "selected_gap": "Signed installer, guided first-run setup and deployment-grade credential configuration without manual technical commands.",
     "scope": "VS-126 only",
     "merge_authorized": false,
-    "plan_integrity": "pending",
-    "governance_gates": "pending",
-    "dotnet_ci": "pending",
-    "windows_installer_execution": "pending",
+    "plan_integrity": "pending-on-final-head",
+    "governance_gates": "pending-on-final-head",
+    "dotnet_ci": "pending-on-final-head",
+    "windows_installer_execution": "integrated-e2e-pending-ci",
     "matrix": "updated-to-implemented-unproven",
-    "metrics": "updated",
-    "next_action": "Validate and repair only PR #191 on this branch. Do not create another VS, branch or PR and do not merge."
+    "metrics": "independent-review-pending-final-ci",
+    "repair": "Authenticode now validates the signed installer rather than an unsigned ZIP; Windows E2E executes digest, signature, extraction, DPAPI credential storage, budget evidence, durable completion and restart idempotency. A path-filtered Windows .NET CI workflow now covers installer-only changes.",
+    "next_action": "Validate Plan Integrity, Governance Gates and .NET CI on the exact final PR head. Keep PR #191 draft and do not create another VS, branch or PR."
   }
 }
