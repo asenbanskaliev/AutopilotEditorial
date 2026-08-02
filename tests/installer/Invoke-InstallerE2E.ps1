@@ -10,7 +10,9 @@ $installRoot = Join-Path $root 'installed'
 $package = Join-Path $root 'BookStudio.zip'
 $signedInstaller = Join-Path $root 'Install-BookStudio.ps1'
 $sourceInstaller = Join-Path $PSScriptRoot '..\..\install\windows\Install-BookStudio.ps1'
+$controlCenterProject = Join-Path $PSScriptRoot '..\..\src\BookStudio.ControlCenter\BookStudio.ControlCenter.csproj'
 $certificateThumbprint = $null
+$launchedProduct = $null
 
 function Invoke-InstallerValidation([string]$Label) {
   $stdout = Join-Path $root "$Label.stdout.log"
@@ -41,10 +43,56 @@ function Invoke-InstallerValidation([string]$Label) {
   Write-Output "[$([DateTimeOffset]::UtcNow.ToString('O'))] PASS installer-$Label"
 }
 
+function Get-FreeTcpPort {
+  $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+  $listener.Start()
+  try { return ([Net.IPEndPoint]$listener.LocalEndpoint).Port }
+  finally { $listener.Stop() }
+}
+
+function Invoke-RealProductSmoke {
+  $launcher = Join-Path $installRoot 'BookStudio.exe'
+  if (-not (Test-Path $launcher -PathType Leaf)) { throw 'Real installed BookStudio launcher is missing.' }
+
+  $port = Get-FreeTcpPort
+  $url = "http://127.0.0.1:$port"
+  $stdout = Join-Path $root 'real-product.stdout.log'
+  $stderr = Join-Path $root 'real-product.stderr.log'
+  $script:launchedProduct = Start-Process -FilePath $launcher -ArgumentList @('--urls', $url) -WorkingDirectory $installRoot -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+  $deadline = [DateTimeOffset]::UtcNow.AddSeconds(60)
+  do {
+    if ($script:launchedProduct.HasExited) {
+      $err = if (Test-Path $stderr) { Get-Content $stderr -Raw } else { '' }
+      throw "Installed BookStudio exited before becoming healthy. $err"
+    }
+    try {
+      $response = Invoke-RestMethod -Uri "$url/health/live" -TimeoutSec 3
+      if ($response.status -eq 'live' -and $response.service -eq 'BookStudio.ControlCenter') {
+        Write-Output 'Real installed BookStudio health smoke PASS'
+        return
+      }
+    }
+    catch {
+      Start-Sleep -Milliseconds 500
+    }
+  } while ([DateTimeOffset]::UtcNow -lt $deadline)
+
+  $err = if (Test-Path $stderr) { Get-Content $stderr -Raw } else { '' }
+  throw "Installed BookStudio did not become healthy within 60 seconds. $err"
+}
+
 try {
-  Write-Output 'Preparing deterministic installer payload.'
+  Write-Output 'Publishing the real BookStudio Control Center distributable.'
   New-Item -ItemType Directory -Force -Path $payload | Out-Null
-  Set-Content -LiteralPath (Join-Path $payload 'BookStudio.exe') -Value 'validation launcher placeholder' -Encoding UTF8
+  dotnet publish $controlCenterProject --configuration Release --no-restore --output $payload -p:AssemblyName=BookStudio -p:UseAppHost=true
+  if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed with exit code $LASTEXITCODE." }
+  foreach ($requiredProductFile in @('BookStudio.exe', 'BookStudio.dll', 'BookStudio.deps.json', 'BookStudio.runtimeconfig.json')) {
+    if (-not (Test-Path (Join-Path $payload $requiredProductFile) -PathType Leaf)) {
+      throw "Real publish output is missing $requiredProductFile."
+    }
+  }
+
   Compress-Archive -Path (Join-Path $payload '*') -DestinationPath $package -Force
   Copy-Item -LiteralPath $sourceInstaller -Destination $signedInstaller
 
@@ -88,6 +136,8 @@ try {
   if ($evidence.provider -ne 'opencode' -or [decimal]$evidence.monthlyLimitEur -ne 25.50) { throw 'Provider or cost ceiling evidence is incorrect.' }
   if ($credential -match [regex]::Escape($env:BOOKSTUDIO_PROVIDER_SECRET)) { throw 'Provider credential was persisted in plaintext.' }
 
+  Invoke-RealProductSmoke
+
   $evidenceHashBeforeRestart = (Get-FileHash -LiteralPath $evidencePath -Algorithm SHA256).Hash
   Invoke-InstallerValidation 'restart-idempotency'
   $evidenceHashAfterRestart = (Get-FileHash -LiteralPath $evidencePath -Algorithm SHA256).Hash
@@ -96,6 +146,9 @@ try {
   Write-Output 'VS-126 Windows installer E2E PASS'
 }
 finally {
+  if ($null -ne $launchedProduct -and -not $launchedProduct.HasExited) {
+    try { $launchedProduct.Kill($true) } catch { }
+  }
   Remove-Item Env:BOOKSTUDIO_PROVIDER -ErrorAction SilentlyContinue
   Remove-Item Env:BOOKSTUDIO_MONTHLY_LIMIT_EUR -ErrorAction SilentlyContinue
   Remove-Item Env:BOOKSTUDIO_PROVIDER_SECRET -ErrorAction SilentlyContinue
