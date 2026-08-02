@@ -22,7 +22,8 @@ public sealed class DeepBookProofCoordinator
         decimal stepCost,
         IReadOnlyList<DeepBookArtifact>? producedArtifacts,
         DateTimeOffset at,
-        CancellationToken ct = default)
+        CancellationToken ct = default,
+        IReadOnlyList<ImageArtifactEvidence>? producedImages = null)
     {
         ValidateRequest(request, journey, stepCost);
         var current = await _store.LoadAsync(request.WorkspaceId, request.ProofId, ct);
@@ -40,7 +41,7 @@ public sealed class DeepBookProofCoordinator
         if (nextCost > request.Policy.MaximumCost)
         {
             var blocked = Advance(current, DeepBookProofStatus.WaitingForDecision, current.Phase, nextCost,
-                current.RepairAttempts, current.Artifacts, current.CompletedPhases, "Cost policy exceeded.", at);
+                current.RepairAttempts, current.Artifacts, current.CompletedPhases, "Cost policy exceeded.", at, current.ImageArtifacts);
             await _store.SaveAsync(blocked, current.Revision, ct);
             return new DeepBookProofStepResult(blocked, false, false);
         }
@@ -52,7 +53,7 @@ public sealed class DeepBookProofCoordinator
                 CompletePhase(current, DeepBookProofPhase.JourneyExecution, DeepBookProofPhase.ArtifactProduction, nextCost, at),
             DeepBookProofPhase.JourneyExecution => current with { AccumulatedCost = nextCost },
             DeepBookProofPhase.ArtifactProduction when producedArtifacts is { Count: > 0 } =>
-                AddArtifacts(current, producedArtifacts, nextCost, at),
+                AddArtifacts(current, producedArtifacts, producedImages, nextCost, at),
             DeepBookProofPhase.ArtifactVerification => VerifyAndFinalize(current, request.Policy, nextCost, at),
             _ => current
         };
@@ -79,13 +80,13 @@ public sealed class DeepBookProofCoordinator
         if (attempts > request.Policy.MaximumRepairAttempts || cost > request.Policy.MaximumCost)
         {
             var blocked = Advance(current, DeepBookProofStatus.WaitingForDecision, current.Phase, cost, attempts,
-                current.Artifacts, current.CompletedPhases, reason, at);
+                current.Artifacts, current.CompletedPhases, reason, at, current.ImageArtifacts);
             await _store.SaveAsync(blocked, current.Revision, ct);
             return blocked;
         }
 
         var repaired = Advance(current, DeepBookProofStatus.Active, current.Phase, cost, attempts,
-            current.Artifacts, current.CompletedPhases, null, at);
+            current.Artifacts, current.CompletedPhases, null, at, current.ImageArtifacts);
         await _store.SaveAsync(repaired, current.Revision, ct);
         return repaired;
     }
@@ -98,12 +99,35 @@ public sealed class DeepBookProofCoordinator
         var missing = required.Where(x => !formats.Contains(x)).ToArray();
         if (missing.Length > 0)
             return Advance(current, DeepBookProofStatus.Failed, DeepBookProofPhase.ArtifactVerification, cost,
-                current.RepairAttempts, verified, current.CompletedPhases, "Missing verified formats: " + string.Join(", ", missing), at);
+                current.RepairAttempts, verified, current.CompletedPhases, "Missing verified formats: " + string.Join(", ", missing), at, current.ImageArtifacts);
+
+        if (policy.RequireImageEvidence && !HasValidImageEvidence(current.ImageArtifacts))
+            return Advance(current, DeepBookProofStatus.Failed, DeepBookProofPhase.ArtifactVerification, cost,
+                current.RepairAttempts, verified, current.CompletedPhases, "Missing or invalid image rights, provenance or accessibility evidence.", at, current.ImageArtifacts);
 
         var completed = current.CompletedPhases.Append(DeepBookProofPhase.ArtifactVerification)
             .Append(DeepBookProofPhase.PublicationReady).ToHashSet();
         return Advance(current, DeepBookProofStatus.Ready, DeepBookProofPhase.PublicationReady, cost,
-            current.RepairAttempts, verified, completed, null, at);
+            current.RepairAttempts, verified, completed, null, at, current.ImageArtifacts);
+    }
+
+    private bool HasValidImageEvidence(IReadOnlyList<ImageArtifactEvidence>? images)
+    {
+        if (images is not { Count: > 0 }) return false;
+        foreach (var image in images)
+        {
+            var path = Path.GetFullPath(Path.Combine(_artifactRoot, image.RelativePath));
+            if (!path.StartsWith(_artifactRoot, StringComparison.Ordinal) || !File.Exists(path)) return false;
+            var bytes = File.ReadAllBytes(path);
+            var digest = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            if (bytes.LongLength == 0 || bytes.LongLength != image.ByteSize || !StringComparer.Ordinal.Equals(digest, image.Sha256)) return false;
+            if (string.IsNullOrWhiteSpace(image.Provenance.ProviderId) || string.IsNullOrWhiteSpace(image.Provenance.Model) ||
+                string.IsNullOrWhiteSpace(image.Provenance.ProviderRequestId) || string.IsNullOrWhiteSpace(image.Provenance.PromptDigest) ||
+                string.IsNullOrWhiteSpace(image.Rights.LicenseKind) || string.IsNullOrWhiteSpace(image.Rights.LicenseReference) ||
+                string.IsNullOrWhiteSpace(image.Rights.RightsHolder) || string.IsNullOrWhiteSpace(image.Rights.Territory) ||
+                string.IsNullOrWhiteSpace(image.Accessibility.AltText)) return false;
+        }
+        return true;
     }
 
     private DeepBookArtifact VerifyArtifact(DeepBookArtifact artifact)
@@ -116,34 +140,38 @@ public sealed class DeepBookProofCoordinator
         return artifact with { Verified = bytes.LongLength > 0 && bytes.LongLength == artifact.ByteSize && StringComparer.Ordinal.Equals(digest, artifact.Sha256) };
     }
 
-    private static DeepBookProofCheckpoint AddArtifacts(DeepBookProofCheckpoint current, IReadOnlyList<DeepBookArtifact> produced, decimal cost, DateTimeOffset at)
+    private static DeepBookProofCheckpoint AddArtifacts(DeepBookProofCheckpoint current, IReadOnlyList<DeepBookArtifact> produced,
+        IReadOnlyList<ImageArtifactEvidence>? producedImages, decimal cost, DateTimeOffset at)
     {
         var merged = current.Artifacts.Concat(produced)
             .GroupBy(x => x.Format, StringComparer.OrdinalIgnoreCase)
             .Select(x => x.Last() with { Verified = false }).ToArray();
+        var images = (current.ImageArtifacts ?? Array.Empty<ImageArtifactEvidence>()).Concat(producedImages ?? Array.Empty<ImageArtifactEvidence>())
+            .GroupBy(x => x.AssetId).Select(x => x.Last()).ToArray();
         var completed = current.CompletedPhases.Append(DeepBookProofPhase.ArtifactProduction).ToHashSet();
         return Advance(current, DeepBookProofStatus.Active, DeepBookProofPhase.ArtifactVerification, cost,
-            current.RepairAttempts, merged, completed, null, at);
+            current.RepairAttempts, merged, completed, null, at, images);
     }
 
     private static DeepBookProofCheckpoint CompletePhase(DeepBookProofCheckpoint current, DeepBookProofPhase completed,
         DeepBookProofPhase next, decimal cost, DateTimeOffset at)
     {
         var phases = current.CompletedPhases.Append(completed).ToHashSet();
-        return Advance(current, DeepBookProofStatus.Active, next, cost, current.RepairAttempts, current.Artifacts, phases, null, at);
+        return Advance(current, DeepBookProofStatus.Active, next, cost, current.RepairAttempts, current.Artifacts, phases, null, at, current.ImageArtifacts);
     }
 
     private static DeepBookProofCheckpoint NewCheckpoint(DeepBookProofRequest request, DateTimeOffset at)
     {
         var checkpoint = new DeepBookProofCheckpoint(request.ProofId, request.JourneyId, request.WorkspaceId,
             DeepBookProofStatus.Active, DeepBookProofPhase.Intake, 1, 0m, 0, Array.Empty<DeepBookArtifact>(),
-            new HashSet<DeepBookProofPhase>(), string.Empty, null, at);
+            new HashSet<DeepBookProofPhase>(), string.Empty, null, at, Array.Empty<ImageArtifactEvidence>());
         return checkpoint with { EvidenceDigest = Digest(checkpoint) };
     }
 
     private static DeepBookProofCheckpoint Advance(DeepBookProofCheckpoint current, DeepBookProofStatus status,
         DeepBookProofPhase phase, decimal cost, int repairs, IReadOnlyList<DeepBookArtifact> artifacts,
-        IReadOnlySet<DeepBookProofPhase> completed, string? blockingReason, DateTimeOffset at)
+        IReadOnlySet<DeepBookProofPhase> completed, string? blockingReason, DateTimeOffset at,
+        IReadOnlyList<ImageArtifactEvidence>? images)
     {
         var next = current with
         {
@@ -155,7 +183,8 @@ public sealed class DeepBookProofCoordinator
             Artifacts = artifacts,
             CompletedPhases = completed.ToHashSet(),
             BlockingReason = blockingReason,
-            UpdatedAtUtc = at
+            UpdatedAtUtc = at,
+            ImageArtifacts = images ?? Array.Empty<ImageArtifactEvidence>()
         };
         return next with { EvidenceDigest = Digest(next) };
     }
@@ -175,8 +204,10 @@ public sealed class DeepBookProofCoordinator
     {
         var artifacts = string.Join(';', checkpoint.Artifacts.OrderBy(x => x.Format, StringComparer.Ordinal)
             .Select(x => $"{x.Format}|{x.RelativePath}|{x.MediaType}|{x.ByteSize}|{x.Sha256}|{x.Provenance}|{x.Verified}"));
+        var images = string.Join(';', (checkpoint.ImageArtifacts ?? Array.Empty<ImageArtifactEvidence>()).OrderBy(x => x.AssetId)
+            .Select(x => $"{x.AssetId}|{x.RelativePath}|{x.MediaType}|{x.ByteSize}|{x.Sha256}|{x.Provenance.ProviderId}|{x.Provenance.Model}|{x.Provenance.ProviderRequestId}|{x.Provenance.PromptDigest}|{x.Rights.LicenseKind}|{x.Rights.LicenseReference}|{x.Rights.RightsHolder}|{x.Rights.Territory}|{x.Accessibility.AltText}|{x.ChargedCost}|{x.Currency}"));
         var phases = string.Join(',', checkpoint.CompletedPhases.OrderBy(x => x));
-        var value = $"{checkpoint.ProofId}|{checkpoint.JourneyId}|{checkpoint.WorkspaceId}|{checkpoint.Status}|{checkpoint.Phase}|{checkpoint.Revision}|{checkpoint.AccumulatedCost}|{checkpoint.RepairAttempts}|{artifacts}|{phases}|{checkpoint.BlockingReason}";
+        var value = $"{checkpoint.ProofId}|{checkpoint.JourneyId}|{checkpoint.WorkspaceId}|{checkpoint.Status}|{checkpoint.Phase}|{checkpoint.Revision}|{checkpoint.AccumulatedCost}|{checkpoint.RepairAttempts}|{artifacts}|{images}|{phases}|{checkpoint.BlockingReason}";
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     }
 }
