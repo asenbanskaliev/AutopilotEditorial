@@ -37,8 +37,24 @@ if ($NoLaunchForValidation -and $env:BOOKSTUDIO_VALIDATION_MODE -ne '1') {
 }
 
 $installerSignature = Get-AuthenticodeSignature -LiteralPath $PSCommandPath
-if ($installerSignature.Status -ne 'Valid') {
-  throw "Installer signature is not valid: $($installerSignature.Status)"
+$signatureStatus = $installerSignature.Status.ToString()
+$controlledValidation = $env:BOOKSTUDIO_VALIDATION_MODE -eq '1'
+if ($signatureStatus -ne 'Valid') {
+  $expectedThumbprint = $env:BOOKSTUDIO_VALIDATION_SIGNER_THUMBPRINT
+  $actualThumbprint = $installerSignature.SignerCertificate.Thumbprint
+  $isControlledSelfSignedValidation =
+    $controlledValidation -and
+    $signatureStatus -eq 'UnknownError' -and
+    -not [string]::IsNullOrWhiteSpace($expectedThumbprint) -and
+    $actualThumbprint -eq $expectedThumbprint -and
+    $installerSignature.SignerCertificate.NotBefore -le (Get-Date) -and
+    $installerSignature.SignerCertificate.NotAfter -ge (Get-Date)
+
+  if (-not $isControlledSelfSignedValidation) {
+    throw "Installer signature is not valid: $signatureStatus"
+  }
+
+  $signatureStatus = 'ValidForControlledValidation'
 }
 
 $package = (Resolve-Path -LiteralPath $PackagePath).Path
@@ -95,7 +111,8 @@ try {
     $state.phase = 'ready'; $state.completed = $true; $state.updatedAt = (Get-Date).ToString('o'); Write-AtomicJson $statePath $state
     Write-AtomicJson $evidencePath ([ordered]@{
       schemaVersion=1; packageSha256=$actualHash; signer=$installerSignature.SignerCertificate.Subject;
-      signatureStatus=$installerSignature.Status.ToString(); installRoot=[IO.Path]::GetFullPath($InstallRoot);
+      signerThumbprint=$installerSignature.SignerCertificate.Thumbprint; signatureStatus=$signatureStatus;
+      installRoot=[IO.Path]::GetFullPath($InstallRoot);
       provider=$state.provider; monthlyLimitEur=$state.monthlyLimitEur; credentialStorage='Windows-DPAPI-current-user';
       completedAt=(Get-Date).ToString('o'); repairAttempts=$state.repairAttempts
     })
