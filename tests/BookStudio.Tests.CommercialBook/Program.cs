@@ -25,11 +25,12 @@ foreach (var chapter in plan.Chapters)
 }
 CommercialManuscriptPolicy.ValidateBook(chapters, 5600);
 Require(chapters.Distinct(StringComparer.Ordinal).Count() == 8, "chapters were duplicated");
+Require(invoker.ChapterAttempts[4] == 2, "quality rejection did not trigger an automatic rewrite");
 
 var repetitive = "# Capítulo 1: Repetición\n\n" + string.Join(". ", Enumerable.Repeat("La misma frase narrativa se repite sin aportar ningún cambio significativo a la escena", 80));
 RequireThrows(() => CommercialManuscriptPolicy.ValidateChapter(repetitive, 1, 900), "repetitive chapter was accepted");
 RequireThrows(() => CommercialManuscriptPolicy.ValidateChapter("# Capítulo 1\n\nplaceholder", 1, 900), "placeholder chapter was accepted");
-Console.WriteLine("PASS VS-138 commercial book adapters and anti-placeholder policy");
+Console.WriteLine("PASS VS-138 commercial book adapters, rewrite recovery and anti-placeholder policy");
 
 static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); }
 static void RequireThrows(Action action, string message)
@@ -41,6 +42,8 @@ static void RequireThrows(Action action, string message)
 
 sealed class FakeCommercialModelInvoker : IEditorialModelInvoker
 {
+    public Dictionary<int, int> ChapterAttempts { get; } = [];
+
     public ValueTask<EditorialModelExecution> InvokeAsync(string purpose, string prompt, string context, IReadOnlyList<EditorialModelCandidate> candidates, TimeSpan timeout, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -63,6 +66,13 @@ sealed class FakeCommercialModelInvoker : IEditorialModelInvoker
         }
 
         var chapterNumber = int.Parse(purpose[^2..], System.Globalization.CultureInfo.InvariantCulture);
+        ChapterAttempts[chapterNumber] = ChapterAttempts.GetValueOrDefault(chapterNumber) + 1;
+        if (chapterNumber == 4 && ChapterAttempts[chapterNumber] == 1)
+        {
+            var repeated = "# Capítulo 4: El nombre perdido 4\n\n" + string.Join(". ", Enumerable.Repeat("La misma frase narrativa se repite sin aportar ningún cambio significativo a la escena", 80)) + ".";
+            return ValueTask.FromResult(new EditorialModelExecution("test-provider", "test-model", "rejected-hash", "context-hash", 20, repeated));
+        }
+
         var paragraphs = Enumerable.Range(1, 24).Select(index =>
             $"La escena {index} del capítulo {chapterNumber} avanza cuando Mara compara el sello azul con la fecha del expediente {chapterNumber}-{index}, escucha una objeción distinta de su hermano y decide conservar una prueba que cambia la investigación de forma concreta");
         var content = $"# Capítulo {chapterNumber}: El nombre perdido {chapterNumber}\n\n" + string.Join(".\n\n", paragraphs) + ".";

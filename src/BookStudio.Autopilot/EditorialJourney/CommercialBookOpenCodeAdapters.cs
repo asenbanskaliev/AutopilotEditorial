@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace BookStudio.Autopilot.EditorialJourney;
 
@@ -45,6 +46,7 @@ Cada capítulo debe avanzar causalmente, tener conflicto propio y ancla de conti
 
 public sealed class OpenCodeCommercialChapterGenerator : IFullBookChapterGenerator
 {
+    private const int MaximumQualityAttempts = 3;
     private readonly IEditorialModelInvoker _models;
     private readonly EditorialJourneyProductionOptions _options;
     private readonly Dictionary<int, string> _chapterHashes = [];
@@ -57,7 +59,47 @@ public sealed class OpenCodeCommercialChapterGenerator : IFullBookChapterGenerat
 
     public async ValueTask<FullBookGeneratedChapter> GenerateAsync(FullBookProductionRequest request, FullBookChapterPlan chapter, string boundedContext, CancellationToken cancellationToken)
     {
-        var prompt = $"""
+        string? correction = null;
+        InvalidDataException? lastQualityFailure = null;
+
+        for (var attempt = 1; attempt <= MaximumQualityAttempts; attempt++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var prompt = BuildPrompt(request, chapter, correction, attempt);
+            var candidates = RotateCandidates(_options.WriterModels, attempt - 1);
+            var execution = await _models.InvokeAsync(
+                $"commercial-chapter-{chapter.Number:D2}",
+                prompt,
+                boundedContext,
+                candidates,
+                _options.GenerationTimeout,
+                cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                var normalized = CommercialManuscriptPolicy.NormalizeChapterLength(execution.Content, request.TargetWordsPerChapter);
+                CommercialManuscriptPolicy.ValidateChapter(normalized, chapter.Number, request.TargetWordsPerChapter, _chapterHashes.Values);
+                var hash = Hash(normalized);
+                _chapterHashes[chapter.Number] = hash;
+                return new FullBookGeneratedChapter(chapter.Number, normalized, execution.Provider, execution.Model, execution.PromptHash);
+            }
+            catch (InvalidDataException qualityFailure) when (attempt < MaximumQualityAttempts)
+            {
+                lastQualityFailure = qualityFailure;
+                correction = BuildCorrection(qualityFailure.Message, execution.Content, request.TargetWordsPerChapter);
+            }
+            catch (InvalidDataException qualityFailure)
+            {
+                lastQualityFailure = qualityFailure;
+            }
+        }
+
+        throw new InvalidDataException(
+            $"Commercial chapter {chapter.Number} failed quality after {MaximumQualityAttempts} attempts: {lastQualityFailure?.Message}",
+            lastQualityFailure);
+    }
+
+    private static string BuildPrompt(FullBookProductionRequest request, FullBookChapterPlan chapter, string? correction, int attempt) => $"""
 Escribe el capítulo {chapter.Number} de {request.ChapterCount} de la obra comercial '{request.Title}' en {request.Language}.
 Título del capítulo: {chapter.Title}
 Objetivo dramático: {chapter.Goal}
@@ -65,12 +107,26 @@ Ancla de continuidad: {chapter.ContinuityAnchor}
 Extensión objetivo: {request.TargetWordsPerChapter} palabras.
 Produce solo Markdown comenzando exactamente por '# Capítulo {chapter.Number}: {chapter.Title}'.
 Requisitos: escenas concretas, causalidad, voz estable, diálogo natural cuando proceda, detalles sensoriales, conflicto, cambio irreversible y cierre que impulse el siguiente capítulo. Evita resumen, relleno, listas, metaexplicaciones, placeholders y repetición de frases.
+Intento editorial: {attempt} de {MaximumQualityAttempts}.
+{correction ?? "Redacta una versión original y completa que cumpla todos los requisitos."}
 """;
-        var execution = await _models.InvokeAsync($"commercial-chapter-{chapter.Number:D2}", prompt, boundedContext, _options.WriterModels, _options.GenerationTimeout, cancellationToken).ConfigureAwait(false);
-        CommercialManuscriptPolicy.ValidateChapter(execution.Content, chapter.Number, request.TargetWordsPerChapter, _chapterHashes.Values);
-        var hash = Hash(execution.Content);
-        _chapterHashes[chapter.Number] = hash;
-        return new FullBookGeneratedChapter(chapter.Number, execution.Content.Trim(), execution.Provider, execution.Model, execution.PromptHash);
+
+    private static string BuildCorrection(string failure, string rejectedContent, int targetWords)
+    {
+        var excerpt = string.Join(' ', rejectedContent.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (excerpt.Length > 1200) excerpt = excerpt[..1200];
+        return $"""
+La versión anterior fue rechazada por esta razón: {failure}
+Reescribe el capítulo desde cero, no lo resumas ni reutilices frases repetidas. Mantén los hechos canónicos y el objetivo dramático, pero cambia escenas, formulaciones y ritmo. Entrega entre {Math.Max(600, (int)(targetWords * 0.70))} y {(int)(targetWords * 1.35)} palabras.
+Fragmento de referencia que NO debes copiar literalmente: {excerpt}
+""";
+    }
+
+    private static IReadOnlyList<EditorialModelCandidate> RotateCandidates(IReadOnlyList<EditorialModelCandidate> candidates, int offset)
+    {
+        if (candidates.Count <= 1) return candidates;
+        var normalizedOffset = offset % candidates.Count;
+        return candidates.Skip(normalizedOffset).Concat(candidates.Take(normalizedOffset)).ToArray();
     }
 
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
@@ -79,6 +135,38 @@ Requisitos: escenas concretas, causalidad, voz estable, diálogo natural cuando 
 public static class CommercialManuscriptPolicy
 {
     private static readonly string[] Forbidden = ["lorem ipsum", "placeholder", "texto de prueba", "contenido pendiente", "como modelo de ia", "as an ai"];
+
+    public static string NormalizeChapterLength(string markdown, int targetWords)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(markdown);
+        var normalized = markdown.Trim();
+        var maximum = (int)(targetWords * 1.35);
+        if (CountWords(normalized) <= maximum) return normalized;
+
+        var headingEnd = normalized.IndexOf('\n');
+        if (headingEnd < 0) return normalized;
+        var heading = normalized[..headingEnd].TrimEnd();
+        var body = normalized[(headingEnd + 1)..].Trim();
+        var sentences = Regex.Matches(body, @".*?(?:[.!?](?=\s|$)|$)", RegexOptions.Singleline)
+            .Select(match => match.Value.Trim())
+            .Where(value => value.Length > 0)
+            .ToArray();
+
+        var builder = new StringBuilder(heading).Append("\n\n");
+        foreach (var sentence in sentences)
+        {
+            var candidate = builder.ToString().TrimEnd() + " " + sentence;
+            if (CountWords(candidate) > maximum) break;
+            if (builder.Length > heading.Length + 2) builder.Append(' ');
+            builder.Append(sentence);
+        }
+
+        var result = builder.ToString().Trim();
+        var minimum = Math.Max(600, (int)(targetWords * 0.70));
+        if (CountWords(result) < minimum)
+            throw new InvalidDataException("Overlong chapter could not be normalized without falling below the minimum.");
+        return result;
+    }
 
     public static void ValidateChapter(string markdown, int chapterNumber, int targetWords, IEnumerable<string>? priorHashes = null)
     {
@@ -106,11 +194,12 @@ public static class CommercialManuscriptPolicy
     public static void ValidateBook(IReadOnlyList<string> chapters, int minimumTotalWords)
     {
         if (chapters.Count < 8) throw new InvalidDataException("A commercial acceptance book requires at least eight chapters.");
-        var totalWords = chapters.Sum(x => x.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length);
+        var totalWords = chapters.Sum(CountWords);
         if (totalWords < minimumTotalWords) throw new InvalidDataException("Commercial manuscript is below the required total word count.");
         var hashes = chapters.Select(x => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(x.Trim())))).ToArray();
         if (hashes.Distinct(StringComparer.Ordinal).Count() != hashes.Length) throw new InvalidDataException("Commercial manuscript contains duplicate chapters.");
     }
 
+    private static int CountWords(string value) => value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
     private static string Normalize(string value) => string.Join(' ', value.ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 }
