@@ -1,0 +1,32 @@
+name: VS-129 Editorial Journey
+
+on:
+  pull_request:
+    paths:
+      - "src/BookStudio.Autopilot/**"
+      - "tests/BookStudio.Tests.EditorialJourney/**"
+      - "tests/governance/test_vs129_deterministic_editorial_journey.py"
+      - "docs/vertical-slices/VS-129-deterministic-editorial-journey-orchestrator.md"
+      - ".github/workflows/04-vs129-editorial-journey.yml"
+      - "Directory.Build.*"
+      - "global.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  editorial-journey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore VS-129 harness
+        run: dotnet restore tests/BookStudio.Tests.EditorialJourney/BookStudio.Tests.EditorialJourney.csproj
+      - name: Build VS-129 harness
+        run: dotnet build tests/BookStudio.Tests.EditorialJourney/BookStudio.Tests.EditorialJourney.csproj --no-restore -c Release
+      - name: Run deterministic editorial journey tests
+        run: dotnet run --project tests/BookStudio.Tests.EditorialJourney/BookStudio.Tests.EditorialJourney.csproj --no-build -c Release
