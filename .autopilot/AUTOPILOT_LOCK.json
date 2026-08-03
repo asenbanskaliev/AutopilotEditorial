@@ -1,25 +1,25 @@
 {
   "version": 1,
   "status": "active",
-  "vs": "VS-128",
-  "issue": 194,
-  "pull_request": 195,
-  "branch": "agent/VS-128-opencode-live-mcp-audit",
-  "implementation_head_sha": "a45324e33fab6d5950d980729c7a72a8306e2350",
+  "vs": "VS-129",
+  "issue": 196,
+  "pull_request": null,
+  "branch": "agent/VS-129-deterministic-editorial-orchestrator",
+  "implementation_head_sha": "6cc7cd5341c81a1a905949eb8892867613121d27",
   "owner": "mcp-implement-validate-repair",
-  "acquired_at": "2026-08-02T23:02:00+02:00",
-  "renewed_at": "2026-08-02T23:18:00+02:00",
-  "expires_at": "2026-08-03T01:18:00+02:00",
+  "acquired_at": "2026-08-03T11:03:00+02:00",
+  "renewed_at": "2026-08-03T11:03:00+02:00",
+  "expires_at": "2026-08-03T13:03:00+02:00",
   "checkpoint": {
-    "selected_gap": "Real OpenCode Zen CLI installation, authentication and MCP tool invocation audit.",
-    "scope": "VS-128 only",
+    "selected_gap": "Deterministic orchestration, verified postconditions, idempotent resume and independent editorial review.",
+    "scope": "VS-129 only",
     "merge_authorized": false,
     "plan_integrity": "pending",
     "governance_gates": "pending",
     "dotnet_ci": "pending",
-    "opencode_live_mcp_audit": "pending",
+    "editorial_journey_tests": "pending",
     "review_threads_open": 0,
-    "implemented": "Pinned isolated OpenCode installation, memory-only Zen credential transport, free-model allowlist, real MCP publication/registration, live tool-routing request, process restart rediscovery and secret leakage scan.",
-    "next_action": "Validate PR #195 on the exact checkpoint head created by this commit. Repair only VS-128 and do not merge without explicit authorization."
+    "implemented": "Canonical artifact IDs, request fingerprinting, durable checkpoints, bounded generated-content policy, verified artifact and release postconditions, independent review gate, preflight gate, progress events, failure evidence and duplicate-free resume.",
+    "next_action": "Open PR, validate the exact head, repair only VS-129 and do not merge before all checks pass."
   }
 }
