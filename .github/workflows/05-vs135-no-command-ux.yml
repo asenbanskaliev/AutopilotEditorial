@@ -1,0 +1,17 @@
+name: VS-135 No-Command User Experience
+on:
+  pull_request:
+    paths: ['src/BookStudio.Autopilot/**','tests/BookStudio.Tests.NoCommandExperience/**','.github/workflows/05-vs135-no-command-ux.yml','docs/vertical-slices/VS-135-no-command-user-experience.md']
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  no-command-ux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with: { global-json-file: global.json }
+      - run: dotnet restore tests/BookStudio.Tests.NoCommandExperience/BookStudio.Tests.NoCommandExperience.csproj
+      - run: dotnet build tests/BookStudio.Tests.NoCommandExperience/BookStudio.Tests.NoCommandExperience.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.NoCommandExperience/BookStudio.Tests.NoCommandExperience.csproj -c Release --no-build
