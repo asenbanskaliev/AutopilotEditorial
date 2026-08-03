@@ -75,7 +75,7 @@ try
 
     var chapterEvidence = generated.Select(item => new
     {
-        item.ChapterNumber,
+        chapterNumber = item.Number,
         words = CountWords(item.Markdown),
         item.Provider,
         item.Model,
