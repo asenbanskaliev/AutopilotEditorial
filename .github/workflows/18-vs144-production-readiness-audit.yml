@@ -1,0 +1,61 @@
+name: VS-144 Production Readiness Audit
+
+on:
+  pull_request:
+    paths:
+      - "src/BookStudio.Autopilot/**"
+      - "tests/BookStudio.Tests.ProductionReadinessAudit/**"
+      - "scripts/vs144_production_readiness_audit.py"
+      - "docs/production-readiness/**"
+      - "SECURITY.md"
+      - "LICENSE"
+      - "README.md"
+      - ".github/workflows/**"
+      - "Directory.Packages.props"
+      - "global.json"
+
+permissions:
+  contents: read
+
+jobs:
+  production-readiness-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Restore audit harness
+        run: dotnet restore tests/BookStudio.Tests.ProductionReadinessAudit/BookStudio.Tests.ProductionReadinessAudit.csproj
+      - name: Build audit harness
+        run: dotnet build tests/BookStudio.Tests.ProductionReadinessAudit/BookStudio.Tests.ProductionReadinessAudit.csproj -c Release --no-restore
+      - name: Run audit gate tests
+        run: dotnet run --project tests/BookStudio.Tests.ProductionReadinessAudit/BookStudio.Tests.ProductionReadinessAudit.csproj -c Release --no-build
+      - name: Run executable repository audit
+        run: python scripts/vs144_production_readiness_audit.py
+      - name: Verify fail-closed evidence
+        shell: bash
+        run: |
+          test -f artifacts/vs144/production-readiness-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('artifacts/vs144/production-readiness-audit.json')
+          data=json.loads(p.read_text())
+          assert data['status']=='PASS'
+          assert data['auditorIndependent'] is True
+          assert len(data['dimensions'])==13
+          assert all(x['passed'] for x in data['dimensions'])
+          assert not any((not x['resolved']) and x['severity'] in {'High','Critical'} for x in data['findings'])
+          assert len(data['releaseEvidenceSha256'])==64
+          PY
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vs144-production-readiness-audit
+          path: artifacts/vs144/production-readiness-audit.json
+          if-no-files-found: error
