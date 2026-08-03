@@ -48,6 +48,8 @@ try
         naturalLanguageEntry = true,
         openCodeWriter = true,
         independentOpenCodeReviewer = true,
+        bundledWriterCall = true,
+        contentAwareReview = true,
         authoringMcp = true,
         qualityMcpRequired = true,
         productionMcp = true,
@@ -84,12 +86,12 @@ async ValueTask<EditorialJourneyResult> RunCompositionAsync(bool resume)
     var defaults = EditorialJourneyProductionOptions.CreateDefault(runtime, opencode);
     var options = defaults with
     {
-        GenerationTimeout = TimeSpan.FromSeconds(90),
+        GenerationTimeout = TimeSpan.FromSeconds(120),
         ReviewTimeout = TimeSpan.FromSeconds(90),
     };
     var invoker = new ResilientOpenCodeEditorialModelInvoker(options);
-    var generator = new OpenCodeEditorialContentGenerator(invoker, options);
-    var reviewer = new OpenCodeIndependentEditorialReviewer(invoker, options);
+    var generator = new BundledOpenCodeEditorialContentGenerator(invoker, options);
+    var reviewer = new ContentAwareOpenCodeIndependentReviewer(generator, invoker, options);
     await using var checkpoints = new SqliteEditorialJourneyCheckpointStore($"Data Source={checkpointDb}");
     await using var gateway = new StdioMcpEditorialArtifactGateway(
         new StdioMcpEditorialGatewayOptions(runtime, workspace, authoring, quality, production, TimeSpan.FromSeconds(60)),
