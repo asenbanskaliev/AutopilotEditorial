@@ -1,0 +1,18 @@
+name: VS-141 Human Editorial Control Center
+on:
+  pull_request:
+    paths:
+      - 'src/BookStudio.Autopilot/EditorialJourney/HumanEditorialControlCenter.cs'
+      - 'tests/BookStudio.Tests.HumanEditorialControl/**'
+      - '.github/workflows/15-vs141-human-editorial-control.yml'
+jobs:
+  human-editorial-control:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet restore tests/BookStudio.Tests.HumanEditorialControl/BookStudio.Tests.HumanEditorialControl.csproj
+      - run: dotnet build tests/BookStudio.Tests.HumanEditorialControl/BookStudio.Tests.HumanEditorialControl.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.HumanEditorialControl/BookStudio.Tests.HumanEditorialControl.csproj -c Release --no-build
