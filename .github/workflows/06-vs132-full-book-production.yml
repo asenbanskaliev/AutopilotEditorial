@@ -1,0 +1,31 @@
+name: VS-132 Full Book Production
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/BookStudio.Autopilot/**'
+      - 'tests/BookStudio.Tests.FullBookProduction/**'
+      - '.github/workflows/06-vs132-full-book-production.yml'
+      - 'docs/vertical-slices/VS-132-full-book-autonomous-production.md'
+      - '.autopilot/AUTOPILOT_LOCK.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  full-book-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore VS-132 harness
+        run: dotnet restore tests/BookStudio.Tests.FullBookProduction/BookStudio.Tests.FullBookProduction.csproj
+      - name: Build VS-132 harness
+        run: dotnet build tests/BookStudio.Tests.FullBookProduction/BookStudio.Tests.FullBookProduction.csproj -c Release --no-restore
+      - name: Run restart-safe full-book acceptance
+        run: dotnet run --project tests/BookStudio.Tests.FullBookProduction/BookStudio.Tests.FullBookProduction.csproj -c Release --no-build
