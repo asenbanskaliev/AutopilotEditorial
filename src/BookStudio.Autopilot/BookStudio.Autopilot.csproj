@@ -11,4 +11,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="EditorialJourney/ProductionEditorialJourneyAdapters.cs" />
+  </ItemGroup>
 </Project>
