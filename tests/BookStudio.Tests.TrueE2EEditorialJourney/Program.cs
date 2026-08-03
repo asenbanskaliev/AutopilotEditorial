@@ -81,8 +81,13 @@ async ValueTask<EditorialJourneyResult> RunCompositionAsync(bool resume)
     var authoring = RequireFile("BOOKSTUDIO_MCP_AUTHORING");
     var quality = RequireFile("BOOKSTUDIO_MCP_QUALITY");
     var production = RequireFile("BOOKSTUDIO_MCP_PRODUCTION");
-    var options = EditorialJourneyProductionOptions.CreateDefault(runtime, opencode);
-    var invoker = new OpenCodeEditorialModelInvoker(options);
+    var defaults = EditorialJourneyProductionOptions.CreateDefault(runtime, opencode);
+    var options = defaults with
+    {
+        GenerationTimeout = TimeSpan.FromSeconds(90),
+        ReviewTimeout = TimeSpan.FromSeconds(90),
+    };
+    var invoker = new ResilientOpenCodeEditorialModelInvoker(options);
     var generator = new OpenCodeEditorialContentGenerator(invoker, options);
     var reviewer = new OpenCodeIndependentEditorialReviewer(invoker, options);
     await using var checkpoints = new SqliteEditorialJourneyCheckpointStore($"Data Source={checkpointDb}");
