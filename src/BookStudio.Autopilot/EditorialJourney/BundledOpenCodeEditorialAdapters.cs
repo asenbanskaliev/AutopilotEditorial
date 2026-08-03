@@ -30,36 +30,25 @@ public sealed class BundledOpenCodeEditorialContentGenerator : IEditorialContent
         return ToGenerated(bundle.Briefing, bundle.Execution);
     }
 
-    public async ValueTask<GeneratedEditorialContent> GenerateOutlineAsync(
-        EditorialJourneyRequest request,
-        PersistedEditorialArtifact briefing,
-        CancellationToken cancellationToken)
+    public async ValueTask<GeneratedEditorialContent> GenerateOutlineAsync(EditorialJourneyRequest request, PersistedEditorialArtifact briefing, CancellationToken cancellationToken)
     {
         var bundle = await EnsureBundleAsync(request, cancellationToken).ConfigureAwait(false);
         return ToGenerated(bundle.Outline, bundle.Execution);
     }
 
-    public async ValueTask<GeneratedEditorialContent> GenerateChapterAsync(
-        EditorialJourneyRequest request,
-        PersistedEditorialArtifact briefing,
-        PersistedEditorialArtifact outline,
-        CancellationToken cancellationToken)
+    public async ValueTask<GeneratedEditorialContent> GenerateChapterAsync(EditorialJourneyRequest request, PersistedEditorialArtifact briefing, PersistedEditorialArtifact outline, CancellationToken cancellationToken)
     {
         var bundle = await EnsureBundleAsync(request, cancellationToken).ConfigureAwait(false);
         return ToGenerated(bundle.Chapter, bundle.Execution);
     }
 
-    public async ValueTask<(string Briefing, string Outline, string Chapter)> GetBundleAsync(
-        EditorialJourneyRequest request,
-        CancellationToken cancellationToken)
+    public async ValueTask<(string Briefing, string Outline, string Chapter)> GetBundleAsync(EditorialJourneyRequest request, CancellationToken cancellationToken)
     {
         var bundle = await EnsureBundleAsync(request, cancellationToken).ConfigureAwait(false);
         return (bundle.Briefing, bundle.Outline, bundle.Chapter);
     }
 
-    private async ValueTask<(string Briefing, string Outline, string Chapter, EditorialModelExecution Execution)> EnsureBundleAsync(
-        EditorialJourneyRequest request,
-        CancellationToken cancellationToken)
+    private async ValueTask<(string Briefing, string Outline, string Chapter, EditorialModelExecution Execution)> EnsureBundleAsync(EditorialJourneyRequest request, CancellationToken cancellationToken)
     {
         var key = $"{request.ProjectId}|{request.Idea}|{request.Title}|{request.Language}|{request.ChapterNumber}";
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -80,14 +69,7 @@ Un esquema Markdown con arco, ocho hitos de capitulos, objetivos, conflicto, con
 Un capitulo de muestra de 450 a 700 palabras que comience con '# Capítulo 1', tenga objetivo, tensión, continuidad y cierre con gancho.
 No devuelvas JSON, bloques de codigo, explicaciones de herramientas ni texto antes del primer marcador.
 """;
-            var execution = await _models.InvokeAsync(
-                    "editorial-bundle",
-                    prompt,
-                    request.Idea,
-                    _options.WriterModels,
-                    _options.GenerationTimeout,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            var execution = await _models.InvokeAsync("editorial-bundle", prompt, request.Idea, _options.WriterModels, _options.GenerationTimeout, cancellationToken).ConfigureAwait(false);
             var parsed = Parse(execution.Content);
             _requestKey = key;
             _bundle = (parsed.Briefing, parsed.Outline, parsed.Chapter, execution);
@@ -102,21 +84,16 @@ No devuelvas JSON, bloques de codigo, explicaciones de herramientas ni texto ant
         var outlineAt = content.IndexOf(OutlineMarker, StringComparison.Ordinal);
         var chapterAt = content.IndexOf(ChapterMarker, StringComparison.Ordinal);
         if (briefingAt < 0 || outlineAt <= briefingAt || chapterAt <= outlineAt)
-        {
             throw new EditorialJourneyException(EditorialJourneyStage.Briefing, "bundle_markers_missing", "OpenCode did not return the required editorial bundle markers.");
-        }
         var briefing = content[(briefingAt + BriefingMarker.Length)..outlineAt].Trim();
         var outline = content[(outlineAt + OutlineMarker.Length)..chapterAt].Trim();
         var chapter = content[(chapterAt + ChapterMarker.Length)..].Trim();
         if (briefing.Length < 120 || outline.Length < 180 || chapter.Length < 600 || !chapter.StartsWith('#'))
-        {
             throw new EditorialJourneyException(EditorialJourneyStage.Briefing, "bundle_content_invalid", "The generated editorial bundle was incomplete.");
-        }
         return (briefing, outline, chapter);
     }
 
-    private static GeneratedEditorialContent ToGenerated(string content, EditorialModelExecution execution) =>
-        new(content, execution.Provider, execution.Model, execution.PromptHash);
+    private static GeneratedEditorialContent ToGenerated(string content, EditorialModelExecution execution) => new(content, execution.Provider, execution.Model, execution.PromptHash);
 }
 
 public sealed class ContentAwareOpenCodeIndependentReviewer : IEditorialIndependentReviewer
@@ -125,27 +102,24 @@ public sealed class ContentAwareOpenCodeIndependentReviewer : IEditorialIndepend
     private readonly IEditorialModelInvoker _models;
     private readonly EditorialJourneyProductionOptions _options;
 
-    public ContentAwareOpenCodeIndependentReviewer(
-        IEditorialGeneratedContentSnapshot snapshot,
-        IEditorialModelInvoker models,
-        EditorialJourneyProductionOptions options)
+    public ContentAwareOpenCodeIndependentReviewer(IEditorialGeneratedContentSnapshot snapshot, IEditorialModelInvoker models, EditorialJourneyProductionOptions options)
     {
         _snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
         _models = models ?? throw new ArgumentNullException(nameof(models));
         _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
-    public async ValueTask<EditorialReviewResult> ReviewAsync(
-        EditorialJourneyRequest request,
-        PersistedEditorialArtifact briefing,
-        PersistedEditorialArtifact outline,
-        PersistedEditorialArtifact chapter,
-        CancellationToken cancellationToken)
+    public async ValueTask<EditorialReviewResult> ReviewAsync(EditorialJourneyRequest request, PersistedEditorialArtifact briefing, PersistedEditorialArtifact outline, PersistedEditorialArtifact chapter, CancellationToken cancellationToken)
     {
         var content = await _snapshot.GetBundleAsync(request, cancellationToken).ConfigureAwait(false);
         var prompt = $"""
-Eres un revisor editorial independiente y adversarial. Evalua esta muestra por coherencia entre briefing, esquema y capitulo, continuidad, contradicciones, voz, ritmo, repeticion, claridad, cierre y riesgos de publicacion.
-Usa PASS cuando no haya un bloqueo material; REVISE para defectos concretos corregibles; BLOCKED solo para contenido inutilizable o inseguro.
+Eres un revisor editorial independiente y adversarial que decide si esta muestra es suficientemente coherente y segura para continuar a preflight técnico.
+Evalua coherencia entre briefing, esquema y capitulo, continuidad, contradicciones materiales, voz, ritmo, repeticion grave, claridad, cierre y riesgos de publicacion.
+Criterio obligatorio:
+- PASS: la muestra es utilizable y no contiene un defecto material que impida continuar. Incluye como observaciones las mejoras opcionales o de pulido.
+- REVISE: existe al menos un defecto concreto que impide continuar, pero puede corregirse.
+- BLOCKED: contenido inutilizable, inseguro o incompatible con la idea.
+No uses REVISE por preferencias estilisticas, mejoras opcionales ni porque el texto no sea perfecto.
 Primera linea exacta: DECISION: PASS, DECISION: REVISE o DECISION: BLOCKED.
 Despues escribe REASONS: y motivos breves. No incluyas ninguna otra cabecera antes de la decision.
 
@@ -158,14 +132,7 @@ ESQUEMA:
 CAPITULO:
 {content.Chapter}
 """;
-        var execution = await _models.InvokeAsync(
-                "independent-content-review",
-                prompt,
-                chapter.Sha256,
-                _options.ReviewerModels,
-                _options.ReviewTimeout,
-                cancellationToken)
-            .ConfigureAwait(false);
+        var execution = await _models.InvokeAsync("independent-content-review", prompt, chapter.Sha256, _options.ReviewerModels, _options.ReviewTimeout, cancellationToken).ConfigureAwait(false);
         var lines = execution.Content.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var decision = (lines.FirstOrDefault() ?? string.Empty).ToUpperInvariant() switch
         {
