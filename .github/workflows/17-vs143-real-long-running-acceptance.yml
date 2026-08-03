@@ -1,0 +1,98 @@
+name: VS-143 Real Long-Running Model Acceptance
+on:
+  pull_request:
+    paths:
+      - 'src/BookStudio.Autopilot/EditorialJourney/RealLongRunningAcceptanceGate.cs'
+      - 'tests/BookStudio.Tests.RealLongRunningAcceptance/**'
+      - '.github/workflows/17-vs143-real-long-running-acceptance.yml'
+      - 'tests/BookStudio.Tests.TrueE2EEditorialJourney/**'
+  workflow_dispatch:
+    inputs:
+      full_scale:
+        description: 'Require externally supplied several-hour evidence before PASS'
+        required: false
+        default: 'false'
+permissions:
+  contents: read
+jobs:
+  full-scale-contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet restore tests/BookStudio.Tests.RealLongRunningAcceptance/BookStudio.Tests.RealLongRunningAcceptance.csproj
+      - run: dotnet build tests/BookStudio.Tests.RealLongRunningAcceptance/BookStudio.Tests.RealLongRunningAcceptance.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.RealLongRunningAcceptance/BookStudio.Tests.RealLongRunningAcceptance.csproj -c Release --no-build
+
+  live-connected-sample:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
+      OPENCODE_VERSION: '1.15.5'
+      RUNTIME: ${{ github.workspace }}/.runtime/vs143
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Require masked live credential
+        shell: bash
+        run: |
+          test -n "$OPENCODE_ZEN_API_KEY"
+          test ${#OPENCODE_ZEN_API_KEY} -ge 12
+          echo "::add-mask::$OPENCODE_ZEN_API_KEY"
+      - name: Install pinned OpenCode ephemerally
+        shell: bash
+        run: |
+          mkdir -p "$RUNTIME/opencode" "$RUNTIME/home" "$RUNTIME/config" "$RUNTIME/data" "$RUNTIME/cache" "$RUNTIME/publish"
+          npm install --prefix "$RUNTIME/opencode" "opencode-ai@$OPENCODE_VERSION" --no-audit --no-fund
+      - name: Publish real MCP servers
+        shell: bash
+        run: |
+          dotnet publish src/BookStudio.Mcp.Authoring/BookStudio.Mcp.Authoring.csproj -c Release -o "$RUNTIME/publish/authoring"
+          dotnet publish src/BookStudio.Mcp.Quality/BookStudio.Mcp.Quality.csproj -c Release -o "$RUNTIME/publish/quality"
+          dotnet publish src/BookStudio.Mcp.Production/BookStudio.Mcp.Production.csproj -c Release -o "$RUNTIME/publish/production"
+      - name: Build live runner
+        run: dotnet build tests/BookStudio.Tests.TrueE2EEditorialJourney/BookStudio.Tests.TrueE2EEditorialJourney.csproj -c Release
+      - name: Run connected OpenCode and MCP proof
+        shell: bash
+        env:
+          HOME: ${{ env.RUNTIME }}/home
+          XDG_CONFIG_HOME: ${{ env.RUNTIME }}/config
+          XDG_DATA_HOME: ${{ env.RUNTIME }}/data
+          XDG_CACHE_HOME: ${{ env.RUNTIME }}/cache
+          OPENCODE_AUTH_CONTENT: ${{ format('{{"opencode":{{"type":"api","key":"{0}"}}}}', secrets.OPENCODE_ZEN_API_KEY) }}
+          BOOKSTUDIO_REPO_ROOT: ${{ github.workspace }}
+          BOOKSTUDIO_VS131_RUNTIME: ${{ env.RUNTIME }}/journey
+          BOOKSTUDIO_OPENCODE: ${{ env.RUNTIME }}/opencode/node_modules/.bin/opencode
+          BOOKSTUDIO_MCP_AUTHORING: ${{ env.RUNTIME }}/publish/authoring/BookStudio.Mcp.Authoring.dll
+          BOOKSTUDIO_MCP_QUALITY: ${{ env.RUNTIME }}/publish/quality/BookStudio.Mcp.Quality.dll
+          BOOKSTUDIO_MCP_PRODUCTION: ${{ env.RUNTIME }}/publish/production/BookStudio.Mcp.Production.dll
+        run: dotnet run --project tests/BookStudio.Tests.TrueE2EEditorialJourney/BookStudio.Tests.TrueE2EEditorialJourney.csproj -c Release --no-build
+      - name: Validate connected evidence and secret hygiene
+        shell: python
+        run: |
+          import json, os, pathlib
+          p = pathlib.Path('artifacts/vs131/true-e2e-orchestrator.json')
+          data = json.loads(p.read_text())
+          assert data['status'] == 'PASS'
+          assert data['actualProductionOrchestrator'] is True
+          assert data['openCodeWriter'] is True
+          assert data['independentOpenCodeReviewer'] is True
+          assert data['authoringMcp'] and data['qualityMcpRequired'] and data['productionMcp']
+          assert data['sqliteCheckpointRestart'] is True
+          assert data['credentialPersisted'] is False
+          assert data['secretLeakageDetected'] is False
+          secret = os.environ['OPENCODE_ZEN_API_KEY']
+          assert secret not in p.read_text()
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vs143-live-connected-sample
+          path: artifacts/vs131/true-e2e-orchestrator.json
+          if-no-files-found: error
