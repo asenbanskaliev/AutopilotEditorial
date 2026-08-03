@@ -21,8 +21,7 @@ public sealed class OpenCodeCommercialBookPlanner : IFullBookPlanner
 Actúa como novelista y editor senior. Diseña un libro comercial original titulado '{request.Title}' en {request.Language}.
 Idea: {request.Idea}
 Número exacto de capítulos: {request.ChapterCount}.
-Devuelve JSON estricto sin Markdown con esta forma:
-{{"premise":"...","endingPromise":"...","chapters":[{{"number":1,"title":"...","goal":"...","continuityAnchor":"..."}}]}}
+Devuelve JSON estricto sin Markdown. Campos obligatorios: premise, endingPromise y chapters. Cada elemento de chapters contiene number, title, goal y continuityAnchor.
 Cada capítulo debe avanzar causalmente, tener conflicto propio y ancla de continuidad concreta. No uses placeholders ni texto genérico.
 """;
         var execution = await _models.InvokeAsync("commercial-book-plan", prompt, request.Idea, _options.WriterModels, _options.GenerationTimeout, cancellationToken).ConfigureAwait(false);
