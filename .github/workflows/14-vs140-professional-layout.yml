@@ -1,0 +1,22 @@
+name: VS-140 Professional Cover and Interior Layout
+on:
+  pull_request:
+    paths:
+      - 'src/BookStudio.Autopilot/EditorialJourney/**'
+      - 'tests/BookStudio.Tests.ProfessionalLayout/**'
+      - '.github/workflows/14-vs140-professional-layout.yml'
+      - 'specs/VS-140-professional-cover-interior-layout.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  professional-layout:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet restore tests/BookStudio.Tests.ProfessionalLayout/BookStudio.Tests.ProfessionalLayout.csproj
+      - run: dotnet build tests/BookStudio.Tests.ProfessionalLayout/BookStudio.Tests.ProfessionalLayout.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.ProfessionalLayout/BookStudio.Tests.ProfessionalLayout.csproj -c Release --no-build
