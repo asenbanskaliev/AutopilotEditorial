@@ -1,0 +1,87 @@
+name: RUN-001 First Real Commercial Book
+
+on:
+  pull_request:
+    paths:
+      - "tests/BookStudio.Tests.FirstRealCommercialBook/**"
+      - ".github/workflows/19-run001-first-real-commercial-book.yml"
+      - "src/BookStudio.Autopilot/EditorialJourney/CommercialBookOpenCodeAdapters.cs"
+      - "src/BookStudio.Autopilot/EditorialJourney/KdpProductionPackage.cs"
+      - "global.json"
+      - "Directory.Packages.props"
+
+permissions:
+  contents: read
+
+jobs:
+  create-real-book:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
+      OPENCODE_VERSION: "1.15.5"
+      RUNTIME: ${{ github.workspace }}/.runtime/run001
+      OUTPUT: artifacts/real-books/el-archivo-de-las-ausencias
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Require masked live credential
+        shell: bash
+        run: |
+          test -n "$OPENCODE_ZEN_API_KEY"
+          test ${#OPENCODE_ZEN_API_KEY} -ge 12
+          echo "::add-mask::$OPENCODE_ZEN_API_KEY"
+      - name: Install pinned OpenCode ephemerally
+        shell: bash
+        run: |
+          mkdir -p "$RUNTIME/opencode" "$RUNTIME/home" "$RUNTIME/config" "$RUNTIME/data" "$RUNTIME/cache" "$RUNTIME/work"
+          npm install --prefix "$RUNTIME/opencode" "opencode-ai@$OPENCODE_VERSION" --no-audit --no-fund
+          "$RUNTIME/opencode/node_modules/.bin/opencode" --version | grep "$OPENCODE_VERSION"
+      - name: Build real book runner
+        run: dotnet build tests/BookStudio.Tests.FirstRealCommercialBook/BookStudio.Tests.FirstRealCommercialBook.csproj -c Release
+      - name: Generate first real commercial book
+        shell: bash
+        env:
+          HOME: ${{ env.RUNTIME }}/home
+          XDG_CONFIG_HOME: ${{ env.RUNTIME }}/config
+          XDG_DATA_HOME: ${{ env.RUNTIME }}/data
+          XDG_CACHE_HOME: ${{ env.RUNTIME }}/cache
+          OPENCODE_AUTH_CONTENT: ${{ format('{{"opencode":{{"type":"api","key":"{0}"}}}}', secrets.OPENCODE_ZEN_API_KEY) }}
+          BOOKSTUDIO_REPO_ROOT: ${{ github.workspace }}
+          BOOKSTUDIO_RUN001_RUNTIME: ${{ env.RUNTIME }}/work
+          BOOKSTUDIO_OPENCODE: ${{ env.RUNTIME }}/opencode/node_modules/.bin/opencode
+        run: dotnet run --project tests/BookStudio.Tests.FirstRealCommercialBook/BookStudio.Tests.FirstRealCommercialBook.csproj -c Release --no-build
+      - name: Verify real-book evidence
+        if: always()
+        shell: bash
+        run: |
+          test -f "$OUTPUT/production-evidence.json"
+          test ! -f "$RUNTIME/data/opencode/auth.json"
+          ! grep -F "$OPENCODE_ZEN_API_KEY" "$OUTPUT/production-evidence.json"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('artifacts/real-books/el-archivo-de-las-ausencias/production-evidence.json')
+          data=json.loads(p.read_text())
+          assert data['status']=='PASS'
+          assert data['realModelExecution'] is True
+          assert data['deterministicTestContent'] is False
+          assert data['chapterCount']==8
+          assert data['totalWords']>=5600
+          assert data['duplicateChapters'] is False
+          assert data['credentialPersisted'] is False
+          assert data['secretLeakageDetected'] is False
+          PY
+      - name: Upload complete real book
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: el-archivo-de-las-ausencias-real-book
+          path: ${{ env.OUTPUT }}
+          if-no-files-found: error
+          retention-days: 30
