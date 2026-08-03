@@ -1,0 +1,59 @@
+name: OpenCode Live MCP Audit
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/03-opencode-live-mcp-audit.yml"
+      - "scripts/run_opencode_live_mcp_audit.py"
+      - "scripts/run_opencode_live_mcp_audit_scoped.py"
+      - "src/BookStudio.Mcp/**"
+      - "src/BookStudio.Mcp.Authoring/**"
+      - "src/BookStudio.Mcp.Production/**"
+      - "src/BookStudio.Application/**"
+      - "src/BookStudio.Domain/**"
+      - "src/BookStudio.Infrastructure/**"
+      - "Directory.*"
+      - "global.json"
+      - "docs/vertical-slices/VS-128-opencode-live-mcp-audit.md"
+      - "tests/governance/test_vs128_opencode_live_mcp_audit.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-opencode-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
+      OPENCODE_TEST_MODEL: opencode/deepseek-v4-flash-free
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Mask live credential
+        shell: bash
+        run: |
+          if [ -z "$OPENCODE_ZEN_API_KEY" ]; then
+            echo "OPENCODE_ZEN_API_KEY is missing" >&2
+            exit 1
+          fi
+          echo "::add-mask::$OPENCODE_ZEN_API_KEY"
+      - name: Run strong live OpenCode editorial MCP audit
+        run: python -u scripts/run_opencode_live_mcp_audit_scoped.py
+      - name: Upload sanitized live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vs128-opencode-live-mcp-evidence
+          path: artifacts/vs128/opencode-live-mcp-audit.json
+          if-no-files-found: warn
+          retention-days: 14
