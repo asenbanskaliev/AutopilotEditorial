@@ -3,13 +3,13 @@
   "status": "active",
   "vs": "VS-129",
   "issue": 196,
-  "pull_request": null,
+  "pull_request": 197,
   "branch": "agent/VS-129-deterministic-editorial-orchestrator",
-  "implementation_head_sha": "6cc7cd5341c81a1a905949eb8892867613121d27",
+  "implementation_head_sha": "db84619444079c08f09f8a3dd265d6a8f13166c7",
   "owner": "mcp-implement-validate-repair",
   "acquired_at": "2026-08-03T11:03:00+02:00",
-  "renewed_at": "2026-08-03T11:03:00+02:00",
-  "expires_at": "2026-08-03T13:03:00+02:00",
+  "renewed_at": "2026-08-03T11:09:00+02:00",
+  "expires_at": "2026-08-03T13:09:00+02:00",
   "checkpoint": {
     "selected_gap": "Deterministic orchestration, verified postconditions, idempotent resume and independent editorial review.",
     "scope": "VS-129 only",
@@ -20,6 +20,6 @@
     "editorial_journey_tests": "pending",
     "review_threads_open": 0,
     "implemented": "Canonical artifact IDs, request fingerprinting, durable checkpoints, bounded generated-content policy, verified artifact and release postconditions, independent review gate, preflight gate, progress events, failure evidence and duplicate-free resume.",
-    "next_action": "Open PR, validate the exact head, repair only VS-129 and do not merge before all checks pass."
+    "next_action": "Validate PR #197 on the exact head, repair only VS-129 and merge only after all checks pass."
   }
 }
