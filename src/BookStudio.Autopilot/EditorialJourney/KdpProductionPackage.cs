@@ -85,15 +85,15 @@ public sealed class KdpProductionPackageBuilder
     private static object BuildChecklist(KdpPackageRequest request) => new
     {
         status = "PASS",
-        checks = new[]
+        checks = new object[]
         {
-            new { id = "trim", passed = true, value = $"{request.TrimWidthInches}x{request.TrimHeightInches}" },
-            new { id = "margins", passed = true, value = request.MarginInches },
-            new { id = "fonts", passed = true, value = "built-in Helvetica, no embedding risk" },
-            new { id = "cover-resolution", passed = true, value = request.Cover.Dpi },
-            new { id = "navigation", passed = true, value = request.Chapters.Count },
-            new { id = "metadata", passed = true, value = request.Metadata.Language },
-            new { id = "isbn", passed = true, value = request.Metadata.Isbn ?? "KDP_FREE_ISBN_OR_USER_SUPPLIED" },
+            new { id = "trim", passed = true, value = (object)$"{request.TrimWidthInches}x{request.TrimHeightInches}" },
+            new { id = "margins", passed = true, value = (object)request.MarginInches },
+            new { id = "fonts", passed = true, value = (object)"built-in Helvetica, no embedding risk" },
+            new { id = "cover-resolution", passed = true, value = (object)request.Cover.Dpi },
+            new { id = "navigation", passed = true, value = (object)request.Chapters.Count },
+            new { id = "metadata", passed = true, value = (object)request.Metadata.Language },
+            new { id = "isbn", passed = true, value = (object)(request.Metadata.Isbn ?? "KDP_FREE_ISBN_OR_USER_SUPPLIED") },
         }
     };
 
