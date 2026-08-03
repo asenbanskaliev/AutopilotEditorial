@@ -1,25 +1,25 @@
 {
   "version": 1,
   "status": "active",
-  "vs": "VS-130",
-  "issue": 198,
+  "vs": "VS-131",
+  "issue": 200,
   "pull_request": null,
-  "branch": "agent/VS-130-production-editorial-adapters",
-  "implementation_head_sha": "5d73a2be99512b37bad6c6e3d1296f9f2b686d64",
+  "branch": "agent/VS-131-true-e2e-orchestrator-live",
+  "implementation_head_sha": "e82c17388b6331ff3d5009fefda890923e7ad77f",
   "owner": "mcp-implement-validate-repair",
-  "acquired_at": "2026-08-03T11:46:00+02:00",
-  "renewed_at": "2026-08-03T11:46:00+02:00",
-  "expires_at": "2026-08-03T13:46:00+02:00",
+  "acquired_at": "2026-08-03T13:32:00+02:00",
+  "renewed_at": "2026-08-03T13:32:00+02:00",
+  "expires_at": "2026-08-03T15:32:00+02:00",
   "checkpoint": {
-    "selected_gap": "Production OpenCode, independent review, SQLite checkpoints, real MCP gateway and live restart-safe proof.",
-    "scope": "VS-130 only",
+    "selected_gap": "The live proof must execute the actual C# production orchestrator rather than a parallel Python journey.",
+    "scope": "VS-131 only",
     "merge_authorized": true,
     "plan_integrity": "pending",
     "governance_gates": "pending",
     "dotnet_ci": "pending",
-    "production_editorial_journey": "pending",
+    "true_e2e_live": "pending",
     "review_threads_open": 0,
-    "implemented": "OpenCode model fallback/cache, writer and independent reviewer adapters, SQLite checkpoints and receipts, real MCP stdio gateway, JSON progress and natural-language entry service.",
-    "next_action": "Open PR, validate exact head, repair all VS-130 failures and merge only after all checks pass."
+    "implemented": "C# live runner composed from natural-language service, OpenCode writer/reviewer, real Authoring/Quality/Production MCP gateway, SQLite checkpoint/receipt stores and restart-safe resume verification.",
+    "next_action": "Open PR, run exact-head live CI, repair and merge only after every check passes."
   }
 }
