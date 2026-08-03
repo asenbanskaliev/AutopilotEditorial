@@ -1,0 +1,39 @@
+name: VS-137 Long-Running Full Book Acceptance
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  long-running-full-book:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore acceptance harness
+        run: dotnet restore tests/BookStudio.Tests.LongRunningFullBook/BookStudio.Tests.LongRunningFullBook.csproj
+      - name: Build acceptance harness
+        run: dotnet build tests/BookStudio.Tests.LongRunningFullBook/BookStudio.Tests.LongRunningFullBook.csproj -c Release --no-restore
+      - name: Run repeated-restart full-book acceptance
+        env:
+          BOOKSTUDIO_VS137_EVIDENCE: artifacts/vs137/long-running-full-book.json
+        run: dotnet run --project tests/BookStudio.Tests.LongRunningFullBook/BookStudio.Tests.LongRunningFullBook.csproj -c Release --no-build
+      - name: Verify sanitized final evidence
+        run: |
+          test -s artifacts/vs137/long-running-full-book.json
+          grep -q '"status": "PASS"' artifacts/vs137/long-running-full-book.json
+          grep -q '"chaptersApproved": 6' artifacts/vs137/long-running-full-book.json
+          grep -q '"reproducible": true' artifacts/vs137/long-running-full-book.json
+          ! grep -q 'vs137-secret-canary-never-persist' artifacts/vs137/long-running-full-book.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vs137-long-running-full-book-evidence
+          path: artifacts/vs137/long-running-full-book.json
+          if-no-files-found: error
