@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>BookStudio.Tests.EditorialJourney</AssemblyName>
     <RootNamespace>BookStudio.Tests.EditorialJourney</RootNamespace>
+    <NoWarn>$(NoWarn);CS8602</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
