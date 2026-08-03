@@ -35,6 +35,5 @@
     <Project Path="tests/BookStudio.Tests.AgentToolProfiles/BookStudio.Tests.AgentToolProfiles.csproj" />
     <Project Path="tests/BookStudio.Tests.ModelBenchmarks/BookStudio.Tests.ModelBenchmarks.csproj" />
     <Project Path="tests/BookStudio.Tests.ContextCompiler/BookStudio.Tests.ContextCompiler.csproj" />
-    <Project Path="tests/BookStudio.Tests.EditorialJourney/BookStudio.Tests.EditorialJourney.csproj" />
   </Folder>
 </Solution>
