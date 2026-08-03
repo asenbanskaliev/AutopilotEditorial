@@ -12,6 +12,7 @@ public sealed record PublicationPackageResult(string ZipPath, string ManifestPat
 public sealed class FinalPublicationJourney
 {
     private static readonly string[] Required = ["manuscript.epub", "interior.pdf", "cover.pdf", "metadata.json", "publication-checklist.md"];
+    private static readonly DateTimeOffset DeterministicZipTimestamp = new(1980, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     public async ValueTask<PublicationPackageResult> BuildAsync(
         string projectId,
@@ -47,12 +48,12 @@ public sealed class FinalPublicationJourney
             foreach (var artifact in artifacts.OrderBy(x => x.Name, StringComparer.Ordinal))
             {
                 var entry = archive.CreateEntry(artifact.Name, CompressionLevel.Optimal);
-                entry.LastWriteTime = DateTimeOffset.UnixEpoch;
+                entry.LastWriteTime = DeterministicZipTimestamp;
                 await using var stream = entry.Open();
                 await stream.WriteAsync(artifact.Content, cancellationToken).ConfigureAwait(false);
             }
             var manifestEntry = archive.CreateEntry("publication-manifest.json", CompressionLevel.Optimal);
-            manifestEntry.LastWriteTime = DateTimeOffset.UnixEpoch;
+            manifestEntry.LastWriteTime = DeterministicZipTimestamp;
             await using var manifestStream = manifestEntry.Open();
             var bytes = Encoding.UTF8.GetBytes(manifestJson);
             await manifestStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
