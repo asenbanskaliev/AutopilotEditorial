@@ -60,10 +60,13 @@ static void Require(bool condition, string message)
     if (!condition) throw new InvalidOperationException(message);
 }
 
-static IReadOnlyList<LiteraryQualityScore> Scores(int value, bool blocker = false) =>
-    Enum.GetValues<LiteraryQualityDimension>()
-        .Select(dimension => new LiteraryQualityScore(dimension, value, [$"{dimension}:{value}"], blocker && dimension == LiteraryQualityDimension.FactualRisk))
-        .ToArray();
+static class QualityTestData
+{
+    public static IReadOnlyList<LiteraryQualityScore> Scores(int value, bool blocker = false) =>
+        Enum.GetValues<LiteraryQualityDimension>()
+            .Select(dimension => new LiteraryQualityScore(dimension, value, [$"{dimension}:{value}"], blocker && dimension == LiteraryQualityDimension.FactualRisk))
+            .ToArray();
+}
 
 sealed class ImprovingEvaluator : IProfessionalLiteraryQualityEvaluator
 {
@@ -71,20 +74,20 @@ sealed class ImprovingEvaluator : IProfessionalLiteraryQualityEvaluator
     {
         var score = attempt == 1 ? 65 : 86;
         var decision = attempt == 1 ? LiteraryQualityDecision.Revise : LiteraryQualityDecision.Pass;
-        return ValueTask.FromResult(new LiteraryQualityAssessment(decision, Scores(score), attempt == 1 ? ["Corregir continuidad y acelerar el punto de giro."] : [], "independent-reviewer", $"review-{attempt}"));
+        return ValueTask.FromResult(new LiteraryQualityAssessment(decision, QualityTestData.Scores(score), attempt == 1 ? ["Corregir continuidad y acelerar el punto de giro."] : [], "independent-reviewer", $"review-{attempt}"));
     }
 }
 
 sealed class BlockedEvaluator : IProfessionalLiteraryQualityEvaluator
 {
     public ValueTask<LiteraryQualityAssessment> EvaluateAsync(LiteraryQualityRequest request, int attempt, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(new LiteraryQualityAssessment(LiteraryQualityDecision.Blocked, Scores(20, blocker: true), ["Resolver el riesgo factual material."], "blocked-reviewer", "blocked"));
+        ValueTask.FromResult(new LiteraryQualityAssessment(LiteraryQualityDecision.Blocked, QualityTestData.Scores(20, blocker: true), ["Resolver el riesgo factual material."], "blocked-reviewer", "blocked"));
 }
 
 sealed class AlwaysReviseEvaluator : IProfessionalLiteraryQualityEvaluator
 {
     public ValueTask<LiteraryQualityAssessment> EvaluateAsync(LiteraryQualityRequest request, int attempt, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(new LiteraryQualityAssessment(LiteraryQualityDecision.Revise, Scores(68), ["Mejorar ritmo y voz."], "bounded-reviewer", $"bounded-{attempt}"));
+        ValueTask.FromResult(new LiteraryQualityAssessment(LiteraryQualityDecision.Revise, QualityTestData.Scores(68), ["Mejorar ritmo y voz."], "bounded-reviewer", $"bounded-{attempt}"));
 }
 
 sealed class RevisingWriter(string identity) : IProfessionalLiteraryReviser
