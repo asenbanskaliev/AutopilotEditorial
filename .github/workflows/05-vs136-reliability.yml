@@ -1,0 +1,17 @@
+name: VS-136 Reliability and Operations
+on:
+  pull_request:
+    paths: ['src/BookStudio.Autopilot/**','tests/BookStudio.Tests.Reliability/**','.github/workflows/05-vs136-reliability.yml','docs/vertical-slices/VS-136-reliability-operations.md']
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  reliability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with: { global-json-file: global.json }
+      - run: dotnet restore tests/BookStudio.Tests.Reliability/BookStudio.Tests.Reliability.csproj
+      - run: dotnet build tests/BookStudio.Tests.Reliability/BookStudio.Tests.Reliability.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.Reliability/BookStudio.Tests.Reliability.csproj -c Release --no-build
