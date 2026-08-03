@@ -1,25 +1,25 @@
 {
   "version": 1,
   "status": "active",
-  "vs": "VS-133",
-  "issue": 202,
+  "vs": "VS-134",
+  "issue": 203,
   "pull_request": null,
-  "branch": "agent/VS-133-professional-literary-quality-gates",
-  "implementation_head_sha": "812c14ab92894d818c0b8422a1763083e133f018",
+  "branch": "agent/VS-134-kdp-production-package",
+  "implementation_head_sha": "94b63740bfa1b39958081514d474c974a75a5f45",
   "owner": "mcp-implement-validate-repair",
-  "acquired_at": "2026-08-03T15:44:00+02:00",
-  "renewed_at": "2026-08-03T15:44:00+02:00",
-  "expires_at": "2026-08-03T17:44:00+02:00",
+  "acquired_at": "2026-08-03T15:55:00+02:00",
+  "renewed_at": "2026-08-03T15:55:00+02:00",
+  "expires_at": "2026-08-03T17:55:00+02:00",
   "checkpoint": {
-    "selected_gap": "Add professional deterministic literary scoring, bounded revision loops and persistent evidence.",
-    "scope": "VS-133 only",
+    "selected_gap": "Generate a reproducible publication-ready KDP package from approved manuscript chapters.",
+    "scope": "VS-134 only",
     "merge_authorized": true,
     "plan_integrity": "pending",
     "governance_gates": "pending",
     "dotnet_ci": "pending",
-    "literary_quality": "pending",
+    "kdp_package": "pending",
     "review_threads_open": 0,
-    "implemented": "Nine literary dimensions, deterministic PASS/REVISE/BLOCKED policy, independent identities, bounded revision loops and JSONL evidence per attempt.",
-    "next_action": "Open PR, validate exact head, repair all failures and merge only after every check passes."
+    "implemented": "Deterministic EPUB, print PDF, metadata, checklist, cover validation, manifest hashes and final ZIP.",
+    "next_action": "Open PR, validate exact head, repair failures and merge only after every check passes."
   }
 }
