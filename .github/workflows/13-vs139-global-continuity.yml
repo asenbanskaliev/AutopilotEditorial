@@ -1,0 +1,22 @@
+name: VS-139 Global Manuscript Continuity
+on:
+  pull_request:
+    paths:
+      - 'src/BookStudio.Autopilot/EditorialJourney/**'
+      - 'tests/BookStudio.Tests.GlobalContinuity/**'
+      - '.github/workflows/13-vs139-global-continuity.yml'
+      - 'specs/VS-139-global-manuscript-continuity.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  global-continuity:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet restore tests/BookStudio.Tests.GlobalContinuity/BookStudio.Tests.GlobalContinuity.csproj
+      - run: dotnet build tests/BookStudio.Tests.GlobalContinuity/BookStudio.Tests.GlobalContinuity.csproj -c Release --no-restore
+      - run: dotnet run --project tests/BookStudio.Tests.GlobalContinuity/BookStudio.Tests.GlobalContinuity.csproj -c Release --no-build
