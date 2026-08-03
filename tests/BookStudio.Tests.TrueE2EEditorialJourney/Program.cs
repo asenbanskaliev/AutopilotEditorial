@@ -50,6 +50,7 @@ try
         independentOpenCodeReviewer = true,
         bundledWriterCall = true,
         contentAwareReview = true,
+        structuredPreflightParsing = true,
         authoringMcp = true,
         qualityMcpRequired = true,
         productionMcp = true,
@@ -93,7 +94,7 @@ async ValueTask<EditorialJourneyResult> RunCompositionAsync(bool resume)
     var generator = new BundledOpenCodeEditorialContentGenerator(invoker, options);
     var reviewer = new ContentAwareOpenCodeIndependentReviewer(generator, invoker, options);
     await using var checkpoints = new SqliteEditorialJourneyCheckpointStore($"Data Source={checkpointDb}");
-    await using var gateway = new StdioMcpEditorialArtifactGateway(
+    await using var gateway = new StructuredPreflightEditorialArtifactGateway(
         new StdioMcpEditorialGatewayOptions(runtime, workspace, authoring, quality, production, TimeSpan.FromSeconds(60)),
         $"Data Source={receiptDb}");
     await using var progressWriter = new StreamWriter(progressPath, append: resume);
