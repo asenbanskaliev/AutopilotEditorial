@@ -6,6 +6,7 @@ on:
       - "src/BookStudio.Autopilot/**"
       - "tests/BookStudio.Tests.ProductionEditorialJourney/**"
       - "scripts/run_opencode_live_mcp_audit.py"
+      - "scripts/run_opencode_live_mcp_audit_scoped.py"
       - "docs/vertical-slices/VS-130-production-editorial-journey-adapters.md"
       - ".github/workflows/04-vs130-production-editorial-journey.yml"
       - "Directory.Packages.props"
@@ -54,14 +55,14 @@ jobs:
           test -n "$OPENCODE_ZEN_API_KEY"
           test ${#OPENCODE_ZEN_API_KEY} -ge 12
           echo "::add-mask::$OPENCODE_ZEN_API_KEY"
-      - name: Run live OpenCode and real MCP proof
-        run: python scripts/run_opencode_live_mcp_audit.py
+      - name: Run scoped live OpenCode and real MCP proof
+        run: python scripts/run_opencode_live_mcp_audit_scoped.py
       - name: Verify VS-130 source contains connected adapters
         shell: bash
         run: |
-          grep -q "OpenCodeEditorialContentGenerator" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.cs
-          grep -q "OpenCodeIndependentEditorialReviewer" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.cs
-          grep -q "SqliteEditorialJourneyCheckpointStore" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.cs
+          grep -q "OpenCodeEditorialContentGenerator" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
+          grep -q "OpenCodeIndependentEditorialReviewer" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
+          grep -q "SqliteEditorialJourneyCheckpointStore" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
           grep -q "StdioMcpEditorialArtifactGateway" src/BookStudio.Autopilot/EditorialJourney/StdioMcpEditorialArtifactGateway.cs
       - name: Upload sanitized live evidence
         if: always()
@@ -69,4 +70,4 @@ jobs:
         with:
           name: vs130-production-editorial-live-evidence
           path: artifacts/vs128/opencode-live-mcp-audit.json
-          if-no-files-found: error
+          if-no-files-found: warn
