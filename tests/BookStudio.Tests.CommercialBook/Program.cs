@@ -63,7 +63,7 @@ sealed class FakeCommercialModelInvoker : IEditorialModelInvoker
         }
 
         var chapterNumber = int.Parse(purpose[^2..], System.Globalization.CultureInfo.InvariantCulture);
-        var paragraphs = Enumerable.Range(1, 55).Select(index =>
+        var paragraphs = Enumerable.Range(1, 24).Select(index =>
             $"La escena {index} del capítulo {chapterNumber} avanza cuando Mara compara el sello azul con la fecha del expediente {chapterNumber}-{index}, escucha una objeción distinta de su hermano y decide conservar una prueba que cambia la investigación de forma concreta");
         var content = $"# Capítulo {chapterNumber}: El nombre perdido {chapterNumber}\n\n" + string.Join(".\n\n", paragraphs) + ".";
         return ValueTask.FromResult(new EditorialModelExecution("test-provider", "test-model", $"chapter-{chapterNumber}-hash", "context-hash", 20, content));
