@@ -29,11 +29,12 @@ def test_vs129_is_idempotent_and_does_not_trust_textual_completion():
     assert "Resume duplicated model generation" in tests
 
 
-def test_vs129_is_in_solution_and_documented():
-    solution = (ROOT / "BookStudio.slnx").read_text(encoding="utf-8")
+def test_vs129_has_isolated_ci_and_documentation():
+    workflow = (ROOT / ".github/workflows/04-vs129-editorial-journey.yml").read_text(encoding="utf-8")
     spec = (ROOT / "docs/vertical-slices/VS-129-deterministic-editorial-journey-orchestrator.md").read_text(encoding="utf-8")
 
-    assert "BookStudio.Tests.EditorialJourney" in solution
+    assert "BookStudio.Tests.EditorialJourney" in workflow
+    assert "Run deterministic editorial journey tests" in workflow
     assert "request fingerprint" in spec
     assert "does not repeat verified generation" in spec
     assert "sanitized failure event" in spec
