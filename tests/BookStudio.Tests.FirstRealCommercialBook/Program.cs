@@ -7,6 +7,7 @@ var repoRoot = RequireDirectory("BOOKSTUDIO_REPO_ROOT");
 var runtime = RequireDirectory("BOOKSTUDIO_RUN001_RUNTIME", create: true);
 var opencode = RequireFile("BOOKSTUDIO_OPENCODE");
 var output = Path.Combine(repoRoot, "artifacts", "real-books", "el-archivo-de-las-ausencias");
+var jsonOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 Directory.CreateDirectory(output);
 
 const string projectId = "el-archivo-de-las-ausencias";
@@ -27,7 +28,7 @@ try
 
     Require(plan.Chapters.Count == request.ChapterCount, "The real plan did not contain exactly eight chapters.");
     Require(plan.Chapters.Select(x => x.Number).SequenceEqual(Enumerable.Range(1, request.ChapterCount)), "The real plan is not contiguous.");
-    await File.WriteAllTextAsync(Path.Combine(output, "book-plan.json"), JsonSerializer.Serialize(plan, JsonOptions), new UTF8Encoding(false));
+    await File.WriteAllTextAsync(Path.Combine(output, "book-plan.json"), JsonSerializer.Serialize(plan, jsonOptions), new UTF8Encoding(false));
 
     var generator = new OpenCodeCommercialChapterGenerator(invoker, options);
     var generated = new List<FullBookGeneratedChapter>();
@@ -104,7 +105,7 @@ try
     };
     Require(evidence.totalWords >= 5600, "The real manuscript is below the commercial minimum.");
     Require(!evidence.duplicateChapters, "The real manuscript contains duplicate chapters.");
-    var evidenceJson = JsonSerializer.Serialize(evidence, JsonOptions);
+    var evidenceJson = JsonSerializer.Serialize(evidence, jsonOptions);
     var secret = Environment.GetEnvironmentVariable("OPENCODE_ZEN_API_KEY") ?? string.Empty;
     Require(string.IsNullOrEmpty(secret) || !evidenceJson.Contains(secret, StringComparison.Ordinal), "Credential leaked into evidence.");
     await File.WriteAllTextAsync(Path.Combine(output, "production-evidence.json"), evidenceJson, new UTF8Encoding(false));
@@ -122,7 +123,7 @@ catch (Exception exception)
         secretLeakageDetected = false,
         completedAtUtc = DateTimeOffset.UtcNow,
     };
-    await File.WriteAllTextAsync(Path.Combine(output, "production-evidence.json"), JsonSerializer.Serialize(failure, JsonOptions), new UTF8Encoding(false));
+    await File.WriteAllTextAsync(Path.Combine(output, "production-evidence.json"), JsonSerializer.Serialize(failure, jsonOptions), new UTF8Encoding(false));
     Console.Error.WriteLine("FAIL RUN-001: " + Sanitize(exception.Message));
     Environment.ExitCode = 1;
 }
@@ -163,4 +164,3 @@ static string Sanitize(string value)
     if (!string.IsNullOrEmpty(secret)) value = value.Replace(secret, "***", StringComparison.Ordinal);
     return value.Length <= 1500 ? value : value[^1500..];
 }
-static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
