@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>BookStudio.Tests.ProductionEditorialJourney</AssemblyName>
+    <RootNamespace>BookStudio.Tests.ProductionEditorialJourney</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/BookStudio.Autopilot/BookStudio.Autopilot.csproj" />
+  </ItemGroup>
+</Project>

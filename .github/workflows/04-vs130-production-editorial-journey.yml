@@ -1,0 +1,73 @@
+name: VS-130 Production Editorial Journey
+
+on:
+  pull_request:
+    paths:
+      - "src/BookStudio.Autopilot/**"
+      - "tests/BookStudio.Tests.ProductionEditorialJourney/**"
+      - "scripts/run_opencode_live_mcp_audit.py"
+      - "scripts/run_opencode_live_mcp_audit_scoped.py"
+      - "docs/vertical-slices/VS-130-production-editorial-journey-adapters.md"
+      - ".github/workflows/04-vs130-production-editorial-journey.yml"
+      - "Directory.Packages.props"
+      - "global.json"
+
+permissions:
+  contents: read
+
+jobs:
+  production-adapters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore production adapter harness
+        run: dotnet restore tests/BookStudio.Tests.ProductionEditorialJourney/BookStudio.Tests.ProductionEditorialJourney.csproj
+      - name: Build production adapter harness
+        run: dotnet build tests/BookStudio.Tests.ProductionEditorialJourney/BookStudio.Tests.ProductionEditorialJourney.csproj --no-restore -c Release
+      - name: Run production adapter tests
+        run: dotnet run --project tests/BookStudio.Tests.ProductionEditorialJourney/BookStudio.Tests.ProductionEditorialJourney.csproj --no-build -c Release
+
+  live-connected-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    needs: production-adapters
+    env:
+      OPENCODE_ZEN_API_KEY: ${{ secrets.OPENCODE_ZEN_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Require live credential
+        shell: bash
+        run: |
+          test -n "$OPENCODE_ZEN_API_KEY"
+          test ${#OPENCODE_ZEN_API_KEY} -ge 12
+          echo "::add-mask::$OPENCODE_ZEN_API_KEY"
+      - name: Run scoped live OpenCode and real MCP proof
+        run: python scripts/run_opencode_live_mcp_audit_scoped.py
+      - name: Verify VS-130 source contains connected adapters
+        shell: bash
+        run: |
+          grep -q "OpenCodeEditorialContentGenerator" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
+          grep -q "OpenCodeIndependentEditorialReviewer" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
+          grep -q "SqliteEditorialJourneyCheckpointStore" src/BookStudio.Autopilot/EditorialJourney/ProductionEditorialJourneyAdapters.Fixed.cs
+          grep -q "StdioMcpEditorialArtifactGateway" src/BookStudio.Autopilot/EditorialJourney/StdioMcpEditorialArtifactGateway.cs
+      - name: Upload sanitized live evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vs130-production-editorial-live-evidence
+          path: artifacts/vs128/opencode-live-mcp-audit.json
+          if-no-files-found: warn
