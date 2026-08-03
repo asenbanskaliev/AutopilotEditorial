@@ -1,25 +1,25 @@
 {
   "version": 1,
   "status": "active",
-  "vs": "VS-131",
-  "issue": 200,
+  "vs": "VS-132",
+  "issue": 201,
   "pull_request": null,
-  "branch": "agent/VS-131-true-e2e-orchestrator-live",
-  "implementation_head_sha": "e82c17388b6331ff3d5009fefda890923e7ad77f",
+  "branch": "agent/VS-132-full-book-autonomous-production",
+  "implementation_head_sha": "36f4582d463362f128064f2de5523a856fd0d279",
   "owner": "mcp-implement-validate-repair",
-  "acquired_at": "2026-08-03T13:32:00+02:00",
-  "renewed_at": "2026-08-03T13:32:00+02:00",
-  "expires_at": "2026-08-03T15:32:00+02:00",
+  "acquired_at": "2026-08-03T15:29:00+02:00",
+  "renewed_at": "2026-08-03T15:29:00+02:00",
+  "expires_at": "2026-08-03T17:29:00+02:00",
   "checkpoint": {
-    "selected_gap": "The live proof must execute the actual C# production orchestrator rather than a parallel Python journey.",
-    "scope": "VS-131 only",
+    "selected_gap": "Extend deterministic production from one sample chapter to a complete restart-safe multi-chapter book.",
+    "scope": "VS-132 only",
     "merge_authorized": true,
     "plan_integrity": "pending",
     "governance_gates": "pending",
     "dotnet_ci": "pending",
-    "true_e2e_live": "pending",
+    "full_book_production": "pending",
     "review_threads_open": 0,
-    "implemented": "C# live runner composed from natural-language service, OpenCode writer/reviewer, real Authoring/Quality/Production MCP gateway, SQLite checkpoint/receipt stores and restart-safe resume verification.",
-    "next_action": "Open PR, run exact-head live CI, repair and merge only after every check passes."
+    "implemented": "Multi-chapter plan execution, bounded word counts and context, rolling summaries, atomic JSON checkpoints, receipt recovery, fingerprint conflict protection and no-duplicate restart acceptance.",
+    "next_action": "Open PR, validate exact head, repair every VS-132 failure and merge only after all checks pass."
   }
 }
