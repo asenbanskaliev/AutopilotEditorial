@@ -1,0 +1,28 @@
+name: VS-138 Real Commercial Book Creation
+
+on:
+  pull_request:
+    paths:
+      - 'src/BookStudio.Autopilot/EditorialJourney/**'
+      - 'tests/BookStudio.Tests.CommercialBook/**'
+      - '.github/workflows/12-vs138-commercial-book.yml'
+      - 'specs/VS-138-real-commercial-book-creation.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  commercial-book-contracts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - name: Restore commercial book harness
+        run: dotnet restore tests/BookStudio.Tests.CommercialBook/BookStudio.Tests.CommercialBook.csproj
+      - name: Build commercial book harness
+        run: dotnet build tests/BookStudio.Tests.CommercialBook/BookStudio.Tests.CommercialBook.csproj -c Release --no-restore
+      - name: Validate model adapters and anti-placeholder policy
+        run: dotnet run --project tests/BookStudio.Tests.CommercialBook/BookStudio.Tests.CommercialBook.csproj -c Release --no-build
