@@ -11,9 +11,7 @@ try
     var firstParagraph = string.Join(' ', Enumerable.Repeat("¿Dónde está el expediente de Íñigo? La archivera revisó la sección pública, encontró una página húmeda y anotó la desaparición.", 28));
     var secondParagraph = string.Join(' ', Enumerable.Repeat("Después cruzó la plaza, habló con su tía y confirmó que ningún registro podía explicar aquella ausencia.", 28));
     var chapterOne = $"# Capítulo 1: La señal\n\n{firstParagraph}\n\n{secondParagraph}";
-    const string finalMarkerStart = "ÚLTIMA PÁGINA:";
-    const string finalMarkerEnd = "sin borrar la memoria de Íñigo.";
-    var finalMarker = $"{finalMarkerStart} la investigación concluyó en Pamplona {finalMarkerEnd}";
+    const string finalMarker = "ÚLTIMA PÁGINA: la investigación concluyó en Pamplona sin borrar la memoria de Íñigo.";
     var chapterTwo = $"# Capítulo 2: La ausencia\n\n{firstParagraph}\n\n{secondParagraph}\n\n{finalMarker}";
     var request = new KdpPackageRequest(
         "vs134-book",
@@ -46,13 +44,11 @@ try
     using var pdfCopy = new MemoryStream();
     await pdfStream.CopyToAsync(pdfCopy);
     var pdfText = Encoding.Latin1.GetString(pdfCopy.ToArray());
+    var renderedText = ExtractRenderedPdfText(pdfText);
     Require(pdfText.Contains("/Encoding /WinAnsiEncoding", StringComparison.Ordinal), "PDF does not declare Spanish-compatible encoding");
-    Require(pdfText.Contains("¿Dónde está el expediente de Íñigo?", StringComparison.Ordinal), "Spanish punctuation or accents were corrupted");
-    Require(pdfText.Contains("Capítulo 2: La ausencia", StringComparison.Ordinal), "second chapter was omitted");
-    var finalStartPosition = pdfText.IndexOf(finalMarkerStart, StringComparison.Ordinal);
-    var finalEndPosition = pdfText.IndexOf(finalMarkerEnd, StringComparison.Ordinal);
-    Require(finalStartPosition >= 0, "final paragraph start was omitted");
-    Require(finalEndPosition > finalStartPosition, "final paragraph end was omitted or reordered");
+    Require(renderedText.Contains("¿Dónde está el expediente de Íñigo?", StringComparison.Ordinal), "Spanish punctuation or accents were corrupted");
+    Require(renderedText.Contains("Capítulo 2: La ausencia", StringComparison.Ordinal), "second chapter was omitted");
+    Require(renderedText.Contains(finalMarker, StringComparison.Ordinal), "final paragraph was omitted or reordered");
     Require(Regex.Matches(pdfText, @"/Type /Page\b").Count >= 4, "complete manuscript was not paginated across multiple pages");
     Require(pdfText.Contains("BT /F1 10.5 Tf 54 ", StringComparison.Ordinal), "paragraph first-line indentation missing");
     Require(pdfText.Contains("BT /F1 10.5 Tf 36 ", StringComparison.Ordinal), "wrapped paragraph continuation alignment missing");
@@ -76,6 +72,16 @@ try
 finally
 {
     Directory.Delete(root, true);
+}
+
+static string ExtractRenderedPdfText(string pdf)
+{
+    var operands = Regex.Matches(pdf, @"\((?<text>(?:\\.|[^\\)])*)\)\s*Tj")
+        .Select(match => match.Groups["text"].Value
+            .Replace("\\(", "(", StringComparison.Ordinal)
+            .Replace("\\)", ")", StringComparison.Ordinal)
+            .Replace("\\\\", "\\", StringComparison.Ordinal));
+    return Regex.Replace(string.Join(' ', operands), @"\s+", " ").Trim();
 }
 
 static string Hash(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
