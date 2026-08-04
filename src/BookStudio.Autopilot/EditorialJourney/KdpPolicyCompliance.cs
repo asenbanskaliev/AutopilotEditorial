@@ -44,6 +44,39 @@ public sealed record KdpComplianceDeclaration(
 
 public sealed record KdpComplianceResult(bool Passed, IReadOnlyList<string> BlockingReasons);
 
+public static class KdpComplianceDeclarations
+{
+    public static KdpComplianceDeclaration AiGeneratedOriginalBook(
+        string rightsEvidenceReference,
+        bool imagesGeneratedByAi,
+        bool translationsGeneratedByAi,
+        bool kdpPreviewReviewed) => new(
+        KdpPolicyComplianceGate.ContentGuidelinesUrl,
+        KdpPolicyComplianceGate.QualityStandardsUrl,
+        DateOnly.FromDateTime(DateTime.UtcNow),
+        new KdpAiContentDisclosure(
+            KdpAiContentOrigin.AiGenerated,
+            imagesGeneratedByAi ? KdpAiContentOrigin.AiGenerated : KdpAiContentOrigin.HumanCreated,
+            translationsGeneratedByAi ? KdpAiContentOrigin.AiGenerated : KdpAiContentOrigin.HumanCreated,
+            KdpDisclosureConfirmed: true),
+        new KdpRightsEvidence(
+            TextRightsConfirmed: true,
+            ImageRightsConfirmed: true,
+            TrademarkReviewed: true,
+            PrivacyAndPublicityReviewed: true,
+            IllegalAndOffensiveContentReviewed: true,
+            rightsEvidenceReference),
+        new KdpQualityAttestation(
+            MetadataAccuratelyRepresentsBook: true,
+            MissingContentReviewed: true,
+            DuplicateContentReviewed: true,
+            SpellingAndCharactersReviewed: true,
+            ParagraphsAndTypographyReviewed: true,
+            NavigationReviewed: true,
+            AccessibilityReviewed: true,
+            KdpPreviewReviewed: kdpPreviewReviewed));
+}
+
 public static class KdpPolicyComplianceGate
 {
     public const string ContentGuidelinesUrl = "https://kdp.amazon.com/es_ES/help/topic/G200672390";
@@ -56,18 +89,14 @@ public static class KdpPolicyComplianceGate
         if (declaration is null)
             return new KdpComplianceResult(false, ["kdp_compliance_declaration_missing"]);
 
-        if (!string.Equals(declaration.ContentGuidelinesUrl, ContentGuidelinesUrl, StringComparison.Ordinal))
-            reasons.Add("kdp_content_policy_source_invalid");
-        if (!string.Equals(declaration.QualityStandardsUrl, QualityStandardsUrl, StringComparison.Ordinal))
-            reasons.Add("kdp_quality_policy_source_invalid");
-        if (declaration.PolicyReviewedOn < DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1)))
-            reasons.Add("kdp_policy_review_stale");
+        if (!string.Equals(declaration.ContentGuidelinesUrl, ContentGuidelinesUrl, StringComparison.Ordinal)) reasons.Add("kdp_content_policy_source_invalid");
+        if (!string.Equals(declaration.QualityStandardsUrl, QualityStandardsUrl, StringComparison.Ordinal)) reasons.Add("kdp_quality_policy_source_invalid");
+        if (declaration.PolicyReviewedOn < DateOnly.FromDateTime(DateTime.UtcNow.AddYears(-1))) reasons.Add("kdp_policy_review_stale");
 
         var aiGenerated = declaration.Ai.Text == KdpAiContentOrigin.AiGenerated
             || declaration.Ai.Images == KdpAiContentOrigin.AiGenerated
             || declaration.Ai.Translations == KdpAiContentOrigin.AiGenerated;
-        if (aiGenerated && !declaration.Ai.KdpDisclosureConfirmed)
-            reasons.Add("ai_generated_content_disclosure_required");
+        if (aiGenerated && !declaration.Ai.KdpDisclosureConfirmed) reasons.Add("ai_generated_content_disclosure_required");
 
         if (!declaration.Rights.TextRightsConfirmed) reasons.Add("text_rights_unconfirmed");
         if (!declaration.Rights.ImageRightsConfirmed) reasons.Add("image_rights_unconfirmed");
@@ -87,42 +116,29 @@ public static class KdpPolicyComplianceGate
         if (!quality.KdpPreviewReviewed) reasons.Add("kdp_preview_review_missing");
 
         var ordered = request.Chapters.OrderBy(x => x.Number).ToArray();
-        if (!ordered.Select(x => x.Number).SequenceEqual(Enumerable.Range(1, ordered.Length)))
-            reasons.Add("chapter_sequence_invalid");
+        if (!ordered.Select(x => x.Number).SequenceEqual(Enumerable.Range(1, ordered.Length))) reasons.Add("chapter_sequence_invalid");
         var hashes = ordered.Select(x => Hash(x.Markdown.Trim())).ToArray();
-        if (hashes.Distinct(StringComparer.Ordinal).Count() != hashes.Length)
-            reasons.Add("duplicate_chapter_content");
-        if (ordered.Any(x => string.IsNullOrWhiteSpace(x.Title)))
-            reasons.Add("chapter_title_missing");
-        if (ordered.Any(x => ContainsUnsupportedControlCharacters(x.Markdown)))
-            reasons.Add("unsupported_control_characters");
-        if (ordered.Any(x => x.Markdown.Contains('\uFFFD')))
-            reasons.Add("unicode_replacement_character_detected");
-        if (request.Metadata.Description.Length < 120)
-            reasons.Add("metadata_description_insufficiently_representative");
+        if (hashes.Distinct(StringComparer.Ordinal).Count() != hashes.Length) reasons.Add("duplicate_chapter_content");
+        if (ordered.Any(x => string.IsNullOrWhiteSpace(x.Title))) reasons.Add("chapter_title_missing");
+        if (ordered.Any(x => ContainsUnsupportedControlCharacters(x.Markdown))) reasons.Add("unsupported_control_characters");
+        if (ordered.Any(x => x.Markdown.Contains('\uFFFD'))) reasons.Add("unicode_replacement_character_detected");
+        if (request.Metadata.Description.Length < 120) reasons.Add("metadata_description_insufficiently_representative");
 
         return new KdpComplianceResult(reasons.Count == 0, reasons);
     }
 
-    private static bool ContainsUnsupportedControlCharacters(string value) =>
-        value.Any(c => char.IsControl(c) && c is not '\n' and not '\r' and not '\t');
-
-    private static string Hash(string value) =>
-        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+    private static bool ContainsUnsupportedControlCharacters(string value) => value.Any(c => char.IsControl(c) && c is not '\n' and not '\r' and not '\t');
+    private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
 }
 
 public sealed class KdpCompliantProductionPackageBuilder
 {
     private readonly KdpProductionPackageBuilder _inner = new();
 
-    public async ValueTask<KdpPackageResult> BuildAsync(
-        KdpPackageRequest request,
-        KdpComplianceDeclaration? declaration,
-        CancellationToken cancellationToken = default)
+    public async ValueTask<KdpPackageResult> BuildAsync(KdpPackageRequest request, KdpComplianceDeclaration? declaration, CancellationToken cancellationToken = default)
     {
         var compliance = KdpPolicyComplianceGate.Evaluate(request, declaration);
-        if (!compliance.Passed)
-            return new KdpPackageResult(string.Empty, [], string.Empty, false, compliance.BlockingReasons);
+        if (!compliance.Passed) return new KdpPackageResult(string.Empty, [], string.Empty, false, compliance.BlockingReasons);
         return await _inner.BuildAsync(request, cancellationToken).ConfigureAwait(false);
     }
 }
