@@ -49,11 +49,10 @@ public static class KdpPolicyComplianceGate
     public const string ContentGuidelinesUrl = "https://kdp.amazon.com/es_ES/help/topic/G200672390";
     public const string QualityStandardsUrl = "https://kdp.amazon.com/es_ES/help/topic/GGRXLC5USU4H67YM";
 
-    public static KdpComplianceResult Evaluate(KdpPackageRequest request)
+    public static KdpComplianceResult Evaluate(KdpPackageRequest request, KdpComplianceDeclaration? declaration)
     {
         ArgumentNullException.ThrowIfNull(request);
         var reasons = new List<string>();
-        var declaration = request.Compliance;
         if (declaration is null)
             return new KdpComplianceResult(false, ["kdp_compliance_declaration_missing"]);
 
@@ -99,8 +98,7 @@ public static class KdpPolicyComplianceGate
             reasons.Add("unsupported_control_characters");
         if (ordered.Any(x => x.Markdown.Contains('\uFFFD')))
             reasons.Add("unicode_replacement_character_detected");
-        if (!request.Metadata.Description.Contains(request.Metadata.Title.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0], StringComparison.OrdinalIgnoreCase)
-            && request.Metadata.Description.Length < 120)
+        if (request.Metadata.Description.Length < 120)
             reasons.Add("metadata_description_insufficiently_representative");
 
         return new KdpComplianceResult(reasons.Count == 0, reasons);
@@ -111,4 +109,20 @@ public static class KdpPolicyComplianceGate
 
     private static string Hash(string value) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
+}
+
+public sealed class KdpCompliantProductionPackageBuilder
+{
+    private readonly KdpProductionPackageBuilder _inner = new();
+
+    public async ValueTask<KdpPackageResult> BuildAsync(
+        KdpPackageRequest request,
+        KdpComplianceDeclaration? declaration,
+        CancellationToken cancellationToken = default)
+    {
+        var compliance = KdpPolicyComplianceGate.Evaluate(request, declaration);
+        if (!compliance.Passed)
+            return new KdpPackageResult(string.Empty, [], string.Empty, false, compliance.BlockingReasons);
+        return await _inner.BuildAsync(request, cancellationToken).ConfigureAwait(false);
+    }
 }
