@@ -147,7 +147,7 @@ public sealed class KdpProductionPackageBuilder
             var contentObjectNumber = pageObjectNumber + 1;
             pageReferences.Add(pageObjectNumber);
             objects.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {pageWidth.ToString("0.##", CultureInfo.InvariantCulture)} {pageHeight.ToString("0.##", CultureInfo.InvariantCulture)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectNumber} 0 R >>");
-            var content = BuildPageContent(page);
+            var content = BuildPageContent(page, pageHeight, margin);
             objects.Add($"<< /Length {PdfEncoding.GetByteCount(content)} >>\nstream\n{content}\nendstream");
         }
         objects[1] = $"<< /Type /Pages /Kids [{string.Join(' ', pageReferences.Select(reference => $"{reference} 0 R"))}] /Count {pages.Count} >>";
@@ -219,17 +219,17 @@ public sealed class KdpProductionPackageBuilder
         return pages;
     }
 
-    private static string BuildPageContent(IReadOnlyList<PdfLine> page)
+    private static string BuildPageContent(IReadOnlyList<PdfLine> page, double pageHeight, double margin)
     {
         var content = new StringBuilder();
-        var y = 612d;
+        var y = pageHeight - margin;
         foreach (var line in page)
         {
             y -= line.SpaceBefore;
             var font = line.Heading ? "/F2" : "/F1";
             var size = line.Heading ? 16d : 10.5d;
             var leading = line.Heading ? 22d : 14.5d;
-            var x = line.FirstParagraphLine && !line.Heading ? 68d : 50d;
+            var x = margin + (line.FirstParagraphLine && !line.Heading ? 18d : 0d);
             content.Append("BT ").Append(font).Append(' ').Append(size.ToString("0.##", CultureInfo.InvariantCulture)).Append(" Tf ")
                 .Append(x.ToString("0.##", CultureInfo.InvariantCulture)).Append(' ').Append(y.ToString("0.##", CultureInfo.InvariantCulture)).Append(" Td (")
                 .Append(EscapePdf(line.Text)).Append(") Tj ET\n");
