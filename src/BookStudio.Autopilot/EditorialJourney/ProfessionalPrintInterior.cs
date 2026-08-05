@@ -13,7 +13,7 @@ public static class ProfessionalPrintInterior
 {
     private static readonly Regex Italic = new(@"(?<!\*)\*([^*\r\n]+)\*(?!\*)", RegexOptions.Compiled);
     private static readonly Regex ShortDialogue = new(@"(?m)^\s*[-–]\s*(?=\p{L}|[¿¡])", RegexOptions.Compiled);
-    private static readonly Regex VisibleMarkdown = new(@"(?<!\*)\*[^*\r\n]+\*(?!\*)|(?m)^\s{0,3}#{1,6}\s+|(?m)^\s*[-+*]\s+", RegexOptions.Compiled);
+    private static readonly Regex VisibleMarkdown = new(@"(?<!\*)\*[^*\r\n]+\*(?!\*)|(?m)^\s*[-+*]\s+", RegexOptions.Compiled);
 
     public static IReadOnlyList<PrintBlock> Parse(string markdown)
     {
@@ -48,7 +48,7 @@ public static class ProfessionalPrintInterior
     {
         var reasons = new List<string>();
         var source = string.Join("\n\n", request.Chapters.Select(x => x.Markdown));
-        var visible = VisibleMarkdown.Matches(RemoveSupportedItalicMarkup(source)).Count;
+        var visible = VisibleMarkdown.Matches(RemoveSupportedMarkup(source)).Count;
         var shortDialogue = ShortDialogue.Matches(source).Count;
         if (visible > 0) reasons.Add("visible_markdown_detected");
         if (shortDialogue > 0) reasons.Add("short_dialogue_hyphen_detected");
@@ -60,12 +60,10 @@ public static class ProfessionalPrintInterior
     {
         var sourceAudit = AuditSource(request);
         if (!sourceAudit.Passed) throw new InvalidOperationException("Professional print source failed: " + string.Join(',', sourceAudit.BlockingReasons));
-
         var width = (double)request.TrimWidthInches * 72d;
         var height = (double)request.TrimHeightInches * 72d;
         var margin = Math.Max(42d, (double)request.MarginInches * 72d);
-        var pages = Layout(request, width, height, margin);
-        return PdfDocument.Build(width, height, pages, request.Metadata.Title);
+        return PdfDocument.Build(width, height, Layout(request, width, height, margin), request.Metadata.Title);
     }
 
     private static IReadOnlyList<PrintPage> Layout(KdpPackageRequest request, double width, double height, double margin)
@@ -75,7 +73,6 @@ public static class ProfessionalPrintInterior
             new([new PrintLine(request.Metadata.Title, PrintStyle.Title, false), new PrintLine(request.Metadata.Author, PrintStyle.Subtitle, false)], false),
             new([new PrintLine("Copyright © " + DateTime.UtcNow.Year + " " + request.Metadata.Author, PrintStyle.Body, false), new PrintLine("Todos los derechos reservados.", PrintStyle.Body, false), new PrintLine("Edición preparada para Amazon KDP.", PrintStyle.Body, false)], false)
         };
-
         var bodyChars = Math.Max(46, (int)Math.Floor((width - margin * 2) / 5.25d));
         var usableLines = Math.Max(24, (int)Math.Floor((height - margin * 2 - 24d) / 14.5d));
         foreach (var chapter in request.Chapters.OrderBy(x => x.Number))
@@ -87,13 +84,7 @@ public static class ProfessionalPrintInterior
                 var plain = string.Concat(block.Inlines.Select(x => x.Text));
                 var style = block.Kind switch { PrintBlockKind.Dialogue => PrintStyle.Dialogue, PrintBlockKind.Document => PrintStyle.Document, _ => PrintStyle.Body };
                 var wrapped = Wrap(plain, bodyChars).ToArray();
-                if (wrapped.Length == 1 && remaining == 1 && lines.Count > 3)
-                {
-                    pages.Add(new PrintPage(lines, true));
-                    lines = [];
-                    remaining = usableLines;
-                }
-                if (wrapped.Length > remaining && remaining < 3 && lines.Count > 3)
+                if ((wrapped.Length == 1 && remaining == 1 || wrapped.Length > remaining && remaining < 3) && lines.Count > 3)
                 {
                     pages.Add(new PrintPage(lines, true));
                     lines = [];
@@ -139,7 +130,14 @@ public static class ProfessionalPrintInterior
     }
 
     private static bool LooksLikeDocument(string text) => text.StartsWith('>') || Regex.IsMatch(text, @"^(Asunto|Acta|Expediente|Inventario|Carta|Nota|Diario)\b", RegexOptions.IgnoreCase);
-    private static string RemoveSupportedItalicMarkup(string source) => Italic.Replace(source, match => match.Groups[1].Value);
+
+    private static string RemoveSupportedMarkup(string source)
+    {
+        var cleaned = Italic.Replace(source, match => match.Groups[1].Value);
+        cleaned = Regex.Replace(cleaned, @"(?m)^\s*#{1,6}\s+.*$", string.Empty);
+        cleaned = Regex.Replace(cleaned, @"(?m)^\s*>\s?", string.Empty);
+        return cleaned;
+    }
 
     private static IEnumerable<string> Wrap(string value, int max)
     {
@@ -202,10 +200,11 @@ public static class ProfessionalPrintInterior
                 if (line.Text.Length > 0) sb.Append($"BT {font} {F(size)} Tf {F(x)} {F(y)} Td ({Esc(line.Text)}) Tj ET\n");
                 y -= leading;
             }
-            if (page.Numbered) sb.Append($"BT /F1 9 Tf 0.5 0 0 0.5 0 0 Tm 420 70 Td ({pageNumber}) Tj ET\n");
+            if (page.Numbered) sb.Append($"BT /F1 9 Tf 210 35 Td ({pageNumber}) Tj ET\n");
             return sb.ToString();
         }
-        private static string Esc(string s) => s.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)").Replace('—', '—').Replace('“', '«').Replace('”', '»');
+
+        private static string Esc(string s) => s.Replace("\\", "\\\\").Replace("(", "\\(").Replace(")", "\\)").Replace("—", "\u0097", StringComparison.Ordinal).Replace('“', '«').Replace('”', '»');
         private static string F(double d) => d.ToString("0.##", CultureInfo.InvariantCulture);
     }
 }
