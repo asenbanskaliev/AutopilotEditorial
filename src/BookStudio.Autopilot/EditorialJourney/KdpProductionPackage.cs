@@ -17,6 +17,7 @@ public sealed record KdpPackageResult(string PackageZip, IReadOnlyList<KdpPackag
 public sealed class KdpProductionPackageBuilder
 {
     private static readonly DateTimeOffset StableTimestamp = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly Encoding PdfEncoding = Encoding.Latin1;
 
     public async ValueTask<KdpPackageResult> BuildAsync(KdpPackageRequest request, CancellationToken cancellationToken = default)
     {
@@ -89,7 +90,7 @@ public sealed class KdpProductionPackageBuilder
         {
             new { id = "trim", passed = true, value = (object)$"{request.TrimWidthInches}x{request.TrimHeightInches}" },
             new { id = "margins", passed = true, value = (object)request.MarginInches },
-            new { id = "fonts", passed = true, value = (object)"built-in Helvetica, no embedding risk" },
+            new { id = "fonts", passed = true, value = (object)"Helvetica with WinAnsiEncoding for Spanish Latin characters" },
             new { id = "cover-resolution", passed = true, value = (object)request.Cover.Dpi },
             new { id = "navigation", passed = true, value = (object)request.Chapters.Count },
             new { id = "metadata", passed = true, value = (object)request.Metadata.Language },
@@ -115,8 +116,9 @@ public sealed class KdpProductionPackageBuilder
             manifestItems.Append($"<item id=\"{id}\" href=\"{href}\" media-type=\"application/xhtml+xml\"/>");
             spine.Append($"<itemref idref=\"{id}\"/>");
             nav.Append($"<li><a href=\"{href}\">{Xml(chapter.Title)}</a></li>");
-            var body = Xml(MarkdownToText(chapter.Markdown)).Replace("\n", "</p><p>", StringComparison.Ordinal);
-            await AddEntryAsync(archive, "OEBPS/" + href, $"<?xml version=\"1.0\" encoding=\"utf-8\"?><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>{Xml(chapter.Title)}</title></head><body><h1>{Xml(chapter.Title)}</h1><p>{body}</p></body></html>", CompressionLevel.Optimal, cancellationToken);
+            var paragraphs = ExtractParagraphs(chapter.Markdown);
+            var body = string.Join(string.Empty, paragraphs.Select(paragraph => $"<p>{Xml(paragraph)}</p>"));
+            await AddEntryAsync(archive, "OEBPS/" + href, $"<?xml version=\"1.0\" encoding=\"utf-8\"?><html xmlns=\"http://www.w3.org/1999/xhtml\"><head><title>{Xml(chapter.Title)}</title></head><body><h1>{Xml(chapter.Title)}</h1>{body}</body></html>", CompressionLevel.Optimal, cancellationToken);
         }
         await AddEntryAsync(archive, "OEBPS/nav.xhtml", $"<?xml version=\"1.0\" encoding=\"utf-8\"?><html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\"><head><title>Contenido</title></head><body><nav epub:type=\"toc\"><ol>{nav}</ol></nav></body></html>", CompressionLevel.Optimal, cancellationToken);
         var opf = $"<?xml version=\"1.0\" encoding=\"utf-8\"?><package xmlns=\"http://www.idpf.org/2007/opf\" version=\"3.0\" unique-identifier=\"bookid\"><metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\"><dc:identifier id=\"bookid\">urn:bookstudio:{Xml(request.ProjectId)}</dc:identifier><dc:title>{Xml(request.Metadata.Title)}</dc:title><dc:creator>{Xml(request.Metadata.Author)}</dc:creator><dc:language>{Xml(request.Metadata.Language)}</dc:language><meta property=\"dcterms:modified\">2026-01-01T00:00:00Z</meta></metadata><manifest>{manifestItems}</manifest><spine>{spine}</spine></package>";
@@ -125,29 +127,143 @@ public sealed class KdpProductionPackageBuilder
 
     private static byte[] BuildPdf(KdpPackageRequest request)
     {
-        var text = MarkdownToText(BuildManuscript(request));
-        var lines = Wrap(text, 82).Take(48).Select(EscapePdf).ToArray();
-        var content = new StringBuilder("BT /F1 10 Tf 50 760 Td 14 TL ");
-        foreach (var line in lines) content.Append('(').Append(line).Append(") Tj T* ");
-        content.Append("ET");
-        var objects = new[]
+        var pageWidth = (double)request.TrimWidthInches * 72d;
+        var pageHeight = (double)request.TrimHeightInches * 72d;
+        var margin = Math.Max(36d, (double)request.MarginInches * 72d);
+        var pages = LayoutPdfPages(request, pageWidth, pageHeight, margin);
+
+        var objects = new List<string>
         {
             "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            $"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {(double)request.TrimWidthInches * 72:0.##} {(double)request.TrimHeightInches * 72:0.##}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-            $"<< /Length {Encoding.ASCII.GetByteCount(content.ToString())} >>\nstream\n{content}\nendstream"
+            string.Empty,
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
         };
+
+        var pageReferences = new List<int>();
+        foreach (var page in pages)
+        {
+            var pageObjectNumber = objects.Count + 1;
+            var contentObjectNumber = pageObjectNumber + 1;
+            pageReferences.Add(pageObjectNumber);
+            objects.Add($"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {pageWidth.ToString("0.##", CultureInfo.InvariantCulture)} {pageHeight.ToString("0.##", CultureInfo.InvariantCulture)}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents {contentObjectNumber} 0 R >>");
+            var content = BuildPageContent(page, pageHeight, margin);
+            objects.Add($"<< /Length {PdfEncoding.GetByteCount(content)} >>\nstream\n{content}\nendstream");
+        }
+        objects[1] = $"<< /Type /Pages /Kids [{string.Join(' ', pageReferences.Select(reference => $"{reference} 0 R"))}] /Count {pages.Count} >>";
+
         using var stream = new MemoryStream();
-        void Write(string value) { var bytes = Encoding.ASCII.GetBytes(value); stream.Write(bytes); }
-        Write("%PDF-1.4\n");
+        void Write(string value)
+        {
+            var bytes = PdfEncoding.GetBytes(value);
+            stream.Write(bytes);
+        }
+
+        Write("%PDF-1.4\n%âãÏÓ\n");
         var offsets = new List<long> { 0 };
-        for (var i = 0; i < objects.Length; i++) { offsets.Add(stream.Position); Write($"{i + 1} 0 obj\n{objects[i]}\nendobj\n"); }
+        for (var i = 0; i < objects.Count; i++)
+        {
+            offsets.Add(stream.Position);
+            Write($"{i + 1} 0 obj\n{objects[i]}\nendobj\n");
+        }
         var xref = stream.Position;
-        Write($"xref\n0 {objects.Length + 1}\n0000000000 65535 f \n");
+        Write($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n");
         foreach (var offset in offsets.Skip(1)) Write(offset.ToString("0000000000", CultureInfo.InvariantCulture) + " 00000 n \n");
-        Write($"trailer\n<< /Size {objects.Length + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        Write($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
         return stream.ToArray();
+    }
+
+    private static IReadOnlyList<IReadOnlyList<PdfLine>> LayoutPdfPages(KdpPackageRequest request, double pageWidth, double pageHeight, double margin)
+    {
+        const double bodyFontSize = 10.5d;
+        const double bodyLeading = 14.5d;
+        const double headingFontSize = 16d;
+        const double headingLeading = 22d;
+        var usableWidth = pageWidth - (margin * 2d);
+        var maximumBodyCharacters = Math.Max(38, (int)Math.Floor(usableWidth / (bodyFontSize * 0.50d)));
+        var maximumHeadingCharacters = Math.Max(25, (int)Math.Floor(usableWidth / (headingFontSize * 0.52d)));
+        var pages = new List<IReadOnlyList<PdfLine>>();
+
+        foreach (var chapter in request.Chapters.OrderBy(chapter => chapter.Number))
+        {
+            var current = new List<PdfLine>();
+            var remainingHeight = pageHeight - (margin * 2d);
+
+            void NewPage()
+            {
+                if (current.Count > 0) pages.Add(current.ToArray());
+                current = [];
+                remainingHeight = pageHeight - (margin * 2d);
+            }
+
+            void AddLine(string text, bool heading, bool firstParagraphLine, double spaceBefore = 0d)
+            {
+                var leading = heading ? headingLeading : bodyLeading;
+                var required = leading + spaceBefore;
+                if (remainingHeight < required && current.Count > 0) NewPage();
+                current.Add(new PdfLine(text, heading, firstParagraphLine, spaceBefore));
+                remainingHeight -= required;
+            }
+
+            var heading = $"Capítulo {chapter.Number}: {chapter.Title}";
+            foreach (var line in WrapWords(heading, maximumHeadingCharacters)) AddLine(line, heading: true, firstParagraphLine: false, spaceBefore: current.Count == 0 ? 0d : 8d);
+
+            var paragraphs = ExtractParagraphs(chapter.Markdown);
+            foreach (var paragraph in paragraphs)
+            {
+                var wrapped = WrapWords(paragraph, maximumBodyCharacters).ToArray();
+                for (var index = 0; index < wrapped.Length; index++) AddLine(wrapped[index], heading: false, firstParagraphLine: index == 0, spaceBefore: index == 0 ? 7d : 0d);
+            }
+            if (current.Count > 0) pages.Add(current.ToArray());
+        }
+        return pages;
+    }
+
+    private static string BuildPageContent(IReadOnlyList<PdfLine> page, double pageHeight, double margin)
+    {
+        var content = new StringBuilder();
+        var y = pageHeight - margin;
+        foreach (var line in page)
+        {
+            y -= line.SpaceBefore;
+            var font = line.Heading ? "/F2" : "/F1";
+            var size = line.Heading ? 16d : 10.5d;
+            var leading = line.Heading ? 22d : 14.5d;
+            var x = margin + (line.FirstParagraphLine && !line.Heading ? 18d : 0d);
+            content.Append("BT ").Append(font).Append(' ').Append(size.ToString("0.##", CultureInfo.InvariantCulture)).Append(" Tf ")
+                .Append(x.ToString("0.##", CultureInfo.InvariantCulture)).Append(' ').Append(y.ToString("0.##", CultureInfo.InvariantCulture)).Append(" Td (")
+                .Append(EscapePdf(line.Text)).Append(") Tj ET\n");
+            y -= leading;
+        }
+        return content.ToString().TrimEnd();
+    }
+
+    private static IReadOnlyList<string> ExtractParagraphs(string markdown)
+    {
+        var normalized = markdown.Replace("\r\n", "\n", StringComparison.Ordinal).Trim();
+        var firstNewLine = normalized.IndexOf('\n');
+        if (firstNewLine >= 0 && normalized.StartsWith('#')) normalized = normalized[(firstNewLine + 1)..].Trim();
+        return Regex.Split(normalized, "\\n\\s*\\n")
+            .Select(paragraph => MarkdownToText(paragraph).Replace('\n', ' ').Trim())
+            .Where(paragraph => paragraph.Length > 0)
+            .ToArray();
+    }
+
+    private static IEnumerable<string> WrapWords(string value, int width)
+    {
+        var words = value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+        var line = new StringBuilder();
+        foreach (var word in words)
+        {
+            if (line.Length > 0 && line.Length + 1 + word.Length > width)
+            {
+                yield return line.ToString();
+                line.Clear();
+            }
+            if (line.Length > 0) line.Append(' ');
+            line.Append(word);
+        }
+        if (line.Length > 0) yield return line.ToString();
     }
 
     private static IReadOnlyList<KdpPackageFile> EnumerateFiles(string root, bool excludeManifest) => Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories)
@@ -171,8 +287,8 @@ public sealed class KdpProductionPackageBuilder
 
     private static string HashFile(string path) => Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant();
     private static string MarkdownToText(string value) => Regex.Replace(value, "(?m)^#{1,6}\\s*", string.Empty).Replace("**", string.Empty, StringComparison.Ordinal).Replace("__", string.Empty, StringComparison.Ordinal);
-    private static IEnumerable<string> Wrap(string value, int width) { foreach (var paragraph in value.Split('\n')) for (var i = 0; i < paragraph.Length; i += width) yield return paragraph.Substring(i, Math.Min(width, paragraph.Length - i)); }
-    private static string EscapePdf(string value) => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("(", "\\(", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal).Select(c => c <= 126 ? c : '?').Aggregate(new StringBuilder(), (b, c) => b.Append(c)).ToString();
+    private static string EscapePdf(string value) => value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("(", "\\(", StringComparison.Ordinal).Replace(")", "\\)", StringComparison.Ordinal);
     private static string Xml(string value) => System.Security.SecurityElement.Escape(value) ?? string.Empty;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private sealed record PdfLine(string Text, bool Heading, bool FirstParagraphLine, double SpaceBefore);
 }

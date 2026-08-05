@@ -4,9 +4,11 @@ on:
   pull_request:
     paths:
       - "tests/BookStudio.Tests.FirstRealCommercialBook/**"
+      - "tests/BookStudio.Tests.KdpRealPackageCompliance/**"
       - ".github/workflows/19-run001-first-real-commercial-book.yml"
       - "src/BookStudio.Autopilot/EditorialJourney/CommercialBookOpenCodeAdapters.cs"
       - "src/BookStudio.Autopilot/EditorialJourney/KdpProductionPackage.cs"
+      - "src/BookStudio.Autopilot/EditorialJourney/KdpPolicyCompliance.cs"
       - "global.json"
       - "Directory.Packages.props"
 
@@ -42,8 +44,10 @@ jobs:
           mkdir -p "$RUNTIME/opencode" "$RUNTIME/home" "$RUNTIME/config" "$RUNTIME/data" "$RUNTIME/cache" "$RUNTIME/work"
           npm install --prefix "$RUNTIME/opencode" "opencode-ai@$OPENCODE_VERSION" --no-audit --no-fund
           "$RUNTIME/opencode/node_modules/.bin/opencode" --version | grep "$OPENCODE_VERSION"
-      - name: Build real book runner
-        run: dotnet build tests/BookStudio.Tests.FirstRealCommercialBook/BookStudio.Tests.FirstRealCommercialBook.csproj -c Release
+      - name: Build real book runner and KDP verifier
+        run: |
+          dotnet build tests/BookStudio.Tests.FirstRealCommercialBook/BookStudio.Tests.FirstRealCommercialBook.csproj -c Release
+          dotnet build tests/BookStudio.Tests.KdpRealPackageCompliance/BookStudio.Tests.KdpRealPackageCompliance.csproj -c Release
       - name: Generate first real commercial book
         shell: bash
         env:
@@ -77,6 +81,11 @@ jobs:
           assert data['credentialPersisted'] is False
           assert data['secretLeakageDetected'] is False
           PY
+      - name: Enforce official Amazon KDP policies on generated package
+        if: success()
+        env:
+          BOOKSTUDIO_REAL_BOOK_OUTPUT: ${{ env.OUTPUT }}
+        run: dotnet run --project tests/BookStudio.Tests.KdpRealPackageCompliance/BookStudio.Tests.KdpRealPackageCompliance.csproj -c Release --no-build
       - name: Upload complete real book
         if: always()
         uses: actions/upload-artifact@v4
