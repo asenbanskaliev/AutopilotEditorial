@@ -50,7 +50,7 @@ try
     Require(raw.Contains("Diario de Navarra", StringComparison.Ordinal), "italic text missing from PDF");
     Require(raw.Contains("Copyright", StringComparison.Ordinal), "copyright page missing");
     Require(raw.Contains("El archivo de las ausencias", StringComparison.Ordinal), "title page missing");
-    Require(raw.Contains("—¿Dónde está el expediente?", StringComparison.Ordinal), "Spanish dialogue punctuation was not preserved");
+    Require(raw.Contains("\u0097¿Dónde está el expediente?", StringComparison.Ordinal), "WinAnsi Spanish dialogue dash was not preserved");
     Require(System.Text.RegularExpressions.Regex.Matches(raw, @"/Type /Page\b").Count >= 3, "front matter and chapter pages missing");
     Console.WriteLine("PASS VS-145 professional print interior and visual quality gate");
 }
