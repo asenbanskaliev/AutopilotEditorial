@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "book-core": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "C:/Users/asenb/OneDrive/Desktop/AutopilotEditoral/AutopilotEditorial/.runtime/publish/book-core/BookStudio.Mcp.dll"
+      ]
+    },
+    "book-authoring": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "C:/Users/asenb/OneDrive/Desktop/AutopilotEditoral/AutopilotEditorial/.runtime/publish/authoring/BookStudio.Mcp.Authoring.dll"
+      ]
+    },
+    "book-quality": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "C:/Users/asenb/OneDrive/Desktop/AutopilotEditoral/AutopilotEditorial/.runtime/publish/quality/BookStudio.Mcp.Quality.dll"
+      ]
+    },
+    "book-production": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "C:/Users/asenb/OneDrive/Desktop/AutopilotEditoral/AutopilotEditorial/.runtime/publish/production/BookStudio.Mcp.Production.dll"
+      ]
+    },
+    "book-ops": {
+      "type": "local",
+      "command": [
+        "dotnet",
+        "C:/Users/asenb/OneDrive/Desktop/AutopilotEditoral/AutopilotEditorial/.runtime/publish/ops/BookStudio.Mcp.Ops.dll"
+      ]
+    }
+  }
+}
