@@ -23,6 +23,8 @@ The 5 MCP servers are packaged and ready for distribution.
 - opencode.json: uses `dotnet` from PATH (was hardcoded to non-existent SDK path)
 - Installer: `Install-BookStudio.ps1` now materializes `opencode.json` with real install paths (replaces `{{INSTALL_ROOT}}` placeholder)
 - Package layout: `servers/<name>/BookStudio.Mcp*.dll` (fixed template that wrongly assumed `servers/publish/`)
+- opencode.json for writing projects must pass `--workspace-root` so servers confine artifacts to that folder
+- Artifact naming contract: `artifactId` MUST be `{projectId}.draft.{slug}` (e.g. `libro.draft.nina-y-pajaro-negro`) or `draft_scope_violation` fails closed
 
 ## Functional host (proof of end-to-end book journey)
 

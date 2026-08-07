@@ -68,13 +68,13 @@ public static class McpPromptDispatcher
         VersionedMcpPromptCatalog catalog)
     {
         if (parameters is null ||
-            !HasOnlyProperties(parameters.Value, "name", "arguments") ||
+            parameters.Value.ValueKind != JsonValueKind.Object ||
             !parameters.Value.TryGetProperty("name", out var nameElement) ||
             nameElement.ValueKind != JsonValueKind.String)
         {
             return InvalidParams(
                 requestId,
-                "prompts/get params require name and optional string arguments.");
+                "prompts/get params require a string name and optional string arguments.");
         }
 
         var name = nameElement.GetString();

@@ -84,8 +84,9 @@ try {
     Expand-Archive -LiteralPath $package -DestinationPath $InstallRoot -Force
 
     # Materialize an MCP-ready opencode.json from the packaged template,
-    # resolving {{INSTALL_ROOT}} to the real install location. This lets the
-    # end user copy this file into any project folder to enable the servers.
+    # resolving {{INSTALL_ROOT}} to the real install location. {{WORKSPACE_ROOT}}
+    # defaults to the install root but is documented on the JSON as the folder
+    # the user edits before copying the file into a writing project.
     $templatePath = Join-Path $InstallRoot 'opencode.template.json'
     $opencodePath = Join-Path $InstallRoot 'opencode.json'
     if (Test-Path -LiteralPath $templatePath) {
@@ -94,6 +95,7 @@ try {
       $normalizedRoot = [IO.Path]::GetFullPath($InstallRoot).TrimEnd([IO.Path]::DirectorySeparatorChar)
       $template = Get-Content -LiteralPath $templatePath -Raw
       $template = $template.Replace('{{INSTALL_ROOT}}', $normalizedRoot)
+      $template = $template.Replace('{{WORKSPACE_ROOT}}', $normalizedRoot)
       $opencodePathTmp = "$opencodePath.tmp"
       $template | Set-Content -LiteralPath $opencodePathTmp -Encoding UTF8
       Move-Item -LiteralPath $opencodePathTmp -Destination $opencodePath -Force

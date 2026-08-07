@@ -145,6 +145,12 @@ internal sealed class McpConformanceRunner
         await ValidateFeatureListAsync(process, "valid-prompts", "prompts/list", "prompts", server.Name)
             .ConfigureAwait(false);
 
+        if (server.Name == "bookstudio-ops")
+        {
+            await ValidateTolerantToolCallAsync(process, server.Name)
+                .ConfigureAwait(false);
+        }
+
         await RunCorpusPhaseAsync(process, corpus, "ready", server.Name)
             .ConfigureAwait(false);
 
@@ -217,6 +223,23 @@ internal sealed class McpConformanceRunner
                 testCase.ExpectedId,
                 serverName + ": corpus " + testCase.Id);
         }
+    }
+
+    private static async Task ValidateTolerantToolCallAsync(
+        McpProcessDriver process,
+        string serverName)
+    {
+        // Regression: tools/call must accept optional "arguments" (omitted for no-arg tools)
+        // and tolerate extra top-level params keys such as "_meta" (MCP spec allows both).
+        // A strict "exactly name and object arguments" gate broke real clients with -32602.
+        await process.SendRawAsync(
+                "{\"jsonrpc\":\"2.0\",\"id\":\"tolerant-call\",\"method\":\"tools/call\",\"params\":{\"name\":\"book.ops.diagnostics\",\"_meta\":{\"progressToken\":\"tolerant\"}}}")
+            .ConfigureAwait(false);
+        using var response = await process.ReadJsonAsync().ConfigureAwait(false);
+        ExpectResult(
+            response.RootElement,
+            "tolerant-call",
+            serverName + ": tools/call with optional arguments and extra _meta");
     }
 
     private static async Task ValidateFeatureListAsync(

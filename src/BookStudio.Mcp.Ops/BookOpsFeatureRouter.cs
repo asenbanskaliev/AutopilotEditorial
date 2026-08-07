@@ -117,16 +117,16 @@ public sealed class BookOpsFeatureRouter : IMcpFeatureRouter, IAsyncDisposable
         CancellationToken cancellationToken)
     {
         if (parameters is null ||
-            !HasOnlyProperties(parameters.Value, "name", "arguments") ||
+            parameters.Value.ValueKind != JsonValueKind.Object ||
             !parameters.Value.TryGetProperty("name", out var nameElement) ||
             nameElement.ValueKind != JsonValueKind.String ||
-            !parameters.Value.TryGetProperty("arguments", out var arguments) ||
-            arguments.ValueKind != JsonValueKind.Object ||
-            arguments.EnumerateObject().Any())
+            (parameters.Value.TryGetProperty("arguments", out var parsedArguments) &&
+             (parsedArguments.ValueKind != JsonValueKind.Object ||
+              parsedArguments.EnumerateObject().Any())))
         {
             return InvalidParams(
                 requestId,
-                "tools/call params require exactly name and empty object arguments.");
+                "tools/call params require a string name and optional empty object arguments.");
         }
 
         var toolName = nameElement.GetString();

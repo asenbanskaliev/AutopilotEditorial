@@ -11,6 +11,7 @@ public sealed class BookCoreFeatureRouter : IMcpFeatureRouter, IAsyncDisposable
     private const int ToolPageSize = 50;
     private const int ResourcePageSize = 3;
     private const int TemplatePageSize = 20;
+    private static readonly JsonElement EmptyObject = JsonDocument.Parse("{}").RootElement;
 
     private static readonly IReadOnlyDictionary<string, object> ServerCapabilities =
         new Dictionary<string, object>(StringComparer.Ordinal)
@@ -116,16 +117,20 @@ public sealed class BookCoreFeatureRouter : IMcpFeatureRouter, IAsyncDisposable
         CancellationToken cancellationToken)
     {
         if (parameters is null ||
-            !HasOnlyProperties(parameters.Value, "name", "arguments") ||
+            parameters.Value.ValueKind != JsonValueKind.Object ||
             !parameters.Value.TryGetProperty("name", out var nameElement) ||
             nameElement.ValueKind != JsonValueKind.String ||
-            !parameters.Value.TryGetProperty("arguments", out var arguments) ||
-            arguments.ValueKind != JsonValueKind.Object)
+            (parameters.Value.TryGetProperty("arguments", out var parsedArguments) &&
+             parsedArguments.ValueKind != JsonValueKind.Object))
         {
             return InvalidParams(
                 requestId,
-                "tools/call params require exactly name and object arguments.");
+                "tools/call params require a string name and optional object arguments.");
         }
+
+        var arguments = parameters.Value.TryGetProperty("arguments", out var providedArguments)
+            ? providedArguments
+            : EmptyObject;
 
         var toolName = nameElement.GetString();
         if (string.IsNullOrWhiteSpace(toolName) || toolName.Length > 128)
