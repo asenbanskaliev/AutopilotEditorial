@@ -119,15 +119,19 @@ if (Test-Path -LiteralPath $installerSrc) {
 }
 
 # Write opencode template. The {{INSTALL_ROOT}} placeholder is materialized by
-# Install-BookStudio.ps1 to the real install location.
+# Install-BookStudio.ps1 to the real install location, and {{WORKSPACE_ROOT}}
+# to the resolved install project folder.
 $openCodeTemplate = @{
     '$schema' = 'https://opencode.ai/config.json'
     mcp = @{
-        'book-core'       = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/book-core/BookStudio.Mcp.dll') }
-        'book-authoring'  = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/authoring/BookStudio.Mcp.Authoring.dll') }
-        'book-quality'    = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/quality/BookStudio.Mcp.Quality.dll') }
-        'book-production' = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/production/BookStudio.Mcp.Production.dll') }
-        'book-ops'        = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/ops/BookStudio.Mcp.Ops.dll') }
+        'book-core'       = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/book-core/BookStudio.Mcp.dll', '--workspace-root', '{{WORKSPACE_ROOT}}') }
+        'book-authoring'  = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/authoring/BookStudio.Mcp.Authoring.dll', '--workspace-root', '{{WORKSPACE_ROOT}}') }
+        'book-quality'    = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/quality/BookStudio.Mcp.dll', '--workspace-root', '{{WORKSPACE_ROOT}}') }
+        'book-production' = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/production/BookStudio.Mcp.dll', '--workspace-root', '{{WORKSPACE_ROOT}}') }
+        'book-ops'        = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/ops/BookStudio.Mcp.dll', '--workspace-root', '{{WORKSPACE_ROOT}}') }
+    }
+    'x-bookstudio' = @{
+        note = 'Edit {{WORKSPACE_ROOT}} to the folder where you write books, then copy this file there.'
     }
 } | ConvertTo-Json -Depth 10
 $openCodeTemplate | Set-Content -LiteralPath (Join-Path $stagingDir 'opencode.template.json') -Encoding UTF8

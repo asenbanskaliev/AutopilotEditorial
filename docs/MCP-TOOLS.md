@@ -258,6 +258,23 @@ In the reference above the `/opt/bookstudio` prefix is a placeholder; replace it
 with the real absolute install path, then open OpenCode from that project folder
 to connect the five servers.
 
+### Artifact ID contract
+
+All write tools enforce a project-scoped naming contract. `artifactId` **must**
+start with `{projectId}.draft.` or the server fails closed with
+`draft_scope_violation`.
+
+| Field | Rule | Example |
+|---|---|---|
+| `projectId` | lowercase slug, ≤ 64 chars | `libro` |
+| `artifactId` | `{projectId}.draft.{slug}` | `libro.draft.nina-y-pajaro-negro` |
+
+### Workspace confinement
+
+Pass `--workspace-root <folder>` to each server so artifacts are stored
+immutably under `<folder>/.bookstudio/artifacts/`. Without it, servers default
+to `%LOCALAPPDATA%\BookStudio\workspace`.
+
 ---
 
 ## Reserved tools (not yet active)
