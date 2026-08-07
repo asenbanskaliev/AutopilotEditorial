@@ -118,15 +118,16 @@ if (Test-Path -LiteralPath $installerSrc) {
     Copy-Item -Force -LiteralPath $installerSrc -Destination $stagingDir
 }
 
-# Write opencode template (relative paths for end-user install)
+# Write opencode template. The {{INSTALL_ROOT}} placeholder is materialized by
+# Install-BookStudio.ps1 to the real install location.
 $openCodeTemplate = @{
     '$schema' = 'https://opencode.ai/config.json'
     mcp = @{
-        'book-core'       = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/publish/book-core/BookStudio.Mcp.dll') }
-        'book-authoring'  = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/publish/authoring/BookStudio.Mcp.Authoring.dll') }
-        'book-quality'    = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/publish/quality/BookStudio.Mcp.Quality.dll') }
-        'book-production' = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/publish/production/BookStudio.Mcp.Production.dll') }
-        'book-ops'        = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/publish/ops/BookStudio.Mcp.Ops.dll') }
+        'book-core'       = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/book-core/BookStudio.Mcp.dll') }
+        'book-authoring'  = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/authoring/BookStudio.Mcp.Authoring.dll') }
+        'book-quality'    = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/quality/BookStudio.Mcp.Quality.dll') }
+        'book-production' = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/production/BookStudio.Mcp.Production.dll') }
+        'book-ops'        = @{ type='local'; command=@('dotnet', '{{INSTALL_ROOT}}/servers/ops/BookStudio.Mcp.Ops.dll') }
     }
 } | ConvertTo-Json -Depth 10
 $openCodeTemplate | Set-Content -LiteralPath (Join-Path $stagingDir 'opencode.template.json') -Encoding UTF8

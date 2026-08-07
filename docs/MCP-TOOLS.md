@@ -219,6 +219,24 @@ and stable recommendations without changing durable state.
 
 ## Connecting to OpenCode
 
+### Automatic (Windows installer)
+
+Run the packaged installer:
+
+```powershell
+.\Install-BookStudio.ps1 -PackagePath .\BookStudio-mcp-0.12.0.zip -ExpectedSha256 <hash>
+```
+
+The installer extracts the servers and materializes an `opencode.json` with the
+real install paths. Copy that generated `opencode.json` into any project folder
+where you want the servers enabled:
+
+```powershell
+Copy-Item "$env:LOCALAPPDATA\BookStudio\opencode.json" <your-project-folder>\opencode.json
+```
+
+### Manual
+
 Add to `opencode.json` (adjust paths to your install location):
 
 ```json
@@ -235,6 +253,10 @@ Add to `opencode.json` (adjust paths to your install location):
 ```
 
 **Prerequisite:** .NET 10 runtime (`dotnet` on PATH). Install from https://dot.net/
+
+In the reference above the `/opt/bookstudio` prefix is a placeholder; replace it
+with the real absolute install path, then open OpenCode from that project folder
+to connect the five servers.
 
 ---
 

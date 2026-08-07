@@ -82,6 +82,23 @@ try {
   if ($state.phase -eq 'verified') {
     New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
     Expand-Archive -LiteralPath $package -DestinationPath $InstallRoot -Force
+
+    # Materialize an MCP-ready opencode.json from the packaged template,
+    # resolving {{INSTALL_ROOT}} to the real install location. This lets the
+    # end user copy this file into any project folder to enable the servers.
+    $templatePath = Join-Path $InstallRoot 'opencode.template.json'
+    $opencodePath = Join-Path $InstallRoot 'opencode.json'
+    if (Test-Path -LiteralPath $templatePath) {
+      Assert-WithinRoot $templatePath $InstallRoot
+      Assert-WithinRoot $opencodePath $InstallRoot
+      $normalizedRoot = [IO.Path]::GetFullPath($InstallRoot).TrimEnd([IO.Path]::DirectorySeparatorChar)
+      $template = Get-Content -LiteralPath $templatePath -Raw
+      $template = $template.Replace('{{INSTALL_ROOT}}', $normalizedRoot)
+      $opencodePathTmp = "$opencodePath.tmp"
+      $template | Set-Content -LiteralPath $opencodePathTmp -Encoding UTF8
+      Move-Item -LiteralPath $opencodePathTmp -Destination $opencodePath -Force
+      Remove-Item -LiteralPath $templatePath -Force
+    }
     $state.phase = 'installed'; $state.updatedAt = (Get-Date).ToString('o'); Write-AtomicJson $statePath $state
   }
 

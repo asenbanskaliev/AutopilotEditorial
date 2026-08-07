@@ -14,13 +14,15 @@
 The 5 MCP servers are packaged and ready for distribution.
 
 - Release ZIP: `.runtime/release/BookStudio-mcp-0.12.0.zip`
-- SHA-256: `5F412419F04DFA14526D9FE661AE554B899699DEECBEC36A89425214902F390C`
+- SHA-256: `69B527E46225EF4A0F950E0C84A26065DFBA7DDBC542A3E8A77D5B37919A193A`
 - Active tools: 10 (2 per server)
 - Tool reference: `docs/MCP-TOOLS.md`
 - Publish script: `scripts/Publish-McpServers.ps1`
 - Package script: `scripts/New-ReleasePackage.ps1`
 - SDK fixed: `10.0.301` (was `10.0.204` — not installed)
 - opencode.json: uses `dotnet` from PATH (was hardcoded to non-existent SDK path)
+- Installer: `Install-BookStudio.ps1` now materializes `opencode.json` with real install paths (replaces `{{INSTALL_ROOT}}` placeholder)
+- Package layout: `servers/<name>/BookStudio.Mcp*.dll` (fixed template that wrongly assumed `servers/publish/`)
 
 ## Functional host (proof of end-to-end book journey)
 
